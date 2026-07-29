@@ -109,19 +109,18 @@ export function VendorPageClient({ businessId }: { businessId: string }) {
     setPageLoading(true)
     try {
       const params = new URLSearchParams()
-      append('page', String(currentPage))
-      append('limit', String(PAGE_LIMIT))
-      if (searchTerm.trim()) append('search', searchTerm.trim())
-      if (filterType !== 'ALL') append('vendorType', filterType)
-      if (filterStatus !== 'ALL') append('status', filterStatus)
+      params.append('page', String(currentPage))
+      params.append('limit', String(PAGE_LIMIT))
+      if (searchTerm.trim()) params.append('search', searchTerm.trim())
+      if (filterType !== 'ALL') params.append('vendorType', filterType)
+      if (filterStatus !== 'ALL') params.append('status', filterStatus)
 
-      const res = await fetch(`${API_BASE}/api/purchase/vendors?${toString()}`, {
+      const res = await fetch(`${API_BASE}/api/purchase/vendors?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'x-business-id': businessId,
         },
       })
-
       const data = await res.json()
       if (!res.ok || !data?.success) {
         throw new Error(data?.message || 'Failed to load vendors')

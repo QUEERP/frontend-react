@@ -172,7 +172,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
 
         const rows = paymentList.map((p: any) => {
           let proj = p.invoice?.project || (p.quotation?.projects && p.quotation.projects[0]) || null;
-          let refNumber = proj?.projectCode || p.invoice?.invoiceNumber || p.quotation?.quoteNumber || '-';
+          let refNumber = proj ? (proj.projectName || proj.projectCode) : (p.invoice?.invoiceNumber || p.quotation?.quoteNumber || '-');
           
           return {
             id: p.id,

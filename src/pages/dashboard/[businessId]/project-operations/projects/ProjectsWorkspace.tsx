@@ -86,11 +86,16 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
     try {
       setLoading(true);
       const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
-      let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (!token || token === 'null' || token === 'undefined') {
-        token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] || 
-                document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] || '';
+      const getCookie = (name: string) => {
+        if (typeof document === 'undefined') return '';
+        const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\]\\^])/g, '\\$1') + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : '';
+      };
+      let token = getCookie('token') || getCookie('accessToken');
+      if (!token && typeof window !== 'undefined') {
+         token = localStorage.getItem('token') || localStorage.getItem('accessToken') || '';
       }
+      
       const res = await fetch(`${API_BASE}/api/projects`, {
         headers: { 'Authorization': `Bearer ${token}`, 'x-business-id': businessId },
         cache: 'no-store'
@@ -100,10 +105,12 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
         const list = data.data || data.projects;
         setProjects(list.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
         if (list.length > 0 && !selectedProject) setSelectedProject(list[0]);
+      } else {
+        toast({ title: "API Error", description: data.message || JSON.stringify(data), variant: "destructive" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching projects:", error);
-      toast({ title: "Error", description: "Failed to load projects.", variant: "destructive" });
+      toast({ title: "Error", description: error.message || "Failed to load projects.", variant: "destructive" });
     } finally {
       setLoading(false);
     }

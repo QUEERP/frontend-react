@@ -8,6 +8,7 @@ import {
   SearchIcon,
   TrashIcon,
   EditIcon,
+  EyeIcon,
   MoreHorizontalIcon,
   WalletIcon,
   PieChartIcon,
@@ -156,6 +157,7 @@ export function ExpensePageClient({ businessId }: { businessId: string }) {
   // Delete dialog
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
 
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
 
@@ -176,7 +178,7 @@ export function ExpensePageClient({ businessId }: { businessId: string }) {
     setPageLoading(true)
     try {
       const [vendorRes, expenseRes] = await Promise.all([
-        fetch(`${API_BASE}/api/vendors`, {
+        fetch(`${API_BASE}/api/purchase/vendors`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'x-business-id': businessId,
@@ -614,6 +616,10 @@ export function ExpensePageClient({ businessId }: { businessId: string }) {
                                   <DownloadIcon className="mr-2 size-4" />
                                   Download PDF
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/expenses/${item.id}/view`) }} className="text-sm cursor-pointer rounded-lg focus:bg-indigo-50 focus:text-indigo-600 dark:focus:bg-indigo-900/30 dark:focus:text-indigo-400">
+                                  <EyeIcon className="mr-2 size-4" />
+                                  View Expense
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/expenses/${item.id}/edit`) }} className="text-sm cursor-pointer rounded-lg focus:bg-blue-50 focus:text-blue-600 dark:focus:bg-blue-900/30 dark:focus:text-blue-400">
                                   <EditIcon className="mr-2 size-4" />
                                   Edit Entry
@@ -692,7 +698,15 @@ export function ExpensePageClient({ businessId }: { businessId: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    <Dialog open={isDownloadingPdf} onOpenChange={setIsDownloadingPdf}>
+        <DialogContent className="sm:max-w-[425px] flex flex-col items-center justify-center p-8">
+          <Loader2Icon className="h-12 w-12 animate-spin text-blue-600 mb-4" />
+          <DialogTitle className="text-xl font-semibold">Processing PDF</DialogTitle>
+          <DialogDescription className="text-center mt-2">
+            Please wait while your PDF is being generated and downloaded...
+          </DialogDescription>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
-

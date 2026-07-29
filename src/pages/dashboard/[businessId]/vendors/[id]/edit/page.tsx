@@ -7,7 +7,7 @@ export default function EditVendorPage() {
   const params = useParams()
   const navigate = useNavigate()
   
-  const { id } = useParams();
+  const { businessId, id } = useParams();
 const vendorId = id as string
 
   const [vendorData, setVendorData] = useState<any>(null)

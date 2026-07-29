@@ -61,7 +61,6 @@ type CreateFormData = {
   customerId?: string
   referenceType?: string
   referenceId?: string
-  projectId?: string
 }
 
 const CATEGORY_OPTIONS = [
@@ -88,13 +87,8 @@ const PAYMENT_METHOD_OPTIONS = [
   'Other',
 ]
 
-export function AddExpenseClient({ businessId }: { businessId: string }) {
+export function ViewExpenseClient({ businessId, expenseId }: { businessId: string, expenseId: string }) {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const initialQuotationId = searchParams.get('quotationId')
-  const initialInvoiceId = searchParams.get('invoiceId')
-  const initialCustomerId = searchParams.get('customerId')
-  const initialProjectId = searchParams.get('projectId')
   const { toast } = useToast()
   const { loading: businessLoading, currencySymbol, business } = useBusinessData()
 
@@ -125,7 +119,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
   const [vendors, setVendors] = useState<VendorOption[]>([])
   const [projects, setProjects] = useState<any[]>([])
   const [submitting, setSubmitting] = useState(false)
-  const [referenceProjectName, setReferenceProjectName] = useState<string>('')
+  const [loading, setLoading] = useState(true)
 
   const [formData, setFormData] = useState<CreateFormData>({
     title: '',
@@ -136,10 +130,9 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
     date: new Date().toISOString().split('T')[0],
     notes: '',
     vendorId: '',
-    customerId: initialCustomerId || '',
-    referenceType: initialQuotationId ? 'Quotation' : initialInvoiceId ? 'Invoice' : initialProjectId ? 'Project' : '',
-    referenceId: initialQuotationId || initialInvoiceId || initialProjectId || '',
-    projectId: initialProjectId || '',
+    customerId: '',
+    referenceType: '',
+    referenceId: '',
   })
 
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
@@ -158,6 +151,15 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
       if (!token) return
 
       try {
+        
+        const projRes = await fetch(`${API_BASE}/api/projects`, {
+          headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId }
+        });
+        const projData = await projRes.json();
+        if (projRes.ok && projData?.success) {
+          setProjects(projData.data || projData.projects || []);
+        }
+    
         const res = await fetch(`${API_BASE}/api/purchase/vendors?limit=1000`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -189,166 +191,135 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
 
   useEffect(() => {
     if (businessLoading) return;
-    if (!isConstruction) return;
 
     const init = async () => {
-      // Load customers, quotations, invoices, and the initial quotation all in parallel
-      const [customersRes, quotationsRes, invoicesRes, quotationRes] = await Promise.all([
-        contactsAPI.getCustomers(businessId).catch(() => ({ customers: [] as Customer[] })),
-        quotationsAPI.getQuotations(businessId).catch(() => ({ quotations: [] as Quotation[] })),
-        invoicesAPI.getInvoices(businessId).catch(() => ({ invoices: [] as Invoice[] })),
-        initialQuotationId
-          ? quotationsAPI.getQuotationById(businessId, initialQuotationId).catch(() => null)
-          : Promise.resolve(null),
-      ]);
+      const token = getCookie('token') || getCookie('accessToken');
+      if (!token) return;
 
-      const allCustomers: Customer[] = (customersRes as any).customers || [];
-      const allQuotations = (quotationsRes as any).quotations || [];
-      const allInvoices = (invoicesRes as any).invoices || [];
+      try {
+        // Load customers, quotations, invoices, and the expense itself all in parallel
+        const [customersRes, quotationsRes, invoicesRes, expenseRes] = await Promise.all([
+          contactsAPI.getCustomers(businessId).catch(() => ({ customers: [] as Customer[] })),
+          quotationsAPI.getQuotations(businessId).catch(() => ({ quotations: [] as Quotation[] })),
+          invoicesAPI.getInvoices(businessId).catch(() => ({ invoices: [] as Invoice[] })),
+          fetch(`${API_BASE}/api/expenses/${expenseId}`, {
+            headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId }
+          }).then(res => res.json()).catch(() => null)
+        ]);
 
-      // Get the specific quotation we came from
-      const quote = quotationRes
-        ? ((quotationRes as any).quotation || (quotationRes as any).data)
-        : null;
+        const allCustomers: Customer[] = (customersRes as any).customers || [];
+        const allQuotations = (quotationsRes as any).quotations || [];
+        const allInvoices = (invoicesRes as any).invoices || [];
+        const expense = expenseRes?.expense || expenseRes?.data;
 
-      // Build quotations list — merge the specific quote in case it's not in the full list
-      let mergedQuotations = [...allQuotations];
-      if (quote && !mergedQuotations.find((q: any) => q.id === quote.id)) {
-        mergedQuotations = [quote, ...mergedQuotations];
-      }
+        let mergedQuotations = [...allQuotations];
+        let mergedCustomers = [...allCustomers];
+        
+        if (expense) {
+          // If the expense has a customer that isn't in the list, add it
+          if (expense.customerId && !mergedCustomers.find((c: any) => c.id === expense.customerId)) {
+             if (expense.customer) {
+               mergedCustomers = [expense.customer as Customer, ...mergedCustomers];
+             }
+          }
 
-      // Build customers list — check if the customer from URL param is in the list
-      // If not (e.g. over 100 customer limit), add the embedded customer from the quotation
-      let mergedCustomers = [...allCustomers];
-      const targetCustomerId = initialCustomerId || quote?.customerId;
-      if (targetCustomerId) {
-        const alreadyInList = mergedCustomers.find((c: any) => c.id === targetCustomerId);
-        if (!alreadyInList && quote?.customer) {
-          mergedCustomers = [quote.customer as Customer, ...mergedCustomers];
+          setFormData({
+            title: expense.title || '',
+            amount: expense.amount ? expense.amount.toString() : '',
+            currency: expense.currency || business?.currency || 'AED',
+            category: expense.category || '',
+            paymentMethod: expense.paymentMethod || '',
+            date: expense.date ? new Date(expense.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            notes: expense.notes || '',
+            vendorId: expense.vendorId || '',
+            customerId: expense.customerId || '',
+            referenceType: expense.referenceType || '',
+            referenceId: expense.referenceId || '',
+          });
+
+          if (expense.items && Array.isArray(expense.items)) {
+            setItems(expense.items.map((i: any) => ({
+              id: i.id || Date.now().toString() + Math.random().toString(),
+              itemName: i.itemName || '',
+              description: i.description || '',
+              quantity: i.quantity || 1,
+              rate: i.rate || 0,
+              taxPercent: i.taxPercent || 0,
+              amount: i.amount || 0,
+            })));
+          }
         }
-      }
 
-      // Set all state at once
-      setCustomers(mergedCustomers);
-      setQuotations(mergedQuotations);
-      setInvoices(allInvoices);
-
-      // Pre-fill the form — customerId from URL param, quotation from the fetched quote
-      const prefilledCustomerId = initialCustomerId || quote?.customerId || '';
-      if (prefilledCustomerId || quote) {
-        setFormData(prev => ({
-          ...prev,
-          customerId: prefilledCustomerId || prev.customerId,
-          referenceType: quote ? 'Quotation' : prev.referenceType,
-          referenceId: quote ? quote.id : prev.referenceId,
-          currency: quote?.currency || prev.currency,
-        }));
+        setCustomers(mergedCustomers);
+        setQuotations(mergedQuotations);
+        setInvoices(allInvoices);
+      } catch (err) {
+        console.error("Failed to load expense data", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     init();
-  }, [businessLoading, isConstruction, businessId, initialQuotationId, initialCustomerId])
+  }, [businessLoading, businessId, expenseId, API_BASE])
 
-  useEffect(() => {
-    const fetchReferenceItems = async () => {
-      if (!isConstruction || !formData.referenceId || !formData.referenceType) {
-        return;
-      }
-      try {
-        let fetchedItems: any[] = [];
-        if (formData.referenceType === 'Quotation') {
-          const res = await quotationsAPI.getQuotationById(businessId, formData.referenceId);
-          const quote = res.quotation || (res as any).data;
-          if (res.success && quote?.items) {
-             fetchedItems = quote.items;
-             setFormData(prev => ({ 
-               ...prev, 
-               title: prev.title || `Expense for Quotation: ${quote.quoteNumber || quote.id}` 
-             }))
-          }
-        } else if (formData.referenceType === 'Invoice') {
-          const res = await invoicesAPI.getInvoiceById(businessId, formData.referenceId);
-          const inv = res.invoice || (res as any).data;
-          if (res.success && inv?.items) {
-             fetchedItems = inv.items;
-          }
-        } else if (formData.referenceType === 'Project') {
-          const token = getCookie('token') || getCookie('accessToken');
-          const res = await fetch(`${API_BASE}/api/projects/${formData.referenceId}`, {
-             headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId }
-          });
-          const projData = await res.json();
-          const proj = projData.project || projData.data;
-          
-          if (projData.success && proj) {
-             let currencyToSet = proj.currency;
-             
-             // If project has a quotation, fetch it to get the line items and currency
-             if (proj.quotationId) {
-               try {
-                 const quotRes = await fetch(`${API_BASE}/api/quotation/${proj.quotationId}`, { 
-                   headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId } 
-                 });
-                 const quotData = await quotRes.json();
-                 const quote = quotData.quotation || quotData.data;
-                 if (quote?.items) {
-                   fetchedItems = quote.items;
-                 }
-                 if (quote?.currency) {
-                   currencyToSet = quote.currency;
-                 }
-               } catch (err) {
-                 console.error('Failed to fetch project quotation', err);
-               }
-             }
-             
-             // If no items were fetched from a quotation, attempt to use the project's direct items
-             if ((!fetchedItems || fetchedItems.length === 0) && proj.items?.length > 0) {
-               fetchedItems = proj.items;
-             }
+  const handleReferenceChange = async (val: string) => {
+    if (val === '__none__') {
+      setFormData(prev => ({ ...prev, referenceType: '', referenceId: '' }))
+      return;
+    }
+    
+    const [type, id] = val.split('|')
+    setFormData(prev => ({ ...prev, referenceType: type, referenceId: id }))
 
-             setFormData(prev => ({ 
-               ...prev, 
-               title: prev.title || `Expense for Project: ${proj.projectCode || proj.id}`,
-               customerId: prev.customerId || proj.customerId || '',
-               currency: currencyToSet || prev.currency,
-             }));
-             if (proj.customerId && proj.customer) {
-               setCustomers(prev => prev.find(c => c.id === proj.customerId) ? prev : [proj.customer, ...prev]);
-             }
-             setReferenceProjectName(proj.projectCode || proj.projectName || proj.id);
-          }
+    if (!isConstruction) return;
+
+    try {
+      let fetchedItems: any[] = [];
+      if (type === 'Quotation') {
+        const res = await quotationsAPI.getQuotationById(businessId, id);
+        const quote = res.quotation || (res as any).data;
+        if (res.success && quote?.items) {
+           fetchedItems = quote.items;
+           setFormData(prev => ({ 
+             ...prev, 
+             title: prev.title || `Expense for Quotation: ${quote.quoteNumber || quote.id}` 
+           }))
         }
-
-        if (fetchedItems.length > 0) {
-          const newExpenseItems: ExpenseItem[] = fetchedItems.map(item => {
-             const qty = Number(item.quantity) || 1;
-             const rate = Number(item.price || item.rate) || 0;
-             const tax = Number(item.taxPercent) || 0;
-             return {
-                id: Date.now().toString() + Math.random().toString(),
-                itemName: item.itemName || item.description?.substring(0, 20) || 'Item',
-                description: item.description || '',
-                quantity: qty,
-                rate: rate,
-                taxPercent: tax,
-                amount: item.total || (qty * rate + (qty * rate * tax / 100))
-             };
-          });
-          
-          setItems(newExpenseItems);
-          const total = newExpenseItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-          setFormData(prev => ({ ...prev, amount: total.toString() }));
+      } else if (type === 'Invoice') {
+        const res = await invoicesAPI.getInvoiceById(businessId, id);
+        const inv = res.invoice || (res as any).data;
+        if (res.success && inv?.items) {
+           fetchedItems = inv.items;
         }
-      } catch (err) {
-        console.error("Failed to fetch reference details", err);
       }
-    };
 
-    fetchReferenceItems();
-  }, [formData.referenceId, formData.referenceType, businessId, isConstruction]);
+      if (fetchedItems.length > 0) {
+        const newExpenseItems: ExpenseItem[] = fetchedItems.map(item => {
+           const qty = Number(item.quantity) || 1;
+           const rate = Number(item.price || item.rate) || 0;
+           const tax = Number(item.taxPercent) || 0;
+           return {
+              id: Date.now().toString() + Math.random().toString(),
+              itemName: item.itemName || item.description?.substring(0, 20) || 'Item',
+              description: item.description || '',
+              quantity: qty,
+              rate: rate,
+              taxPercent: tax,
+              amount: item.total || (qty * rate + (qty * rate * tax / 100))
+           };
+        });
+        
+        setItems(newExpenseItems);
+        const total = newExpenseItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+        setFormData(prev => ({ ...prev, amount: total.toString() }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch reference details", err);
+    }
+  };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!formData.title.trim()) {
@@ -383,10 +354,9 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
       if (formData.customerId) body.customerId = formData.customerId
       if (formData.referenceType) body.referenceType = formData.referenceType
       if (formData.referenceId) body.referenceId = formData.referenceId
-      if (formData.projectId) body.projectId = formData.projectId
 
-      const res = await fetch(`${API_BASE}/api/expenses`, {
-        method: 'POST',
+      const res = await fetch(`${API_BASE}/api/expenses/${expenseId}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -397,18 +367,14 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
 
       const data = await res.json()
       if (!res.ok || !data?.success) {
-        throw new Error(data?.message || 'Failed to create expense')
+        throw new Error(data?.message || 'Failed to update expense')
       }
 
-      toast({ title: 'Expense created', description: 'Expense has been recorded successfully.' })
-      if (formData.projectId) {
-        navigate(`/dashboard/${businessId}/project-operations/projects/${formData.projectId}`)
-      } else {
-        navigate(`/dashboard/${businessId}/expenses`)
-      }
+      toast({ title: 'Expense updated', description: 'Expense has been updated successfully.' })
+      navigate(`/dashboard/${businessId}/expenses`)
     } catch (err: any) {
       toast({
-        title: 'Failed to create expense',
+        title: 'Failed to update expense',
         description: err?.message || 'Unknown error',
         variant: 'destructive',
       })
@@ -416,7 +382,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
     }
   }
 
-  if (businessLoading) {
+  if (businessLoading || loading) {
     return <DashboardPageSkeleton />
   }
 
@@ -427,13 +393,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
         <div>
           <Button 
             variant="ghost" 
-            onClick={() => {
-              if (formData.projectId) {
-                navigate(`/dashboard/${businessId}/project-operations/projects/${formData.projectId}`)
-              } else {
-                navigate(`/dashboard/${businessId}/expenses`)
-              }
-            }}
+            onClick={() => navigate(`/dashboard/${businessId}/expenses`)}
             className="h-9 px-3 rounded-xl hover:bg-slate-200 text-muted-foreground -ml-3"
           >
             <ChevronLeftIcon className="h-4 w-4 mr-1" />
@@ -441,13 +401,13 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
           </Button>
         </div>
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Create Expense</h1>
-          <p className="text-muted-foreground">Record a new business expense in your ledger. Fields marked with * are required.</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">View Expense</h1>
+          <p className="text-muted-foreground">Update your expense record details. Fields marked with * are required.</p>
         </div>
       </div>
 
       <Card className="rounded-2xl border border-border dark:border-slate-800 bg-card/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-sm overflow-visible">
-        <form onSubmit={handleCreate} className="flex flex-col">
+        <form onSubmit={handleUpdate} className="flex flex-col">
           <div className="flex flex-col p-6 md:p-8 space-y-8">
             
             <div className="space-y-2">
@@ -610,23 +570,16 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label className="text-foreground font-semibold">Reference (Optional)</Label>
+                  <Label className="text-foreground font-semibold">Quotation / Invoice (Optional)</Label>
                   <Select
-                    disabled={(!formData.customerId && formData.referenceType !== 'Project') || submitting}
+                    disabled={!formData.customerId || submitting}
                     value={formData.referenceId ? `${formData.referenceType}|${formData.referenceId}` : '__none__'}
-                    onValueChange={(val) => {
-                      if (val === '__none__') {
-                        setFormData(prev => ({ ...prev, referenceType: '', referenceId: '' }))
-                      } else {
-                        const [type, id] = val.split('|')
-                        setFormData(prev => ({ ...prev, referenceType: type, referenceId: id }))
-                      }
-                    }}
+                    onValueChange={handleReferenceChange}
                   >
                     <SelectTrigger className="h-11 rounded-xl transition-all focus:ring-2 focus:ring-blue-500/20">
                       <div className="flex items-center gap-2">
                         <FileTextIcon className="size-4 text-muted-foreground" />
-                        <SelectValue placeholder={formData.customerId || formData.referenceType === 'Project' ? "Select Reference" : "Select Customer First"} />
+                        <SelectValue placeholder={formData.customerId ? "Select Quotation/Invoice" : "Select Customer First"} />
                       </div>
                     </SelectTrigger>
                     <SelectContent className="rounded-xl max-h-60">
@@ -648,21 +601,6 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
                           <SelectItem key={`Invoice|${i.id}`} value={`Invoice|${i.id}`}>{i.invoiceNumber}</SelectItem>
                         ))}
                       </SelectGroup>
-                      
-                      <SelectGroup>
-                        <SelectLabel>Projects</SelectLabel>
-                        {projects.filter(p => !formData.customerId || p.customerId === formData.customerId).map(p => (
-                          <SelectItem key={`Project|${p.id}`} value={`Project|${p.id}`}>{p.projectName || p.projectCode}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                      {formData.referenceType === 'Project' && formData.referenceId && !projects.find(p => p.id === formData.referenceId) && (
-                        <SelectGroup>
-                          <SelectLabel>Project</SelectLabel>
-                          <SelectItem key={`Project|${formData.referenceId}`} value={`Project|${formData.referenceId}`}>
-                            {referenceProjectName || 'Selected Project'}
-                          </SelectItem>
-                        </SelectGroup>
-                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -782,13 +720,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => {
-                if (formData.projectId) {
-                  navigate(`/dashboard/${businessId}/project-operations/projects/${formData.projectId}`)
-                } else {
-                  navigate(`/dashboard/${businessId}/expenses`)
-                }
-              }} 
+              onClick={() => navigate(`/dashboard/${businessId}/expenses`)} 
               disabled={submitting} 
               className="h-11 px-8 rounded-xl border-border font-semibold hover:bg-card text-[15px]"
             >
@@ -800,7 +732,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
               className="h-11 px-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm transition-all text-[15px]"
             >
               {submitting ? <Loader2Icon className="size-4 animate-spin" /> : <PlusIcon className="size-4" />}
-              {submitting ? 'Creating Expense...' : 'Create Expense'}
+              {submitting ? 'Updating Expense...' : 'View Expense'}
             </Button>
           </div>
         </form>

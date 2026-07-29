@@ -117,6 +117,7 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
   }
 
   const [vendors, setVendors] = useState<VendorOption[]>([])
+  const [projects, setProjects] = useState<any[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -150,7 +151,16 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
       if (!token) return
 
       try {
-        const res = await fetch(`${API_BASE}/api/vendors?limit=1000`, {
+        
+        const projRes = await fetch(`${API_BASE}/api/projects`, {
+          headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId }
+        });
+        const projData = await projRes.json();
+        if (projRes.ok && projData?.success) {
+          setProjects(projData.data || projData.projects || []);
+        }
+    
+        const res = await fetch(`${API_BASE}/api/purchase/vendors?limit=1000`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'x-business-id': businessId,

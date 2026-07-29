@@ -135,9 +135,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
 
   const [quotations, setQuotations] = useState<QuotationItem[]>([])
   const [loadingQuotations, setLoadingQuotations] = useState(false)
-
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
-  const [selectedDocIdForPayment, setSelectedDocIdForPayment] = useState<string>('')
+  const [downloadingPaymentId, setDownloadingPaymentId] = useState<string | null>(null)
   
   const isConstruction = business?.businessType?.toLowerCase() === 'construction'
 
@@ -158,7 +156,6 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
 
   const [paymentsList, setPaymentsList] = useState<PaymentItem[]>([])
   const [loadingPaymentsList, setLoadingPaymentsList] = useState(false)
-  const [downloadingPaymentId, setDownloadingPaymentId] = useState<string | null>(null)
 
   const customer = useMemo(() => {
     return (business?.customers ?? []).find((c: any) => c.id === customerId) || null
@@ -560,7 +557,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
               invoiceId: String(p.invoiceId || p.quotationId || ''),
               invoiceNumber: String(
                 p.invoice?.invoiceNumber || 
-                (p.quotation?.projects && p.quotation.projects.length > 0 ? p.quotation.projects[0].projectCode : null) || 
+                (p.quotation?.projects && p.quotation.projects.length > 0 ? (p.quotation.projects[0].projectName || p.quotation.projects[0].projectCode) : null) || 
                 p.quotation?.quoteNumber || 
                 (p.customerId && !p.invoiceId && !p.quotationId ? 'Unassigned Advance' : '-')
               ),
@@ -853,8 +850,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
             variant="outline" 
             className="h-10 cursor-pointer rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 font-medium px-4"
             onClick={() => {
-              setSelectedDocIdForPayment('')
-              setPaymentModalOpen(true)
+              navigate(`/dashboard/${businessId}/payments/add?customerId=${customerId}`)
             }}
           >
             <DollarSignIcon className="mr-2 size-4" />
@@ -1516,57 +1512,6 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
         </TabsContent>
       </Tabs>
       
-      <Dialog open={paymentModalOpen} onOpenChange={setPaymentModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-xl border-border">
-          <DialogHeader>
-            <DialogTitle>Add Payment</DialogTitle>
-            <DialogDescription>
-              Select the {isConstruction ? 'project / quotation' : 'invoice'} you want to record a payment for.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            {pendingDocs.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4 bg-muted/30 rounded-md border border-border/50">
-                No pending {isConstruction ? 'projects' : 'invoices'} found for this customer.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select {isConstruction ? 'Project' : 'Invoice'}</label>
-                <Select value={selectedDocIdForPayment} onValueChange={setSelectedDocIdForPayment}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={`Select ${isConstruction ? 'Project' : 'Invoice'}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {pendingDocs.map((doc: any) => (
-                      <SelectItem key={doc.id} value={doc.id}>
-                        {isConstruction ? (doc.projectCode || doc.quoteNumber) : doc.invoiceNumber} - {business?.currency || 'INR'} {doc.grandTotal || doc.totalAmount}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPaymentModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              disabled={!selectedDocIdForPayment}
-              onClick={() => {
-                setPaymentModalOpen(false)
-                if (isConstruction) {
-                  navigate(`/dashboard/${businessId}/payments/add?quotationId=${selectedDocIdForPayment}`)
-                } else {
-                  navigate(`/dashboard/${businessId}/invoices/payment?invoiceId=${selectedDocIdForPayment}`)
-                }
-              }}
-            >
-              Proceed
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

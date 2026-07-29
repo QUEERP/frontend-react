@@ -52,13 +52,13 @@ export function InvoicePaymentPageClient({
     return fromStorage || fromCookie
   }
 
-  const invoice = useMemo(() => {
-    if (!invoiceId) return null
-    return (business?.invoices ?? []).find((inv: any) => inv.id === invoiceId) ?? null
-  }, [business, invoiceId])
-  
   const [selectedTargetInvoiceId, setSelectedTargetInvoiceId] = useState<string>(invoiceId || '')
-  const targetInvoiceId = invoice?.id || selectedTargetInvoiceId || ''
+  const targetInvoiceId = invoiceId || selectedTargetInvoiceId || ''
+
+  const invoice = useMemo(() => {
+    if (!targetInvoiceId) return null
+    return (business?.invoices ?? []).find((inv: any) => inv.id === targetInvoiceId) ?? null
+  }, [business, targetInvoiceId])
   
   const [pendingInvoices, setPendingInvoices] = useState<any[]>([])
   const [isLoadingPending, setIsLoadingPending] = useState(false)

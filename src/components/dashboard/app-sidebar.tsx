@@ -1635,7 +1635,7 @@ export function AppSidebar() {
                       )}
 
                       {/* Standalone & Settings */}
-                      <div className="px-2">
+                      <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
                         {business?.businessType?.toLowerCase() === 'construction' && (
                           <SidebarMenuSubItem>
                             <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/project-operations/projects')}>
@@ -1670,7 +1670,7 @@ export function AppSidebar() {
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
-                      </div>
+                      </SidebarMenuSub>
 
                     </div>
                   </CollapsibleContent>
