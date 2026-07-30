@@ -225,7 +225,7 @@ export function ConstructionProjectDetailsClient({ businessId, projectId }: Cons
                             {item.description && <p className="text-xs text-gray-500 mt-1">{item.description}</p>}
                           </td>
                           <td className="px-6 py-4 text-right font-medium">{item.quantity}</td>
-                          <td className="px-6 py-4 text-right font-medium">{formatCurrency(item.unitPrice)}</td>
+                          <td className="px-6 py-4 text-right font-medium">{formatCurrency(item.price || item.unitPrice || item.rate || 0)}</td>
                           <td className="px-6 py-4 text-right font-medium">{item.taxPercent || item.taxRate || 0}%</td>
                           <td className="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(item.total || item.amount || 0)}</td>
                         </tr>
