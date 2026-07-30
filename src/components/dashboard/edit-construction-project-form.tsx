@@ -92,8 +92,18 @@ export function EditConstructionProjectForm({ businessId, projectId }: { busines
             endDate: p.endDate ? p.endDate.split('T')[0] : '', 
             currency: p.currency || 'CAD', 
             quotationId: p.quotationId || '', 
-            note: '' 
+            note: p.note || '' 
           });
+          if (p.projectItems && p.projectItems.length > 0) {
+            setItems(p.projectItems.map((item: any) => ({
+              id: item.id || Date.now().toString(),
+              itemName: item.itemName,
+              description: item.description || '',
+              quantity: item.quantity,
+              rate: item.rate || item.price || 0,
+              amount: item.amount || (item.quantity * (item.rate || item.price || 0))
+            })));
+          }
         }
       } catch (err) {}
     };
@@ -188,7 +198,9 @@ export function EditConstructionProjectForm({ businessId, projectId }: { busines
         endDate: formData.endDate || undefined,
         quotationId: formData.quotationId || undefined,
         budget: items.reduce((sum, item) => sum + item.amount, 0),
-        executionType: 'CONSTRUCTION'
+        executionType: 'CONSTRUCTION',
+        note: formData.note,
+        items: items
       };
 
       let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
