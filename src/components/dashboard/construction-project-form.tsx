@@ -169,7 +169,8 @@ export function ConstructionProjectForm({ businessId }: { businessId: string }) 
         endDate: formData.endDate || undefined,
         quotationId: formData.quotationId || undefined,
         budget: items.reduce((sum, item) => sum + item.amount, 0),
-        executionType: 'CONSTRUCTION'
+        executionType: 'CONSTRUCTION',
+        items: items
       };
 
       let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;

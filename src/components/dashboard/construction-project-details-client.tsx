@@ -218,24 +218,27 @@ export function ConstructionProjectDetailsClient({ businessId, projectId }: Cons
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-800 bg-white dark:bg-gray-800">
-                      {quotation?.items?.length > 0 ? quotation.items.map((item: any, i: number) => (
-                        <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
-                          <td className="px-6 py-4">
-                            <p className="font-semibold text-gray-900 dark:text-white">{item.itemName}</p>
-                            {item.description && <p className="text-xs text-gray-500 mt-1">{item.description}</p>}
-                          </td>
-                          <td className="px-6 py-4 text-right font-medium">{item.quantity}</td>
-                          <td className="px-6 py-4 text-right font-medium">{formatCurrency(item.price || item.unitPrice || item.rate || 0)}</td>
-                          <td className="px-6 py-4 text-right font-medium">{item.taxPercent || item.taxRate || 0}%</td>
-                          <td className="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(item.total || item.amount || 0)}</td>
-                        </tr>
-                      )) : (
-                        <tr>
-                          <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                            No line items found for this project.
-                          </td>
-                        </tr>
-                      )}
+                      {(() => {
+                        const displayItems = quotation?.items?.length > 0 ? quotation.items : (project?.projectItems || []);
+                        return displayItems.length > 0 ? displayItems.map((item: any, i: number) => (
+                          <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                            <td className="px-6 py-4">
+                              <p className="font-semibold text-gray-900 dark:text-white">{item.itemName}</p>
+                              {item.description && <p className="text-xs text-gray-500 mt-1">{item.description}</p>}
+                            </td>
+                            <td className="px-6 py-4 text-right font-medium">{item.quantity}</td>
+                            <td className="px-6 py-4 text-right font-medium">{formatCurrency(item.price || item.unitPrice || item.rate || 0)}</td>
+                            <td className="px-6 py-4 text-right font-medium">{item.taxPercent || item.taxRate || 0}%</td>
+                            <td className="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(item.total || item.amount || 0)}</td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                              No line items found for this project.
+                            </td>
+                          </tr>
+                        );
+                      })()}
                     </tbody>
                   </table>
                 </div>
