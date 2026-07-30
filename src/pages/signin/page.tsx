@@ -39,7 +39,7 @@ export default function SignIn() {
       const token: string = data.token;
       const businesses: Array<{ businessId: string }> = Array.isArray(data.businesses) ? data.businesses : [];
 
-      const secure = import.meta.env.PROD ? '; Secure' : '';
+      const secure = window.location.protocol === 'https:' ? '; Secure' : '';
       document.cookie = `token=${encodeURIComponent(token)}; Path=/; Max-Age=604800; SameSite=Lax${secure}`;
 
       if (businesses.length > 0 && businesses[0]?.businessId) {

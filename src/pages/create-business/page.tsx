@@ -52,7 +52,7 @@ export default function CreateBusiness() {
   };
 
   const setCookie = (name: string, value: string, maxAgeSeconds = 60 * 60 * 24 * 7) => {
-    const secure = import.meta.env.PROD ? '; Secure' : '';
+    const secure = window.location.protocol === 'https:' ? '; Secure' : '';
     document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${secure}`;
   };
 
