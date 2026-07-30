@@ -277,13 +277,16 @@ export default function CreateProjectPage() {
     setTeam(team.map(t => t.id === id ? { ...t, [field]: value } : t));
   };
 
+  const isSubmittingRef = React.useRef(false);
   const handleSubmit = async (actionType: 'start' | 'draft' | 'planning' = 'start') => {
+    if (isSubmittingRef.current) return;
     if (!formData.projName || !formData.customer || !formData.startDate || !formData.endDate) {
       toast({ title: "Validation Error", description: "Please fill in all required fields (Name, Customer, Start/End Date).", variant: "destructive" });
       return;
     }
 
     try {
+      isSubmittingRef.current = true;
       setIsSubmitting(true);
       const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
       const payload = {
@@ -331,6 +334,7 @@ export default function CreateProjectPage() {
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };

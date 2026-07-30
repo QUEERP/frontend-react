@@ -146,14 +146,17 @@ export function ConstructionProjectForm({ businessId }: { businessId: string }) 
     }
   };
 
+  const isSubmittingRef = React.useRef(false);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current) return;
     if (!formData.projName || !formData.customerId) {
       toast({ title: "Validation Error", description: "Project Title and Customer are required.", variant: "destructive" });
       return;
     }
 
     try {
+      isSubmittingRef.current = true;
       setIsSubmitting(true);
       const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
       const payload = {
@@ -193,6 +196,7 @@ export function ConstructionProjectForm({ businessId }: { businessId: string }) 
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
