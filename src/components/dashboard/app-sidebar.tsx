@@ -775,7 +775,7 @@ export function AppSidebar() {
       setSelectedBusiness(value)
       window.localStorage.setItem('activeBusinessId', value)
 
-      const secure = import.meta.env.PROD ? '; Secure' : ''
+      const secure = window.location.protocol === 'https:' ? '; Secure' : ''
       document.cookie = `activeBusinessId=${encodeURIComponent(value)}; Path=/; Max-Age=604800; SameSite=Lax${secure}`
 
       toast({

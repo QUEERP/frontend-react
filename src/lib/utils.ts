@@ -21,6 +21,6 @@ export function getCookie(name: string): string | undefined {
 
 export function clearCookie(name: string) {
   if (typeof document === 'undefined') return
-  const secure = import.meta.env.PROD ? '; Secure' : ''
+  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
   document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax${secure}`
 }
