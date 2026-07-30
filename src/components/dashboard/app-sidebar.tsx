@@ -54,7 +54,7 @@ const MENU_CONFIG: Record<string, any> = {
 };
 
 function isMenuVisible(businessType: string | undefined | null, moduleName: string, sectionName?: string, subItemName?: string) {
-  if (!businessType || businessType === 'unknown') return false;
+  if (!businessType || businessType === 'unknown') return true;
   
   const normalizedType = Object.keys(MENU_CONFIG).find(
     k => k.toLowerCase() === businessType.toLowerCase()
