@@ -418,39 +418,6 @@ export function UsersPageClient({ businessId }: { businessId: string }) {
 
   return (
     <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-10 pt-0 sm:px-6 lg:px-8">
-      {/* Top bar */}
-      <div className="-mx-4 mb-6 sticky top-0 z-20 border-b border-border bg-card/80 backdrop-blur-xl px-4 py-3 shadow-[0_2px_10px_rgba(0,0,0,0.02)] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 dark:bg-[#121418]/80 dark:border-[#1e2228] dark:shadow-none">
-        <header className="flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
-              <UsersIcon className="size-5" />
-            </div>
-            <div className="flex flex-col leading-tight">
-              <div className="flex items-center gap-2">
-                <span className="text-base font-semibold text-foreground dark:text-slate-200">Users</span>
-                <Badge variant="secondary" className="hidden sm:inline-flex bg-muted text-muted-foreground dark:bg-[#1c2128] dark:text-slate-400 border-none">
-                  Overview
-                </Badge>
-              </div>
-              <span className="truncate text-[13px] font-medium text-muted-foreground dark:text-slate-400">
-                Manage your business users and their permissions
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <DashboardModeToggle className="rounded-full bg-muted border-border/60 hover:bg-blue-50 hover:text-blue-600 text-muted-foreground dark:bg-[#181a20] dark:border-[#23272c] dark:text-slate-400 dark:hover:bg-[#1c2128] dark:hover:text-blue-400 transition-colors" />
-            <div className="h-5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block mx-1" />
-            <NotificationBell />
-            <Link to={`/dashboard/${resolvedBusinessId || businessId}/approvals`}>
-              <div className="flex items-center justify-center size-9 rounded-full border border-green-200 bg-green-50 text-green-600 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors" title="Approvals">
-                <CheckCircle2Icon className="size-4" />
-              </div>
-            </Link>
-            <UserMenu />
-          </div>
-        </header>
-      </div>
 
       {/* KPI cards */}
       <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
