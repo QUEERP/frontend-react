@@ -15,27 +15,27 @@ export default function ProjectDetailTabs({ project, businessId }: { project: an
   const tabs = useMemo(() => {
     const isService = project.executionType === "SERVICE" || project.executionType === "HYBRID";
     const isProduct = project.executionType === "PRODUCT" || project.executionType === "HYBRID";
-    const isConstruction = project.executionType === "CONSTRUCTION" || business?.businessType?.toLowerCase() === 'construction';
+    const isBasic = project.executionType === "BASIC" || business?.businessType?.toLowerCase() === 'basic';
 
     const allTabs = [
       { id: "overview", label: "Overview", icon: LayoutDashboard, show: true },
-      { id: "planning", label: "Planning", icon: Map, show: !isConstruction },
-      { id: "tasks", label: "Tasks", icon: CheckSquare, show: !isConstruction && (isService || isProduct) },
-      { id: "milestones", label: "Milestones", icon: Flag, show: !isConstruction && isService },
-      { id: "resources", label: "Resources", icon: Users, show: !isConstruction },
-      { id: "meetings", label: "Meetings", icon: Calendar, show: !isConstruction && isService },
-      { id: "documents", label: "Documents", icon: FileText, show: !isConstruction },
-      { id: "time-tracking", label: "Time Tracking", icon: Clock, show: !isConstruction && isService },
-      { id: "expenses", label: "Expenses", icon: Receipt, show: !isConstruction },
-      { id: "inventory", label: "Inventory", icon: Package, show: !isConstruction && isProduct },
-      { id: "purchase", label: "Purchase", icon: ShoppingCart, show: !isConstruction && isProduct },
-      { id: "billing", label: "Billing", icon: DollarSign, show: !isConstruction },
-      { id: "issues", label: "Issues", icon: AlertCircle, show: !isConstruction },
-      { id: "risks", label: "Risks", icon: ShieldAlert, show: !isConstruction },
-      { id: "change-requests", label: "Change Requests", icon: GitPullRequest, show: !isConstruction && isService },
-      { id: "support", label: "Support", icon: HeadphonesIcon, show: !isConstruction },
-      { id: "reports", label: "Reports", icon: BarChart, show: !isConstruction },
-      { id: "timeline", label: "Activity Timeline", icon: Activity, show: !isConstruction },
+      { id: "planning", label: "Planning", icon: Map, show: !isBasic },
+      { id: "tasks", label: "Tasks", icon: CheckSquare, show: !isBasic && (isService || isProduct) },
+      { id: "milestones", label: "Milestones", icon: Flag, show: !isBasic && isService },
+      { id: "resources", label: "Resources", icon: Users, show: !isBasic },
+      { id: "meetings", label: "Meetings", icon: Calendar, show: !isBasic && isService },
+      { id: "documents", label: "Documents", icon: FileText, show: !isBasic },
+      { id: "time-tracking", label: "Time Tracking", icon: Clock, show: !isBasic && isService },
+      { id: "expenses", label: "Expenses", icon: Receipt, show: !isBasic },
+      { id: "inventory", label: "Inventory", icon: Package, show: !isBasic && isProduct },
+      { id: "purchase", label: "Purchase", icon: ShoppingCart, show: !isBasic && isProduct },
+      { id: "billing", label: "Billing", icon: DollarSign, show: !isBasic },
+      { id: "issues", label: "Issues", icon: AlertCircle, show: !isBasic },
+      { id: "risks", label: "Risks", icon: ShieldAlert, show: !isBasic },
+      { id: "change-requests", label: "Change Requests", icon: GitPullRequest, show: !isBasic && isService },
+      { id: "support", label: "Support", icon: HeadphonesIcon, show: !isBasic },
+      { id: "reports", label: "Reports", icon: BarChart, show: !isBasic },
+      { id: "timeline", label: "Activity Timeline", icon: Activity, show: !isBasic },
     ];
 
     return allTabs.filter(t => t.show);

@@ -56,7 +56,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
   const params = useParams();const businessId = (propBusinessId || (params as any)?.businessId) as string;
   const { toast } = useToast();
   const { business } = useBusinessData();
-  const isConstruction = business?.businessType?.toLowerCase() === 'construction';
+  const isBasic = business?.businessType?.toLowerCase() === 'basic';
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<any>(null);
@@ -252,7 +252,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
     ];
   }, [selectedProject]);
 
-  if (isConstruction) {
+  if (isBasic) {
     return (
       <ProjectsTable 
         businessId={businessId as string} 

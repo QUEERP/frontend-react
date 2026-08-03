@@ -4,6 +4,7 @@ import { BarChart2, FileText, TrendingUp, AlertCircle, DollarSign, Clock, FileSp
 import { useToast } from '@/hooks/use-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { API_ROOT } from "@/config/api";
+import { useBusinessData } from '@/components/dashboard/business-data-provider';
 
 const REPORT_TYPES = [
   { key: 'projects', label: 'Projects', icon: BarChart2, color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20' },
@@ -32,6 +33,8 @@ function KpiCard({ label, value, sub, color }: any) {
 }
 
 export function GlobalReportsWorkspace({ businessId }: { businessId: string }) {
+  const { business } = useBusinessData();
+  const isBasic = business?.businessType?.toLowerCase() === 'basic';
   const [activeReport, setActiveReport] = useState('projects');
   const [data, setData] = useState<any>(null);
   const [summary, setSummary] = useState<any>(null);
@@ -155,7 +158,7 @@ export function GlobalReportsWorkspace({ businessId }: { businessId: string }) {
 
       {/* Report Type Cards */}
       <div className="px-6 pt-4 grid grid-cols-3 sm:grid-cols-6 gap-3">
-        {REPORT_TYPES.map(r => {
+        {REPORT_TYPES.filter(r => !(isBasic && (r.key === 'timesheets' || r.key === 'issues'))).map(r => {
           const Icon = r.icon;
           return (
             <button key={r.key} onClick={() => setActiveReport(r.key)}

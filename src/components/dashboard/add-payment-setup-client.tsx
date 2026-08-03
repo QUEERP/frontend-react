@@ -12,7 +12,7 @@ export function AddPaymentSetupClient({ businessId }: { businessId: string }) {
   const customerId = searchParams.get('customerId')
   
   const { business } = useBusinessData()
-  const isConstruction = business?.businessType?.toLowerCase() === 'construction'
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
   const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
 
   const [pendingDocs, setPendingDocs] = useState<any[]>([])
@@ -32,7 +32,7 @@ export function AddPaymentSetupClient({ businessId }: { businessId: string }) {
       try {
         const token = getCookie('token') || getCookie('accessToken')
         let endpoint = ''
-        if (isConstruction) {
+        if (isBasic) {
           endpoint = `${API_BASE}/api/quotations?customerId=${customerId}&status=ACCEPTED`
         } else {
           endpoint = `${API_BASE}/api/invoices?customerId=${customerId}&status=SENT,PARTIALLY_PAID`
@@ -42,7 +42,7 @@ export function AddPaymentSetupClient({ businessId }: { businessId: string }) {
         })
         const data = await res.json()
         if (data.success) {
-          setPendingDocs(isConstruction ? data.quotations : data.invoices)
+          setPendingDocs(isBasic ? data.quotations : data.invoices)
         }
       } catch (err) {
         console.error(err)
@@ -51,10 +51,10 @@ export function AddPaymentSetupClient({ businessId }: { businessId: string }) {
       }
     }
     fetchPendingDocs()
-  }, [customerId, businessId, isConstruction])
+  }, [customerId, businessId, isBasic])
 
   const handleProceed = () => {
-    if (isConstruction) {
+    if (isBasic) {
       navigate(`/dashboard/${businessId}/payments/add?quotationId=${selectedDocId}`)
     } else {
       navigate(`/dashboard/${businessId}/invoices/payment?invoiceId=${selectedDocId}`)
@@ -69,7 +69,7 @@ export function AddPaymentSetupClient({ businessId }: { businessId: string }) {
             Add Payment
           </h1>
           <p className="text-slate-500 mt-2 text-sm sm:text-base font-medium">
-            Select the {isConstruction ? 'project / quotation' : 'invoice'} you want to record a payment for.
+            Select the {isBasic ? 'project / quotation' : 'invoice'} you want to record a payment for.
           </p>
         </div>
         <Button
@@ -86,25 +86,25 @@ export function AddPaymentSetupClient({ businessId }: { businessId: string }) {
         <Card className="rounded-2xl shadow-sm border-slate-200">
           <CardHeader className="bg-slate-50/50 rounded-t-2xl border-b border-slate-100 pb-6">
             <CardTitle className="text-xl">Select Document</CardTitle>
-            <CardDescription className="text-sm">Choose from pending {isConstruction ? 'projects' : 'invoices'}</CardDescription>
+            <CardDescription className="text-sm">Choose from pending {isBasic ? 'projects' : 'invoices'}</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
              {loading ? <p className="text-sm text-muted-foreground flex items-center gap-2"><span className="animate-pulse h-4 w-4 bg-slate-200 rounded-full inline-block"></span> Loading...</p> : 
               pendingDocs.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6 bg-slate-50 rounded-xl border border-slate-100">
-                No pending {isConstruction ? 'projects' : 'invoices'} found for this customer.
+                No pending {isBasic ? 'projects' : 'invoices'} found for this customer.
               </p>
             ) : (
               <div className="space-y-3">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Select {isConstruction ? 'Project' : 'Invoice'}</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Select {isBasic ? 'Project' : 'Invoice'}</label>
                 <Select value={selectedDocId} onValueChange={setSelectedDocId}>
                   <SelectTrigger className="w-full h-12 rounded-xl border-slate-200 bg-white">
-                    <SelectValue placeholder={`Select ${isConstruction ? 'Project' : 'Invoice'}`} />
+                    <SelectValue placeholder={`Select ${isBasic ? 'Project' : 'Invoice'}`} />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-200 shadow-lg">
                     {pendingDocs.map((doc: any) => (
                       <SelectItem key={doc.id} value={doc.id} className="cursor-pointer focus:bg-slate-50">
-                        <span className="font-medium text-slate-700">{isConstruction ? (doc.projectCode || doc.quoteNumber) : doc.invoiceNumber}</span>
+                        <span className="font-medium text-slate-700">{isBasic ? (doc.projectCode || doc.quoteNumber) : doc.invoiceNumber}</span>
                         <span className="text-slate-400 mx-2">—</span>
                         <span className="font-bold text-slate-900">{business?.currency || 'INR'} {Number(doc.grandTotal || doc.totalAmount || 0).toLocaleString()}</span>
                       </SelectItem>

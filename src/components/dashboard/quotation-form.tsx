@@ -91,10 +91,10 @@ export function QuotationForm({
 
   const taxLabel = isIndia ? 'GST %' : isUAE ? 'VAT %' : 'Tax %'
   const taxType = isIndia ? 'GST' : isUAE ? 'VAT' : 'TAX'
-  const isConstruction = business?.businessType === 'Construction'
+  const isBasic = business?.businessType === 'Basic'
 
   let gridColsClass = ''
-  if (isConstruction) {
+  if (isBasic) {
     gridColsClass = 'lg:grid-cols-[2fr_2fr_1fr_1.5fr_1.5fr_auto]'
   } else {
     if (isIndia && formData.gstTreatment === 'SAME_STATE') {
@@ -135,13 +135,13 @@ export function QuotationForm({
   const currencySymbol = getCurrencySymbol(displayCurrency)
 
   React.useEffect(() => {
-    if (isConstruction && mode === 'create' && formData.items.length === 1 && formData.items[0].price === 0 && !formData.items[0].productId && !formData.items[0].itemName) {
+    if (isBasic && mode === 'create' && formData.items.length === 1 && formData.items[0].price === 0 && !formData.items[0].productId && !formData.items[0].itemName) {
       setFormData(prev => ({
         ...prev,
         items: [{ ...prev.items[0], quantity: 1, price: 1 }]
       }))
     }
-  }, [isConstruction, mode])
+  }, [isBasic, mode])
 
 
   React.useEffect(() => {
@@ -175,7 +175,7 @@ export function QuotationForm({
         itemName: '', 
         description: '', 
         quantity: 1, 
-        price: isConstruction ? 1 : 0, 
+        price: isBasic ? 1 : 0, 
         taxPercent: 0, 
         itemType: 'GOODS', 
         hsnSacCode: '' 
@@ -521,13 +521,18 @@ export function QuotationForm({
 
               <div className="space-y-3">
                 <div className={`hidden lg:grid ${gridColsClass} gap-3 px-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider`}>
-                  <div>{isConstruction ? 'Item Name' : 'Product / Service'}</div>
+                  <div>{isBasic ? 'Item Name' : 'Product / Service'}</div>
                   <div>Description</div>
-                  {!isConstruction && <div>Type</div>}
-                  {!isConstruction && <div>{formData.items.length > 0 && formData.items[0].itemType === 'SERVICE' ? 'SAC' : 'HSN'}</div>}
-                  <div>{formData.items.length > 0 && formData.items[0].itemType === 'SERVICE' ? 'HRS' : 'QTY'}</div>
+                  {!isBasic && <div>Type</div>}
+                  {!isBasic && <div>{formData.items.length > 0 && formData.items[0].itemType === 'SERVICE' ? 'SAC' : 'HSN'}</div>}
+                  <div>
+                    {formData.items.length > 0 ? (
+                      formData.items[0].itemType === 'SERVICE' ? 'HRS' :
+                      ['kg', 'gram', 'meter', 'litre'].includes((formData.items[0].unit || '').toLowerCase()) ? formData.items[0].unit?.toUpperCase() : 'QTY'
+                    ) : 'QTY'}
+                  </div>
                   <div>Rate</div>
-                  {!isConstruction && (
+                  {!isBasic && (
                     isIndia && formData.gstTreatment === 'SAME_STATE' ? (
                       <>
                         <div>CGST %</div>
@@ -553,8 +558,8 @@ export function QuotationForm({
                       <div key={index} className={`grid gap-3 rounded-xl border border-border bg-muted/30 p-4 ${gridColsClass} lg:items-start lg:p-2 lg:bg-background lg:border-none`}>
 
                         <div className="space-y-1">
-                          <Label className="lg:hidden text-xs font-semibold text-muted-foreground">{isConstruction ? 'Item Name' : 'Product'}</Label>
-                          {isConstruction ? (
+                          <Label className="lg:hidden text-xs font-semibold text-muted-foreground">{isBasic ? 'Item Name' : 'Product'}</Label>
+                          {isBasic ? (
                              <Input 
                                value={item.itemName || ''} 
                                placeholder="Item Name"
@@ -594,7 +599,7 @@ export function QuotationForm({
                           />
                         </div>
 
-                        {!isConstruction && (
+                        {!isBasic && (
                           <>
                             <div className="space-y-1">
                               <Label className="lg:hidden text-xs font-semibold text-muted-foreground">Type</Label>
@@ -651,7 +656,7 @@ export function QuotationForm({
                           />
                         </div>
 
-                        {!isConstruction && (
+                        {!isBasic && (
                           isIndia && formData.gstTreatment === 'SAME_STATE' ? (
                             <>
                               <div className="space-y-1">

@@ -48,7 +48,7 @@ export function ProjectsTable({
       <div className="flex-none px-6 py-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Projects</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage and monitor all construction projects.</p>
+          <p className="text-sm text-gray-500 mt-1">Manage and monitor all basic projects.</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">

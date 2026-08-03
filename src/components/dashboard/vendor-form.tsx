@@ -78,7 +78,7 @@ export function VendorForm({
   const { business, currencySymbol } = useBusinessData()
 
   const [formData, setFormData] = useState<VendorFormData>(() => {
-    const isConst = business?.businessType === 'Construction'
+    const isConst = business?.businessType === 'Basic'
     return {
       name: '',
       vendorType: '',
@@ -100,7 +100,7 @@ export function VendorForm({
 
   useEffect(() => {
     if (!isEditing && business) {
-      const isConst = business.businessType === 'Construction'
+      const isConst = business.businessType === 'Basic'
       setFormData(prev => {
         if (prev.name === '') {
            return {

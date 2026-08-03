@@ -101,7 +101,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
   const [invoices, setInvoices] = useState<any[]>([])
   const navigate = useNavigate()
   const { business, refresh, loading, currencySymbol } = useBusinessData()
-  const isConstruction = business?.businessType?.toLowerCase() === 'construction'
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
   const { toast } = useToast()
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -597,7 +597,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                   </TableCell>
                   <TableCell className="py-4 text-right">
                     <div className="flex justify-end items-center gap-1">
-                      {isConstruction ? (
+                      {isBasic ? (
                         <>
                           <Button 
                             variant="outline" 
@@ -683,7 +683,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                             Edit Invoice
                           </DropdownMenuItem>
 
-                          {!isConstruction && (
+                          {!isBasic && (
                             <DropdownMenuItem
                               className="cursor-pointer font-medium text-foreground focus:text-blue-700 focus:bg-blue-50 py-2.5"
                               onClick={(e) => {
@@ -725,7 +725,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                             Download PDF
                           </DropdownMenuItem>
                           
-                          {!isConstruction && (
+                          {!isBasic && (
                             <DropdownMenuItem className="cursor-pointer font-medium text-foreground focus:text-blue-700 focus:bg-blue-50 py-2.5" onClick={(e) => e.stopPropagation()}>
                               <SendIcon className="mr-2 size-4" />
                               Send to Customer

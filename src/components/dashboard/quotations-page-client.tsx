@@ -75,7 +75,7 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
   const [searchTerm, setSearchTerm] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const { business, role } = useBusinessData()
-  const isConstruction = business?.businessType?.toLowerCase() === 'construction'
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
 
   const isOwner = React.useMemo(() => {
     if (role?.name?.toLowerCase() === 'owner') return true;
@@ -444,9 +444,9 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
                   {filteredQuotations.map((quotation) => (
                     <TableRow 
                       key={quotation.id} 
-                      className={`border-border transition-colors ${business?.businessType?.toLowerCase() === 'construction' ? 'cursor-pointer hover:bg-muted/80' : 'hover:bg-muted/50'}`}
+                      className={`border-border transition-colors ${business?.businessType?.toLowerCase() === 'basic' ? 'cursor-pointer hover:bg-muted/80' : 'hover:bg-muted/50'}`}
                       onClick={() => {
-                        if (business?.businessType?.toLowerCase() === 'construction') {
+                        if (business?.businessType?.toLowerCase() === 'basic') {
                           navigate(`/dashboard/${businessId}/quotations/${quotation.id}/edit`)
                         }
                       }}

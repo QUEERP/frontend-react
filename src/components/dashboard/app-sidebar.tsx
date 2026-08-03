@@ -36,7 +36,7 @@ type ModuleItem = {
 }
 
 const MENU_CONFIG: Record<string, any> = {
-  Construction: {
+  Basic: {
     hiddenModules: ["Inventory", "HR", "Statutory Reports"],
     moduleVisibility: {
       Sales: {
@@ -1507,7 +1507,7 @@ export function AppSidebar() {
                       </div>
 
                       {/* Pre-Sales */}
-                      {business?.businessType?.toLowerCase() !== 'construction' && (
+                      {business?.businessType?.toLowerCase() !== 'basic' && (
                         <Collapsible open={isProjectOpsPreSalesOpen} onOpenChange={setIsProjectOpsPreSalesOpen} className="px-2">
                           <CollapsibleTrigger asChild>
                             <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
@@ -1539,7 +1539,7 @@ export function AppSidebar() {
                       )}
 
                       {/* Project Management */}
-                      {business?.businessType?.toLowerCase() !== 'construction' && (
+                      {business?.businessType?.toLowerCase() !== 'basic' && (
                         <Collapsible open={isProjectOpsManagementOpen} onOpenChange={setIsProjectOpsManagementOpen} className="px-2">
                           <CollapsibleTrigger asChild>
                             <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
@@ -1574,7 +1574,7 @@ export function AppSidebar() {
                       )}
 
                       {/* Project Finance */}
-                      {business?.businessType?.toLowerCase() !== 'construction' && (
+                      {business?.businessType?.toLowerCase() !== 'basic' && (
                         <Collapsible open={isProjectOpsFinanceOpen} onOpenChange={setIsProjectOpsFinanceOpen} className="px-2">
                           <CollapsibleTrigger asChild>
                             <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
@@ -1605,7 +1605,7 @@ export function AppSidebar() {
                       )}
 
                       {/* Support */}
-                      {business?.businessType?.toLowerCase() !== 'construction' && (
+                      {business?.businessType?.toLowerCase() !== 'basic' && (
                         <Collapsible open={isProjectOpsSupportOpen} onOpenChange={setIsProjectOpsSupportOpen} className="px-2">
                           <CollapsibleTrigger asChild>
                             <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
@@ -1636,7 +1636,7 @@ export function AppSidebar() {
 
                       {/* Standalone & Settings */}
                       <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                        {business?.businessType?.toLowerCase() === 'construction' && (
+                        {business?.businessType?.toLowerCase() === 'basic' && (
                           <SidebarMenuSubItem>
                             <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/project-operations/projects')}>
                               <Link to={`${baseDashboardPath}/project-operations/projects`} className="flex items-center gap-2">

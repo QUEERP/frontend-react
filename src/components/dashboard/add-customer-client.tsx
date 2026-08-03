@@ -111,7 +111,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
   }, [])
 
   useEffect(() => {
-    if (business?.businessType?.toLowerCase() === 'construction') {
+    if (business?.businessType?.toLowerCase() === 'basic') {
       setFormData(prev => ({
         ...prev,
         region: prev.region || 'CANADA',

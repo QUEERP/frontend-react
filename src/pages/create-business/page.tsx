@@ -11,7 +11,7 @@ export default function CreateBusiness() {
   const navigate = useNavigate();
   const [businessName, setBusinessName] = useState('');
   const [country, setCountry] = useState('IN');
-  const [businessType, setBusinessType] = useState('Construction');
+  const [businessType, setBusinessType] = useState('Basic');
   const [countries, setCountries] = useState<{code: string, name: string}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -207,8 +207,8 @@ export default function CreateBusiness() {
                 onChange={(e) => setBusinessType(e.target.value)}
                 className={`w-full px-5 py-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-blue-500/10 bg-slate-50 text-slate-900 focus:outline-none focus:ring-4 focus:bg-white transition-all font-medium`}
               >
-                <option value="Construction">Construction</option>
-                <option value="Other">Other</option>
+                <option value="Basic">Basic</option>
+                <option value="Trading">Trading</option>
               </select>
             </motion.div>
 

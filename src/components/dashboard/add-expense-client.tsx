@@ -98,11 +98,18 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
   const { toast } = useToast()
   const { loading: businessLoading, currencySymbol, business } = useBusinessData()
 
-  const isConstruction = business?.businessType?.toLowerCase() === 'construction'
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
   const [items, setItems] = useState<ExpenseItem[]>([])
   
   const addItem = () => setItems([...items, { id: Date.now().toString(), itemName: '', description: '', quantity: 1, rate: 0, taxPercent: 0, amount: 0 }])
-  const removeItem = (id: string) => setItems(items.filter(i => i.id !== id))
+  const removeItem = (id: string) => {
+    const newItems = items.filter(i => i.id !== id)
+    setItems(newItems)
+    if (isBasic) {
+      const total = newItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
+      setFormData(prev => ({ ...prev, amount: total.toString() }))
+    }
+  }
   const updateItem = (id: string, field: keyof ExpenseItem, val: any) => {
     const newItems = items.map(i => i.id === id ? { ...i, [field]: val } : i)
     // auto-calculate amount if q, rate, tax change
@@ -116,7 +123,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
     }
 
     setItems(newItems)
-    if (isConstruction) {
+    if (isBasic) {
       const total = newItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
       setFormData(prev => ({ ...prev, amount: total.toString() }))
     }
@@ -189,7 +196,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
 
   useEffect(() => {
     if (businessLoading) return;
-    if (!isConstruction) return;
+    if (!isBasic) return;
 
     const init = async () => {
       // Load customers, quotations, invoices, and the initial quotation all in parallel
@@ -247,11 +254,11 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
     };
 
     init();
-  }, [businessLoading, isConstruction, businessId, initialQuotationId, initialCustomerId])
+  }, [businessLoading, isBasic, businessId, initialQuotationId, initialCustomerId])
 
   useEffect(() => {
     const fetchReferenceItems = async () => {
-      if (!isConstruction || !formData.referenceId || !formData.referenceType) {
+      if (!isBasic || !formData.referenceId || !formData.referenceType) {
         return;
       }
       try {
@@ -264,7 +271,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
              setFormData(prev => ({ 
                ...prev, 
                title: prev.title || `Expense for Quotation: ${quote.quoteNumber || quote.id}` 
-             }))
+             }));
           }
         } else if (formData.referenceType === 'Invoice') {
           const res = await invoicesAPI.getInvoiceById(businessId, formData.referenceId);
@@ -281,6 +288,10 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
           const proj = projData.project || projData.data;
           
           if (projData.success && proj) {
+             setFormData(prev => ({ 
+               ...prev, 
+               title: prev.title || `Expense for Project: ${proj.projectCode || proj.id}` 
+             }));
              let currencyToSet = proj.currency;
              
              // If project has a quotation, fetch it to get the line items and currency
@@ -309,7 +320,6 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
 
              setFormData(prev => ({ 
                ...prev, 
-               title: prev.title || `Expense for Project: ${proj.projectCode || proj.id}`,
                customerId: prev.customerId || proj.customerId || '',
                currency: currencyToSet || prev.currency,
              }));
@@ -346,7 +356,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
     };
 
     fetchReferenceItems();
-  }, [formData.referenceId, formData.referenceType, businessId, isConstruction]);
+  }, [formData.referenceId, formData.referenceType, businessId, isBasic]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -359,8 +369,12 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
       toast({ title: 'Validation error', description: 'Amount must be greater than 0.', variant: 'destructive' })
       return
     }
-    if (!isConstruction && !formData.category) {
+    if (!isBasic && !formData.category) {
       toast({ title: 'Validation error', description: 'Category is required.', variant: 'destructive' })
+      return
+    }
+    if (!formData.paymentMethod) {
+      toast({ title: 'Validation error', description: 'Payment method is required.', variant: 'destructive' })
       return
     }
 
@@ -371,9 +385,9 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
         title: formData.title.trim(),
         amount: Number(formData.amount),
         currency: formData.currency,
-        category: isConstruction ? 'Construction' : formData.category,
+        category: isBasic ? 'Basic' : formData.category,
       }
-      if (isConstruction && items.length > 0) {
+      if (isBasic && items.length > 0) {
         body.items = items;
       }
       if (formData.paymentMethod) body.paymentMethod = formData.paymentMethod
@@ -509,7 +523,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
             </div>
 
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2">
-              {!isConstruction && (<div className="space-y-2">
+              {!isBasic && (<div className="space-y-2">
                 <Label className="text-foreground font-semibold">Category *</Label>
                 <Select
                   value={formData.category}
@@ -530,7 +544,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
               </div>)}
 
               <div className="space-y-2">
-                <Label className="text-foreground font-semibold">Payment Method</Label>
+                <Label className="text-foreground font-semibold">Payment Method *</Label>
                 <Select
                   value={formData.paymentMethod}
                   onValueChange={(value) => setFormData((prev) => ({ ...prev, paymentMethod: value }))}
@@ -577,7 +591,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
               </Select>
             </div>
 
-            {isConstruction && (
+            {isBasic && (
               <div className="grid gap-6 grid-cols-1 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="text-foreground font-semibold">Customer (Optional)</Label>
@@ -681,7 +695,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
               />
             </div>
 
-            {isConstruction && (
+            {isBasic && (
               <div className="space-y-4 pt-4 border-t border-border">
                 <div className="flex justify-between items-center">
                   <Label className="text-foreground font-semibold">Line Items</Label>

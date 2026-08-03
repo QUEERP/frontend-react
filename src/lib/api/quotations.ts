@@ -17,6 +17,7 @@ export interface QuotationItemInput {
   cgstPercent?: number
   sgstPercent?: number
   igstPercent?: number
+  unit?: string
 }
 
 export interface QuotationItem extends QuotationItemInput {
