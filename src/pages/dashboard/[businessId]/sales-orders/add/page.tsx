@@ -31,6 +31,7 @@ export default function AddSalesOrderPage() {
               quotationId: res.quotation.id,
               dealId: res.quotation.dealId || '',
               assignedToId: res.quotation.assignedToId || '',
+              currency: res.quotation.currency || '',
               tax: res.quotation.tax || 0,
               discount: res.quotation.discount || 0,
               notes: res.quotation.notes || '',

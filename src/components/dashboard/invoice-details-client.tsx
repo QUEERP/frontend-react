@@ -90,7 +90,7 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
     return false;
   }, [role, business])
 
-  const isConstruction = business?.businessType?.toLowerCase() === 'construction'
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
   const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
 
   const [payments, setPayments] = React.useState<any[]>([])
@@ -98,7 +98,7 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
   const [finLoading, setFinLoading] = React.useState(false)
 
   const loadFinancials = React.useCallback(async () => {
-    if (!isConstruction || !invoiceId) return;
+    if (!isBasic || !invoiceId) return;
     try {
       setFinLoading(true)
       const token = getCookie('token') || getCookie('accessToken')
@@ -120,7 +120,7 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
     } finally {
       setFinLoading(false)
     }
-  }, [businessId, invoiceId, isConstruction, API_BASE])
+  }, [businessId, invoiceId, isBasic, API_BASE])
 
   React.useEffect(() => {
     loadFinancials()
@@ -253,7 +253,7 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
             </Button>
           )}
 
-          {isConstruction && (
+          {isBasic && (
             <Button
               variant="outline"
               onClick={() => navigate(`/dashboard/${businessId}/expenses/add?invoiceId=${invoiceId}`)}
@@ -300,7 +300,7 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-border bg-muted/80 text-left font-semibold text-muted-foreground text-xs uppercase tracking-wider">
-                      {isConstruction ? (
+                      {isBasic ? (
                         <>
                           <th className="p-4 w-[25%]">Item Name</th>
                           <th className="p-4 w-[35%]">Description</th>
@@ -308,12 +308,19 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
                       ) : (
                         <th className="p-4 w-[35%]">Item &amp; Description</th>
                       )}
-                      {!isConstruction && (
+                      {!isBasic && (
                         <th className="p-4 text-center">{invoice.items && invoice.items[0]?.itemType === 'SERVICE' ? 'SAC' : 'HSN'}</th>
                       )}
-                      <th className="p-4 text-center">{isConstruction ? 'QTY' : (invoice.items && invoice.items[0]?.itemType === 'SERVICE' ? 'HRS' : 'QTY')}</th>
+                      <th className="p-4 text-center">
+                        {isBasic ? 'QTY' : (
+                          invoice.items && invoice.items.length > 0 ? (
+                            invoice.items[0].itemType === 'SERVICE' ? 'HRS' :
+                            ['kg', 'gram', 'meter', 'litre'].includes((invoice.items[0].unit || '').toLowerCase()) ? invoice.items[0].unit?.toUpperCase() : 'QTY'
+                          ) : 'QTY'
+                        )}
+                      </th>
                       <th className="p-4 text-right">Rate</th>
-                      {!isConstruction && (
+                      {!isBasic && (
                         <th className="p-4 text-right">Tax %</th>
                       )}
                       <th className="p-4 text-right">Amount</th>
@@ -322,7 +329,7 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
                   <tbody>
                     {invoice.items?.map((item) => (
                       <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                        {isConstruction ? (
+                        {isBasic ? (
                           <>
                             <td className="p-4 align-top">
                               <p className="font-bold text-foreground">{item.itemName || (item.description ? item.description.substring(0, 50) : '—')}</p>
@@ -341,12 +348,12 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
                             )}
                           </td>
                         )}
-                        {!isConstruction && (
+                        {!isBasic && (
                           <td className="p-4 text-center font-mono text-muted-foreground">{item.hsnSacCode || '—'}</td>
                         )}
                         <td className="p-4 text-center font-medium text-foreground">{item.quantity}</td>
                         <td className="p-4 text-right font-mono text-muted-foreground">{formatCurrency(item.rate || 0, invoice.currency)}</td>
-                        {!isConstruction && (
+                        {!isBasic && (
                           <td className="p-4 text-right font-mono text-muted-foreground">{item.taxPercent ? `${item.taxPercent}%` : '0%'}</td>
                         )}
                         <td className="p-4 text-right font-mono font-bold text-foreground">{formatCurrency(item.total, invoice.currency)}</td>
@@ -384,8 +391,8 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
             </CardContent>
           </Card>
 
-          {/* Construction Financial Summary */}
-          {isConstruction && (
+          {/* Basic Financial Summary */}
+          {isBasic && (
             <Card className="rounded-2xl border-border shadow-sm bg-card overflow-hidden mt-6">
               <CardHeader className="pb-4 border-b border-border bg-muted/50">
                 <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">

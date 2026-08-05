@@ -92,11 +92,18 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
   const { toast } = useToast()
   const { loading: businessLoading, currencySymbol, business } = useBusinessData()
 
-  const isConstruction = business?.businessType?.toLowerCase() === 'construction'
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
   const [items, setItems] = useState<ExpenseItem[]>([])
   
   const addItem = () => setItems([...items, { id: Date.now().toString(), itemName: '', description: '', quantity: 1, rate: 0, taxPercent: 0, amount: 0 }])
-  const removeItem = (id: string) => setItems(items.filter(i => i.id !== id))
+  const removeItem = (id: string) => {
+    const newItems = items.filter(i => i.id !== id)
+    setItems(newItems)
+    if (isBasic) {
+      const total = newItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
+      setFormData(prev => ({ ...prev, amount: total.toString() }))
+    }
+  }
   const updateItem = (id: string, field: keyof ExpenseItem, val: any) => {
     const newItems = items.map(i => i.id === id ? { ...i, [field]: val } : i)
     // auto-calculate amount if q, rate, tax change
@@ -110,7 +117,7 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
     }
 
     setItems(newItems)
-    if (isConstruction) {
+    if (isBasic) {
       const total = newItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
       setFormData(prev => ({ ...prev, amount: total.toString() }))
     }
@@ -272,7 +279,7 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
     const [type, id] = val.split('|')
     setFormData(prev => ({ ...prev, referenceType: type, referenceId: id }))
 
-    if (!isConstruction) return;
+    if (!isBasic) return;
 
     try {
       let fetchedItems: any[] = [];
@@ -330,7 +337,7 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
       toast({ title: 'Validation error', description: 'Amount must be greater than 0.', variant: 'destructive' })
       return
     }
-    if (!isConstruction && !formData.category) {
+    if (!isBasic && !formData.category) {
       toast({ title: 'Validation error', description: 'Category is required.', variant: 'destructive' })
       return
     }
@@ -342,9 +349,9 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
         title: formData.title.trim(),
         amount: Number(formData.amount),
         currency: formData.currency,
-        category: isConstruction ? 'Construction' : formData.category,
+        category: isBasic ? 'Basic' : formData.category,
       }
-      if (isConstruction && items.length > 0) {
+      if (isBasic && items.length > 0) {
         body.items = items;
       }
       if (formData.paymentMethod) body.paymentMethod = formData.paymentMethod
@@ -469,7 +476,7 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
             </div>
 
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2">
-              {!isConstruction && (<div className="space-y-2">
+              {!isBasic && (<div className="space-y-2">
                 <Label className="text-foreground font-semibold">Category *</Label>
                 <Select
                   value={formData.category}
@@ -537,7 +544,7 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
               </Select>
             </div>
 
-            {isConstruction && (
+            {isBasic && (
               <div className="grid gap-6 grid-cols-1 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="text-foreground font-semibold">Customer (Optional)</Label>
@@ -619,7 +626,7 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
               />
             </div>
 
-            {isConstruction && (
+            {isBasic && (
               <div className="space-y-4 pt-4 border-t border-border">
                 <div className="flex justify-between items-center">
                   <Label className="text-foreground font-semibold">Line Items</Label>

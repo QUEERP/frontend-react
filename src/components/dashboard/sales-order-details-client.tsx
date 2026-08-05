@@ -225,7 +225,12 @@ export function SalesOrderDetailsClient({ businessId, orderId }: SalesOrderDetai
                     <tr className="border-b bg-muted/40 text-left font-medium text-muted-foreground uppercase text-[11px] tracking-wider">
                       <th className="p-3 w-[35%]">Item &amp; Description</th>
                       <th className="p-3 text-center">{order.items && order.items[0]?.itemType === 'SERVICE' ? 'SAC' : 'HSN'}</th>
-                      <th className="p-3 text-center">{order.items && order.items[0]?.itemType === 'SERVICE' ? 'HRS' : 'QTY'}</th>
+                      <th className="p-3 text-center">
+                        {order.items && order.items.length > 0 ? (
+                          order.items[0].itemType === 'SERVICE' ? 'HRS' :
+                          ['kg', 'gram', 'meter', 'litre'].includes((order.items[0].unit || '').toLowerCase()) ? order.items[0].unit?.toUpperCase() : 'QTY'
+                        ) : 'QTY'}
+                      </th>
                       <th className="p-3 text-right">Unit Price</th>
                       <th className="p-3 text-right">Tax %</th>
                       <th className="p-3 text-right">Total</th>

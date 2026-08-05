@@ -9,7 +9,7 @@ import { useBusinessCustomers } from "@/hooks/use-business-data";
 import { quotationsAPI } from "@/lib/api/quotations";
 import { projectOperationsAPI } from "@/lib/api/project-operations";
 
-export function ConstructionProjectForm({ businessId }: { businessId: string }) {
+export function BasicProjectForm({ businessId }: { businessId: string }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryQuotationId = searchParams.get('quotationId') || '';
@@ -150,8 +150,8 @@ export function ConstructionProjectForm({ businessId }: { businessId: string }) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmittingRef.current) return;
-    if (!formData.projName || !formData.customerId) {
-      toast({ title: "Validation Error", description: "Project Title and Customer are required.", variant: "destructive" });
+    if (!formData.projName || !formData.customerId || !formData.startDate) {
+      toast({ title: "Validation Error", description: "Project Title, Customer, and Start Date are required.", variant: "destructive" });
       return;
     }
 
@@ -163,13 +163,13 @@ export function ConstructionProjectForm({ businessId }: { businessId: string }) 
         projectCode: formData.projNumber,
         projectName: formData.projName,
         customerId: formData.customerId,
-        department: 'Construction',
+        department: 'Basic',
         status: 'ACTIVE',
         startDate: formData.startDate || undefined,
         endDate: formData.endDate || undefined,
         quotationId: formData.quotationId || undefined,
         budget: items.reduce((sum, item) => sum + item.amount, 0),
-        executionType: 'CONSTRUCTION',
+        executionType: 'BASIC',
         items: items,
         note: formData.note
       };
@@ -189,15 +189,26 @@ export function ConstructionProjectForm({ businessId }: { businessId: string }) 
         body: JSON.stringify(payload)
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to create project');
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || (data && !data.success)) {
+        if (res.status === 401 || data?.message === 'invalid signature') {
+          toast({ title: "Session Invalid", description: "Your token is invalid or has expired. Redirecting to login...", variant: "destructive" });
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            window.location.href = '/';
+          }, 2000);
+          return;
+        }
+        throw new Error(data?.message || 'Failed to create project');
       }
 
-      toast({ title: "Success", description: "Construction Project created successfully." });
+      toast({ title: "Success", description: "Basic Project created successfully." });
       navigate(`/dashboard/${businessId}/project-operations/projects`);
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
-    } finally {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
@@ -212,10 +223,10 @@ export function ConstructionProjectForm({ businessId }: { businessId: string }) 
           </button>
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
-              <span>PROJECT OPERATIONS</span> <span className="text-gray-300 dark:text-gray-600">/</span> <span>CONSTRUCTION</span>
+              <span>PROJECT OPERATIONS</span> <span className="text-gray-300 dark:text-gray-600">/</span> <span>BASIC</span>
             </div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">New Construction Project</h1>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">New Basic Project</h1>
               <span className="px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 text-xs font-bold rounded">
                 {formData.projNumber}
               </span>
@@ -277,10 +288,11 @@ export function ConstructionProjectForm({ businessId }: { businessId: string }) 
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                  Start Date
+                  Start Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
+                  required
                   value={formData.startDate}
                   onChange={(e) => handleChange('startDate', e.target.value)}
                   className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition-all outline-none"

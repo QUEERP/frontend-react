@@ -76,8 +76,8 @@ export function QuotationPaymentPageClient({
   const targetBusinessId = businessId || business?.id || getClientBusinessId() || ''
 
   const quotationAmount = useMemo(() => {
-    const isConstruction = business?.businessType?.toLowerCase() === 'construction' || project?.executionType === 'CONSTRUCTION' || project?.department === 'Construction'
-    return isConstruction && project?.budget ? Number(project.budget) : Number(quotation?.totalAmount || 0)
+    const isBasic = business?.businessType?.toLowerCase() === 'basic' || project?.executionType === 'BASIC' || project?.department === 'Basic'
+    return isBasic && project?.budget ? Number(project.budget) : Number(quotation?.totalAmount || 0)
   }, [quotation, project, business])
   
   const quotationCurrency = (quotation as any)?.currency || ''
@@ -128,13 +128,13 @@ export function QuotationPaymentPageClient({
   }, [quotationId, customerId, API_BASE, businessId])
 
   useEffect(() => {
-    if (!quotation) return
+    if (!quotation && !project) return
     setPaymentForm((prev) => ({
       ...prev,
-      amountReceived: '0',
+      amountReceived: quotationAmount ? quotationAmount.toString() : '0',
       paymentDate: quotationDate,
     }))
-  }, [quotation, quotationAmount, quotationDate])
+  }, [quotation, project, quotationAmount, quotationDate])
 
   useEffect(() => {
     const loadPaymentSummary = async () => {
@@ -182,8 +182,8 @@ export function QuotationPaymentPageClient({
           setQuotation(qResponse.quotation)
         }
         const currentQuotation = qResponse.quotation || null
-        const isConstruction = business?.businessType?.toLowerCase() === 'construction' || project?.executionType === 'CONSTRUCTION' || project?.department === 'Construction'
-        const currentQuotationAmount = isConstruction && project?.budget ? Number(project.budget) : Number(currentQuotation?.totalAmount || 0)
+        const isBasic = business?.businessType?.toLowerCase() === 'basic' || project?.executionType === 'BASIC' || project?.department === 'Basic'
+        const currentQuotationAmount = isBasic && project?.budget ? Number(project.budget) : Number(currentQuotation?.totalAmount || 0)
 
         const response = await fetch(`${API_BASE}/api/payments/quotation/${encodeURIComponent(currentQuotationId)}`, {
           method: 'GET',
@@ -210,7 +210,7 @@ export function QuotationPaymentPageClient({
         setQuotationPaymentStatus(computedStatus)
         setPaymentForm((prev) => ({
           ...prev,
-          amountReceived: '0',
+          amountReceived: calculatedRemaining > 0 ? calculatedRemaining.toString() : '0',
           paymentDate: prev.paymentDate || (currentQuotation?.issueDate ? new Date(currentQuotation.issueDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
         }))
 

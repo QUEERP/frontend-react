@@ -1,4 +1,4 @@
-import { toast } from 'sonner';
+import { toast as sonnerToast } from 'sonner';
 import React, { useState } from 'react'
 import {  useNavigate  } from 'react-router-dom';
 import {
@@ -86,9 +86,9 @@ export function AddUserPageClient({ businessId }: { businessId: string }) {
       })
 
       // Navigate to the user's permissions page (which is the user detail view)
-      const membershipId = payload.data?.id
-      if (membershipId) {
-        navigate(`/dashboard/${businessId}/users/${membershipId}`)
+      const userId = payload.data?.userId || payload.data?.user?.id
+      if (userId) {
+        navigate(`/dashboard/${businessId}/users/${userId}`)
       } else {
         navigate(`/dashboard/${businessId}/users`)
       }

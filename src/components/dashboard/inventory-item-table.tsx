@@ -154,7 +154,12 @@ export function InventoryItemTable({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[200px]">Description</th>
                 {!isService && <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[150px]">Warehouse</th>}
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[120px]">{isService ? 'SAC' : 'HSN'}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[100px]">{isService ? 'HRS' : 'QTY'}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[100px]">
+                  {items.length > 0 ? (
+                    items[0].itemType === 'SERVICE' ? 'HRS' :
+                    ['kg', 'gram', 'meter', 'litre'].includes((items[0].unit || '').toLowerCase()) ? items[0].unit?.toUpperCase() : 'QTY'
+                  ) : (isService ? 'HRS' : 'QTY')}
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[120px]">Unit</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[120px]">Rate</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[100px]">{taxLabel} %</th>

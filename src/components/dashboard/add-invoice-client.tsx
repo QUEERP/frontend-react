@@ -159,7 +159,7 @@ export function AddInvoiceClient({
 
     // NEW ARCHITECTURE: Business Country is the source of truth
     const businessCountry = business?.country || 'UAE'
-    const isConstruction = business?.businessType === 'Construction'
+    const isBasic = business?.businessType === 'Basic'
     const customerCountryName = (customer?.country || customer?.region || '').trim().toUpperCase()
 
     // Check if a customer is selected AND their country is known to be NOT India and NOT UAE
@@ -251,7 +251,7 @@ export function AddInvoiceClient({
       subtotal,
       taxTotal,
       total: grandTotal,
-      isConstruction,
+      isBasic,
       isIndia,
       isUAE,
       isOtherCountry,
@@ -619,7 +619,7 @@ export function AddInvoiceClient({
           itemName: it.itemName,
           warehouseId: it.warehouseId,
           description: it.description,
-          itemType: summary.isConstruction ? 'SERVICE' : (it.itemType || 'GOODS'),
+          itemType: summary.isBasic ? 'SERVICE' : (it.itemType || 'GOODS'),
           unit: it.unit,
           quantity: it.quantity,
           rate: it.price,
@@ -664,7 +664,11 @@ export function AddInvoiceClient({
         window.open(downloadUrl, '_blank')
       }
 
-      navigate(`/dashboard/${businessId}/invoices`)
+      if (formData.projectId) {
+        navigate(`/dashboard/${businessId}/project-operations/projects/${formData.projectId}`)
+      } else {
+        navigate(`/dashboard/${businessId}/invoices`)
+      }
     } catch (error: any) {
       toast({ title: 'Error', description: error?.message || 'Failed to create invoice', variant: 'destructive' })
     } finally {
@@ -777,7 +781,7 @@ export function AddInvoiceClient({
                       />
                     </div>
 
-                    {!summary.isConstruction && (
+                    {!summary.isBasic && (
                       <>
                         <div className="space-y-2">
                           <Label htmlFor="salesOrder" className="flex items-center gap-2">
@@ -945,12 +949,17 @@ export function AddInvoiceClient({
                         <Table className="min-w-[1200px] w-full table-fixed">
                           <TableHeader className="bg-muted/80">
                             <TableRow className="hover:bg-background border-border">
-                              <TableHead className="w-[180px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{summary.isConstruction ? 'Item Name' : 'Product'}</TableHead>
+                              <TableHead className="w-[180px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{summary.isBasic ? 'Item Name' : 'Product'}</TableHead>
                               <TableHead className="w-[200px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Description</TableHead>
-                              {!summary.isConstruction && hasGoodsItem && <TableHead className="w-[130px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Warehouse</TableHead>}
-                              {!summary.isConstruction && <TableHead className="w-[110px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{items.length > 0 && items[0].itemType === 'SERVICE' ? 'SAC' : 'HSN'}</TableHead>}
-                              <TableHead className="w-[70px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{items.length > 0 && items[0].itemType === 'SERVICE' ? 'HRS' : 'QTY'}</TableHead>
-                              {!summary.isConstruction && <TableHead className="w-[90px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Unit</TableHead>}
+                              {!summary.isBasic && hasGoodsItem && <TableHead className="w-[130px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Warehouse</TableHead>}
+                              {!summary.isBasic && <TableHead className="w-[110px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{items.length > 0 && items[0].itemType === 'SERVICE' ? 'SAC' : 'HSN'}</TableHead>}
+                              <TableHead className="w-[70px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                {items.length > 0 ? (
+                                  items[0].itemType === 'SERVICE' ? 'HRS' :
+                                  ['kg', 'gram', 'meter', 'litre'].includes((items[0].unit || '').toLowerCase()) ? items[0].unit?.toUpperCase() : 'QTY'
+                                ) : 'QTY'}
+                              </TableHead>
+                              {!summary.isBasic && <TableHead className="w-[90px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Unit</TableHead>}
                               <TableHead className="w-[110px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Rate</TableHead>
                               {summary.isOtherCountry ? (
                                 <TableHead className="w-[80px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">{summary.taxLabel}</TableHead>
@@ -995,7 +1004,7 @@ export function AddInvoiceClient({
                               return (
                                 <TableRow key={item.id} className="group hover:bg-muted/30">
                                   <TableCell className="align-top py-4">
-                                    {summary.isConstruction ? (
+                                    {summary.isBasic ? (
                                       <Input 
                                         value={item.itemName || ''} 
                                         placeholder="Item Name"
@@ -1027,7 +1036,7 @@ export function AddInvoiceClient({
                                     />
                                   </TableCell>
 
-                                  {!summary.isConstruction && hasGoodsItem && (
+                                  {!summary.isBasic && hasGoodsItem && (
                                     <TableCell className="align-top py-4">
                                       {!isService ? (
                                         <Select
@@ -1047,7 +1056,7 @@ export function AddInvoiceClient({
                                     </TableCell>
                                   )}
 
-                                  {!summary.isConstruction && (
+                                  {!summary.isBasic && (
                                     <TableCell className="align-top py-4">
                                       <div className="relative">
                                         <Input
@@ -1072,7 +1081,7 @@ export function AddInvoiceClient({
                                     </div>
                                   </TableCell>
 
-                                  {!summary.isConstruction && (
+                                  {!summary.isBasic && (
                                     <TableCell className="align-top py-4">
                                       <Select value={item.unit || 'pcs'} onValueChange={v => updateItem(index, 'unit', v)}>
                                         <SelectTrigger className="h-9 w-full bg-background"><SelectValue /></SelectTrigger>
@@ -1248,12 +1257,12 @@ export function AddInvoiceClient({
                             </div>
                           )}
                         </>
-                      ) : (
+                      ) : summary.isUAE ? (
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground font-medium">VAT Total</span>
                           <span className="font-bold text-blue-600">+{formData.currency || currency} {summary.vat.toFixed(2)}</span>
                         </div>
-                      )}
+                      ) : null}
 
                       <div className="flex justify-between items-center text-sm border-t border-border pt-3">
                         <span className="text-muted-foreground font-medium">Tax Total</span>
@@ -1306,7 +1315,13 @@ export function AddInvoiceClient({
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => navigate(-1)}
+                      onClick={() => {
+                        if (formData.projectId) {
+                          navigate(`/dashboard/${businessId}/project-operations/projects/${formData.projectId}`)
+                        } else {
+                          navigate(-1)
+                        }
+                      }}
                       disabled={isSubmitting}
                       className="rounded-xl px-6 cursor-pointer"
                     >

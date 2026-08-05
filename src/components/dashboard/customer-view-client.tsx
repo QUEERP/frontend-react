@@ -137,7 +137,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
   const [loadingQuotations, setLoadingQuotations] = useState(false)
   const [downloadingPaymentId, setDownloadingPaymentId] = useState<string | null>(null)
   
-  const isConstruction = business?.businessType?.toLowerCase() === 'construction'
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
 
   const customerInvoices = useMemo(() => {
     const invoices = Array.isArray((business as any)?.invoices) ? (business as any).invoices : []
@@ -145,11 +145,11 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
   }, [business, customerId])
 
   const pendingDocs = useMemo(() => {
-    if (isConstruction) {
+    if (isBasic) {
       return quotations.filter((q: any) => q.status !== 'PAID' && q.status !== 'CANCELLED' && q.status !== 'DRAFT')
     }
     return customerInvoices.filter((i: any) => i.status !== 'PAID' && i.status !== 'CANCELLED' && i.status !== 'DRAFT')
-  }, [quotations, customerInvoices, isConstruction])
+  }, [quotations, customerInvoices, isBasic])
 
   const [salesOrders, setSalesOrders] = useState<SalesOrderItem[]>([])
   const [loadingSalesOrders, setLoadingSalesOrders] = useState(false)
@@ -833,12 +833,14 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
               New Quote
             </Button>
           </Link>
-          <Link to={`/dashboard/${businessId}/sales-orders/add?customerId=${customerId}`}>
-            <Button size="sm" variant="outline" className="h-10 cursor-pointer rounded-xl border-border text-muted-foreground hover:bg-muted font-medium px-4">
-              <PlusIcon className="mr-2 size-4" />
-              New Order
-            </Button>
-          </Link>
+          {!isBasic && (
+            <Link to={`/dashboard/${businessId}/sales-orders/add?customerId=${customerId}`}>
+              <Button size="sm" variant="outline" className="h-10 cursor-pointer rounded-xl border-border text-muted-foreground hover:bg-muted font-medium px-4">
+                <PlusIcon className="mr-2 size-4" />
+                New Order
+              </Button>
+            </Link>
+          )}
           <Link to={`/dashboard/${businessId}/invoices/add?customerId=${customerId}`}>
             <Button size="sm" variant="outline" className="h-10 cursor-pointer rounded-xl border-border text-muted-foreground hover:bg-muted font-medium px-4">
               <PlusIcon className="mr-2 size-4" />
@@ -905,10 +907,12 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
             Quotations
             {quotations.length > 0 && <span className="ml-2 bg-slate-200 text-foreground px-2 py-0.5 rounded-full text-xs font-bold">{quotations.length}</span>}
           </TabsTrigger>
-          <TabsTrigger value="orders" className="text-sm font-medium px-4 py-2.5 rounded-xl data-[state=active]:bg-card data-[state=active]:text-blue-700 data-[state=active]:shadow-sm transition-all text-muted-foreground hover:text-foreground hover:bg-slate-200/50 data-[state=active]:hover:bg-card">
-            Sales Orders
-            {salesOrders.length > 0 && <span className="ml-2 bg-slate-200 text-foreground px-2 py-0.5 rounded-full text-xs font-bold">{salesOrders.length}</span>}
-          </TabsTrigger>
+          {!isBasic && (
+            <TabsTrigger value="orders" className="text-sm font-medium px-4 py-2.5 rounded-xl data-[state=active]:bg-card data-[state=active]:text-blue-700 data-[state=active]:shadow-sm transition-all text-muted-foreground hover:text-foreground hover:bg-slate-200/50 data-[state=active]:hover:bg-card">
+              Sales Orders
+              {salesOrders.length > 0 && <span className="ml-2 bg-slate-200 text-foreground px-2 py-0.5 rounded-full text-xs font-bold">{salesOrders.length}</span>}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="invoices" className="text-sm font-medium px-4 py-2.5 rounded-xl data-[state=active]:bg-card data-[state=active]:text-blue-700 data-[state=active]:shadow-sm transition-all text-muted-foreground hover:text-foreground hover:bg-slate-200/50 data-[state=active]:hover:bg-card">
             Invoices
             {customerInvoices.length > 0 && <span className="ml-2 bg-slate-200 text-foreground px-2 py-0.5 rounded-full text-xs font-bold">{customerInvoices.length}</span>}
@@ -1136,7 +1140,8 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
         </TabsContent>
 
         {/* ── Sales Orders Tab ── */}
-        <TabsContent value="orders">
+        {!isBasic && (
+          <TabsContent value="orders">
           <Card className="rounded-2xl shadow-sm border-border bg-card overflow-hidden">
             <CardHeader className="pb-4 border-b border-border flex flex-row items-center justify-between bg-muted/50">
               <div>
@@ -1198,7 +1203,8 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+          </TabsContent>
+        )}
 
         {/* ── Invoices Tab ── */}
         <TabsContent value="invoices">

@@ -17,12 +17,12 @@ import { toast } from 'sonner'
 import { getCookie } from '@/lib/utils'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
 
-interface ConstructionProjectDetailsClientProps {
+interface BasicProjectDetailsClientProps {
   businessId: string
   projectId: string
 }
 
-export function ConstructionProjectDetailsClient({ businessId, projectId }: ConstructionProjectDetailsClientProps) {
+export function BasicProjectDetailsClient({ businessId, projectId }: BasicProjectDetailsClientProps) {
   const navigate = useNavigate()
   const [project, setProject] = React.useState<any>(null)
   const [quotation, setQuotation] = React.useState<any>(null)
@@ -380,12 +380,12 @@ export function ConstructionProjectDetailsClient({ businessId, projectId }: Cons
             <CardContent className="p-5 space-y-4 text-sm">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Department</span>
-                <span className="font-bold text-gray-900 dark:text-white text-base">{project.department || 'Construction'}</span>
+                <span className="font-bold text-gray-900 dark:text-white text-base">{project.department || 'Basic'}</span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Execution Type</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{project.executionType || 'CONSTRUCTION'}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{project.executionType || 'BASIC'}</span>
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Progress</span>

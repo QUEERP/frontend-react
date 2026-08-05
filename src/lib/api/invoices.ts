@@ -27,6 +27,7 @@ export interface InvoiceItem {
   taxPercent: number
   total: number
   hsnSacCode?: string
+  unit?: string
 }
 
 export interface Invoice {

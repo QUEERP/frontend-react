@@ -106,7 +106,7 @@ export function QuotationDetailsClient({ businessId, quotationId }: QuotationDet
     return false;
   }, [role, business])
 
-  const isConstruction = business?.businessType?.toLowerCase() === 'construction'
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
   const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
 
   const [payments, setPayments] = React.useState<any[]>([])
@@ -114,7 +114,7 @@ export function QuotationDetailsClient({ businessId, quotationId }: QuotationDet
   const [finLoading, setFinLoading] = React.useState(false)
 
   const loadFinancials = React.useCallback(async () => {
-    if (!isConstruction || !quotationId) return;
+    if (!isBasic || !quotationId) return;
     try {
       setFinLoading(true)
       const token = getCookie('token') || getCookie('accessToken')
@@ -136,7 +136,7 @@ export function QuotationDetailsClient({ businessId, quotationId }: QuotationDet
     } finally {
       setFinLoading(false)
     }
-  }, [businessId, quotationId, isConstruction, API_BASE])
+  }, [businessId, quotationId, isBasic, API_BASE])
 
   React.useEffect(() => {
     loadFinancials()
@@ -185,7 +185,7 @@ export function QuotationDetailsClient({ businessId, quotationId }: QuotationDet
   }
 
   const handleConvertToSalesOrder = async () => {
-    if (isConstruction) {
+    if (isBasic) {
       navigate(`/dashboard/${businessId}/project-operations/projects/create?quotationId=${quotationId}&customerId=${quotation?.customerId || ''}`)
     } else {
       navigate(`/dashboard/${businessId}/sales-orders/add?quotationId=${quotationId}`)
@@ -296,7 +296,7 @@ export function QuotationDetailsClient({ businessId, quotationId }: QuotationDet
               className="h-10 rounded-xl cursor-pointer gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm w-full md:w-auto"
             >
               <FileSignature className="h-4 w-4" />
-              {isConstruction ? "Convert To Project" : "Convert to Sales Order"}
+              {isBasic ? "Convert To Project" : "Convert to Sales Order"}
             </Button>
           )}
 
@@ -338,7 +338,7 @@ export function QuotationDetailsClient({ businessId, quotationId }: QuotationDet
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-border bg-muted/80 text-left font-semibold text-muted-foreground text-xs uppercase tracking-wider">
-                      {isConstruction ? (
+                      {isBasic ? (
                         <>
                           <th className="p-4 w-[20%]">Item Name</th>
                           <th className="p-4 w-[20%]">Description</th>
@@ -346,8 +346,13 @@ export function QuotationDetailsClient({ businessId, quotationId }: QuotationDet
                       ) : (
                         <th className="p-4 w-[35%]">Item &amp; Description</th>
                       )}
-                      {!isConstruction && <th className="p-4 text-center">{quotation.items && quotation.items[0]?.itemType === 'SERVICE' ? 'SAC' : 'HSN'}</th>}
-                      <th className="p-4 text-center">{quotation.items && quotation.items[0]?.itemType === 'SERVICE' ? 'HRS' : 'QTY'}</th>
+                      {!isBasic && <th className="p-4 text-center">{quotation.items && quotation.items[0]?.itemType === 'SERVICE' ? 'SAC' : 'HSN'}</th>}
+                      <th className="p-4 text-center">
+                        {quotation.items && quotation.items.length > 0 ? (
+                          quotation.items[0].itemType === 'SERVICE' ? 'HRS' :
+                          ['kg', 'gram', 'meter', 'litre'].includes((quotation.items[0].unit || '').toLowerCase()) ? quotation.items[0].unit?.toUpperCase() : 'QTY'
+                        ) : 'QTY'}
+                      </th>
                       <th className="p-4 text-right">Rate</th>
                       <th className="p-4 text-right">Tax %</th>
                       <th className="p-4 text-right">Amount</th>
@@ -356,7 +361,7 @@ export function QuotationDetailsClient({ businessId, quotationId }: QuotationDet
                   <tbody>
                     {quotation.items?.map((item) => (
                       <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                        {isConstruction ? (
+                        {isBasic ? (
                           <>
                             <td className="p-4">
                               <p className="font-bold text-foreground">{item.itemName || '—'}</p>
@@ -375,7 +380,7 @@ export function QuotationDetailsClient({ businessId, quotationId }: QuotationDet
                             )}
                           </td>
                         )}
-                        {!isConstruction && <td className="p-4 text-center font-mono text-muted-foreground">{item.hsnSacCode || '—'}</td>}
+                        {!isBasic && <td className="p-4 text-center font-mono text-muted-foreground">{item.hsnSacCode || '—'}</td>}
                         <td className="p-4 text-center font-medium text-foreground">{item.quantity}</td>
                         <td className="p-4 text-right font-mono text-muted-foreground">{formatCurrency(item.price, quotation.currency)}</td>
                         <td className="p-4 text-right font-mono text-muted-foreground">{item.taxPercent ? `${item.taxPercent}%` : '0%'}</td>
@@ -414,8 +419,8 @@ export function QuotationDetailsClient({ businessId, quotationId }: QuotationDet
             </CardContent>
           </Card>
 
-          {/* Construction Financial Summary */}
-          {isConstruction && (
+          {/* Basic Financial Summary */}
+          {isBasic && (
             <Card className="rounded-2xl border-border shadow-sm bg-card overflow-hidden mt-6">
               <CardHeader className="pb-4 border-b border-border bg-muted/50">
                 <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">

@@ -89,13 +89,17 @@ export function CreateProductModal({ open, onClose, businessId, onCreated }: Cre
   const [submitting, setSubmitting] = React.useState(false)
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({})
   const [activeTab, setActiveTab] = React.useState('basic')
-  const { currency = 'AED' } = useBusinessData()
+  const { currency = 'AED', business } = useBusinessData()
   const isIndia = currency === 'INR';
   const isUae = currency === 'AED';
+  const isTrading = (business as any)?.businessType === 'Trading';
 
   React.useEffect(() => {
     if (!open) return
-    setForm(DEFAULT_FORM)
+    setForm({
+      ...DEFAULT_FORM,
+      type: isTrading ? 'GOODS' : 'GOODS'
+    })
     setErrors({})
     setActiveTab('basic')
     warehousesAPI.getAll(businessId)
@@ -331,7 +335,7 @@ export function CreateProductModal({ open, onClose, businessId, onCreated }: Cre
                   <Label className="text-xs font-bold text-muted-foreground dark:text-slate-300 uppercase tracking-wider">
                     Product Type <span className="text-rose-500">*</span>
                   </Label>
-                  <Select value={form.type} onValueChange={handleTypeChange}>
+                  <Select value={form.type} onValueChange={handleTypeChange} disabled={isTrading}>
                     <SelectTrigger className={`h-11 rounded-xl border-border dark:border-slate-700 bg-muted/50 dark:bg-slate-800 ${errors.type ? 'border-rose-400' : ''}`}>
                       <SelectValue />
                     </SelectTrigger>

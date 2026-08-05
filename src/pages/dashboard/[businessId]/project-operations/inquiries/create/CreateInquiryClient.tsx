@@ -49,7 +49,7 @@ const PRIORITIES = [
 ];
 
 const PROJECT_TYPES = [
-  "Software", "Construction", "Manufacturing", "Consultancy", "Marketing",
+  "Software", "Basic", "Manufacturing", "Consultancy", "Marketing",
   "Maintenance", "Trading", "Interior", "Architecture", "Healthcare", "Education", "Other"
 ];
 
@@ -62,7 +62,7 @@ const EXECUTION_TYPES = [
 
 const INDUSTRIES = [
   "Technology", "Retail", "Manufacturing", "Healthcare", "Finance", 
-  "Education", "Construction", "Real Estate", "Transportation", "Logistics", 
+  "Education", "Basic", "Real Estate", "Transportation", "Logistics", 
   "Energy", "Telecommunications", "Agriculture", "Hospitality", "Automotive", 
   "Aerospace", "Media", "Entertainment", "Other"
 ];

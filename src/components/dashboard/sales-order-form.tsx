@@ -154,7 +154,7 @@ export function SalesOrderForm({
   })
 
   const { business } = useBusinessData()
-  const isConstruction = (business as any)?.businessType === 'Construction'
+  const isBasic = (business as any)?.businessType === 'Basic'
 
   // Auto-calculate summary
   const summary = React.useMemo(() => {
@@ -371,6 +371,15 @@ export function SalesOrderForm({
       setFetchingQuotation(false)
     }
   }, [businessId, products, warehouses])
+
+  // Automatically assign default warehouse to items if missing (e.g. from quotation import)
+  React.useEffect(() => {
+    if (warehouses.length > 0 && items.some(it => !it.warehouseId)) {
+      setItems(prev => prev.map(it => 
+        !it.warehouseId ? { ...it, warehouseId: warehouses[0].id } : it
+      ))
+    }
+  }, [warehouses, items])
 
   const handleQuotationSelect = (qId: string) => {
     if (qId === 'none') {
@@ -853,13 +862,18 @@ export function SalesOrderForm({
                     <Table className="min-w-[1200px] table-fixed">
                       <TableHeader className="bg-muted/80 border-b border-border">
                         <TableRow className="hover:bg-background border-none text-muted-foreground">
-                          <TableHead className="w-[180px] text-[11px] font-bold uppercase">{isConstruction ? 'Item Name' : 'Product'}</TableHead>
+                          <TableHead className="w-[180px] text-[11px] font-bold uppercase">{isBasic ? 'Item Name' : 'Product'}</TableHead>
                           <TableHead className="w-[200px] text-[11px] font-bold uppercase">Description</TableHead>
-                          {!isConstruction && hasGoodsItem && <TableHead className="w-[130px] text-[11px] font-bold uppercase">Warehouse</TableHead>}
-                          {!isConstruction && <TableHead className="w-[100px] text-[11px] font-bold uppercase">{items.length > 0 && items[0].itemType === 'SERVICE' ? 'SAC' : 'HSN'}</TableHead>}
-                          {!isConstruction && hasGoodsItem && <TableHead className="w-[80px] text-[11px] font-bold uppercase text-center">Stock</TableHead>}
-                          <TableHead className="w-[80px] text-[11px] font-bold uppercase text-center">{items.length > 0 && items[0].itemType === 'SERVICE' ? 'HRS' : 'QTY'}</TableHead>
-                          {!isConstruction && <TableHead className="w-[90px] text-[11px] font-bold uppercase">Unit</TableHead>}
+                          {!isBasic && hasGoodsItem && <TableHead className="w-[130px] text-[11px] font-bold uppercase">Warehouse</TableHead>}
+                          {!isBasic && <TableHead className="w-[100px] text-[11px] font-bold uppercase">{items.length > 0 && items[0].itemType === 'SERVICE' ? 'SAC' : 'HSN'}</TableHead>}
+                          {!isBasic && hasGoodsItem && <TableHead className="w-[80px] text-[11px] font-bold uppercase text-center">Stock</TableHead>}
+                          <TableHead className="w-[80px] text-[11px] font-bold uppercase text-center">
+                            {items.length > 0 ? (
+                              items[0].itemType === 'SERVICE' ? 'HRS' :
+                              ['kg', 'gram', 'meter', 'litre'].includes((items[0].unit || '').toLowerCase()) ? items[0].unit?.toUpperCase() : 'QTY'
+                            ) : 'QTY'}
+                          </TableHead>
+                          {!isBasic && <TableHead className="w-[90px] text-[11px] font-bold uppercase">Unit</TableHead>}
                           <TableHead className="w-[110px] text-[11px] font-bold uppercase text-right">Rate</TableHead>
                           {summary.isOtherCountry ? (
                             <TableHead className="w-[80px] text-[11px] font-bold uppercase text-right">{summary.taxLabel}</TableHead>
@@ -913,7 +927,7 @@ export function SalesOrderForm({
                           return (
                             <TableRow key={item.id} className="group hover:bg-muted/50 border-b border-border last:border-none">
                               <TableCell className="py-3 px-2">
-                                {isConstruction ? (
+                                {isBasic ? (
                                   <Input 
                                     value={item.itemName || ''} 
                                     placeholder="Item Name"
@@ -945,7 +959,7 @@ export function SalesOrderForm({
                                 />
                               </TableCell>
 
-                              {!isConstruction && hasGoodsItem && (
+                              {!isBasic && hasGoodsItem && (
                                 <TableCell className="py-3 px-2">
                                   {!isService ? (
                                     <Select
@@ -965,7 +979,7 @@ export function SalesOrderForm({
                                 </TableCell>
                               )}
 
-                              {!isConstruction && (
+                              {!isBasic && (
                                 <TableCell className="py-3 px-2">
                                   <div className="relative">
                                     <Input
@@ -978,7 +992,7 @@ export function SalesOrderForm({
                                 </TableCell>
                               )}
 
-                              {!isConstruction && hasGoodsItem && (
+                              {!isBasic && hasGoodsItem && (
                                 <TableCell className="py-3 px-2">
                                   <div className="flex justify-center">
                                     {item.productId && !isService ? (
@@ -1018,7 +1032,7 @@ export function SalesOrderForm({
                                 </div>
                               </TableCell>
 
-                              {!isConstruction && (
+                              {!isBasic && (
                                 <TableCell className="py-3 px-2">
                                   <Select value={item.unit || 'pcs'} onValueChange={v => updateItem(index, 'unit', v)}>
                                     <SelectTrigger className="h-8 w-full bg-background text-xs px-2"><SelectValue /></SelectTrigger>

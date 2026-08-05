@@ -132,7 +132,7 @@ export function ExpensePageClient({ businessId }: { businessId: string }) {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { loading: businessLoading, currencySymbol, business } = useBusinessData()
-  const isConstruction = business?.businessType === 'Construction'
+  const isBasic = business?.businessType === 'Basic'
 
   const [vendors, setVendors] = useState<VendorOption[]>([])
   const [expenseList, setExpenseList] = useState<ExpenseItem[]>([])
@@ -551,7 +551,7 @@ export function ExpensePageClient({ businessId }: { businessId: string }) {
                       <TableRow className="border-b border-border dark:border-slate-800">
                         <TableHead className="font-semibold h-11">Title</TableHead>
                         <TableHead className="font-semibold h-11">Amount</TableHead>
-                        {!isConstruction && <TableHead className="font-semibold h-11 hidden sm:table-cell">Category</TableHead>}
+                        {!isBasic && <TableHead className="font-semibold h-11 hidden sm:table-cell">Category</TableHead>}
                         <TableHead className="font-semibold h-11 hidden md:table-cell">Payment</TableHead>
                         <TableHead className="font-semibold h-11 hidden lg:table-cell">Vendor</TableHead>
                         <TableHead className="font-semibold h-11 hidden sm:table-cell">Date</TableHead>
@@ -578,7 +578,7 @@ export function ExpensePageClient({ businessId }: { businessId: string }) {
                               {item.currency} {item.amount.toLocaleString(item.currency === 'CAD' ? 'en-CA' : 'en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </TableCell>
-                          {!isConstruction && <TableCell className="text-sm hidden sm:table-cell">
+                          {!isBasic && <TableCell className="text-sm hidden sm:table-cell">
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">
                               {item.category || '-'}
                             </span>

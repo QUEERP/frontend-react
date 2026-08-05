@@ -485,7 +485,7 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
                     <select className="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none">
                       <option>All Types</option>
                       <option>Software</option>
-                      <option>Construction</option>
+                      <option>Basic</option>
                       <option>Manufacturing</option>
                       <option>Consultancy</option>
                     </select>

@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import React, { use } from 'react';
-import { EditConstructionProjectForm } from '@/components/dashboard/edit-construction-project-form';
+import { EditBasicProjectForm } from '@/components/dashboard/edit-basic-project-form';
 
 export default function EditProjectPage() {
   const routerParams = useParams() as any;
@@ -9,6 +9,6 @@ export default function EditProjectPage() {
   
 
   return (
-    <EditConstructionProjectForm businessId={businessId as string} projectId={projectId as string} />
+    <EditBasicProjectForm businessId={businessId as string} projectId={projectId as string} />
   );
 }

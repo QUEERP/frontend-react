@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import React, { use } from 'react';
 import ProjectDetailTabs from './ProjectDetailTabs';
-import { ConstructionProjectDetailsClient } from '@/components/dashboard/construction-project-details-client';
+import { BasicProjectDetailsClient } from '@/components/dashboard/basic-project-details-client';
 import { useBusinessData } from '@/components/dashboard/business-data-provider';
 
 export default function ProjectDetailsPage() {
@@ -11,10 +11,10 @@ export default function ProjectDetailsPage() {
   
   const { business } = useBusinessData();
   
-  const isConstruction = business?.businessType?.toLowerCase() === 'construction';
+  const isBasic = business?.businessType?.toLowerCase() === 'basic';
 
-  if (isConstruction) {
-    return <ConstructionProjectDetailsClient businessId={businessId as string} projectId={projectId as string} />;
+  if (isBasic) {
+    return <BasicProjectDetailsClient businessId={businessId as string} projectId={projectId as string} />;
   }
 
   // In a real application, fetch project details here from projectId

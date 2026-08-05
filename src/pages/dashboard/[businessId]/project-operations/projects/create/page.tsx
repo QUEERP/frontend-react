@@ -16,7 +16,7 @@ import { getCookie } from '@/lib/utils';
 import { UserSelect } from "@/components/project-operations/UserSelect";
 import { useBusinessCustomers } from "@/hooks/use-business-data";
 import { useBusinessData } from "@/components/dashboard/business-data-provider";
-import { ConstructionProjectForm } from "@/components/dashboard/construction-project-form";
+import { BasicProjectForm } from "@/components/dashboard/basic-project-form";
 
 // ------------------------------------------------------------------
 // REUSABLE COMPONENTS
@@ -116,8 +116,8 @@ export default function CreateProjectPage() {
   const { businessId } = useParams();
   const { business } = useBusinessData();
 
-  if (business?.businessType?.toLowerCase() === 'construction') {
-    return <ConstructionProjectForm businessId={businessId as string} />;
+  if (business?.businessType?.toLowerCase() === 'basic') {
+    return <BasicProjectForm businessId={businessId as string} />;
   }
 
   const navigate = useNavigate();

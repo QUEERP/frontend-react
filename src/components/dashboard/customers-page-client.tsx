@@ -186,11 +186,11 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
     }
   }, [customers, business])
 
-  const isConstruction = business?.businessType?.toLowerCase() === 'construction'
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
   
   const pendingDocs = useMemo(() => {
     if (!selectedCustomerForPayment) return []
-    if (isConstruction) {
+    if (isBasic) {
       return (business?.quotations || business?.invoices || []).filter((q: any) => 
         q.customerId === selectedCustomerForPayment.id && 
         q.status !== 'PAID' && 
@@ -204,7 +204,7 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
       i.status !== 'CANCELLED' && 
       i.status !== 'DRAFT'
     )
-  }, [selectedCustomerForPayment, business, isConstruction])
+  }, [selectedCustomerForPayment, business, isBasic])
 
   const handleAddCustomerClick = () => {
     if (business?.isActive === false) {
@@ -319,9 +319,9 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
                   return (
                 <TableRow 
                   key={customer.id} 
-                  className={`group border-b border-border transition-colors ${business?.businessType?.toLowerCase() === 'construction' ? 'cursor-pointer hover:bg-muted/80' : 'hover:bg-muted/80'}`}
+                  className={`group border-b border-border transition-colors ${business?.businessType?.toLowerCase() === 'basic' ? 'cursor-pointer hover:bg-muted/80' : 'hover:bg-muted/80'}`}
                   onClick={() => {
-                    if (business?.businessType?.toLowerCase() === 'construction') {
+                    if (business?.businessType?.toLowerCase() === 'basic') {
                       navigate(`/dashboard/${businessId}/customers/${customer.id}/edit`)
                     }
                   }}
