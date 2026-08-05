@@ -493,10 +493,24 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
                                         <XCircle className="mr-1 h-3.5 w-3.5" />
                                         Reject
                                       </Button>
-                                    </>
-                                  )}
+                                    )}
 
-                                  <DropdownMenu>
+                                    {isBasic && (quotation.status === 'APPROVED' || quotation.status === 'Approved') && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => { 
+                                          e.stopPropagation(); 
+                                          navigate(`/dashboard/${businessId}/project-operations/projects/create?quotationId=${quotation.id}&customerId=${quotation.customerId || ''}`) 
+                                        }}
+                                        className="h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                                      >
+                                        <Plus className="mr-1 h-3.5 w-3.5" />
+                                        Convert to Project
+                                      </Button>
+                                    )}
+
+                                    <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-muted">
                                         <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
@@ -526,15 +540,6 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
                                         <Download className="mr-2 h-4 w-4" />
                                         Download PDF
                                       </DropdownMenuItem>
-                                      {isBasic && (quotation.status === 'APPROVED' || quotation.status === 'Approved') && (
-                                        <DropdownMenuItem
-                                          onSelect={() => navigate(`/dashboard/${businessId}/project-operations/projects/create?quotationId=${quotation.id}&customerId=${quotation.customerId || ''}`)}
-                                          className="rounded-lg cursor-pointer font-medium text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700"
-                                        >
-                                          <Plus className="mr-2 h-4 w-4" />
-                                          Convert to Project
-                                        </DropdownMenuItem>
-                                      )}
                                       <div className="h-px bg-muted my-1" />
                                       <DropdownMenuItem
                                         onSelect={() => handleDelete(quotation.id)}
