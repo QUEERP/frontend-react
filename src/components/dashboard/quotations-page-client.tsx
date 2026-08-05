@@ -338,8 +338,9 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
               <SelectContent className="rounded-xl border-border">
                 <SelectItem value="all" className="rounded-lg cursor-pointer">All Statuses</SelectItem>
                 <SelectItem value="Draft" className="rounded-lg cursor-pointer">Draft</SelectItem>
-                <SelectItem value="Sent" className="rounded-lg cursor-pointer">Sent</SelectItem>
-                <SelectItem value="Accepted" className="rounded-lg cursor-pointer">Accepted</SelectItem>
+                {!isBasic && <SelectItem value="Sent" className="rounded-lg cursor-pointer">Sent</SelectItem>}
+                {!isBasic && <SelectItem value="Accepted" className="rounded-lg cursor-pointer">Accepted</SelectItem>}
+                {isBasic && <SelectItem value="APPROVED" className="rounded-lg cursor-pointer">Approved</SelectItem>}
                 <SelectItem value="Rejected" className="rounded-lg cursor-pointer">Rejected</SelectItem>
               </SelectContent>
             </Select>
