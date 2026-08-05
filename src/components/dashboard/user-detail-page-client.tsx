@@ -32,6 +32,7 @@ import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/use-toast'
 import { UserMenu } from './user-menu'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { useBusinessData } from '@/components/dashboard/business-data-provider'
 
 type CrudPermissions = {
   read: boolean
@@ -268,6 +269,21 @@ const PERMISSION_TREE = [
     name: 'System Settings',
     sections: [
       {
+        name: 'Business Settings',
+        modules: [
+          { name: 'General Info', key: 'settings_general' },
+          { name: 'Location', key: 'settings_location' },
+          { name: 'Tax Registration', key: 'settings_tax' },
+          { name: 'Financial', key: 'settings_finance' },
+          { name: 'Banking', key: 'settings_banking' },
+          { name: 'Invoice Settings', key: 'settings_invoice' },
+          { name: 'Inventory Settings', key: 'settings_inventory' },
+          { name: 'HR Settings', key: 'settings_hr' },
+          { name: 'Compliance', key: 'settings_compliance' },
+          { name: 'Security', key: 'settings_security' }
+        ]
+      },
+      {
         name: 'Administration',
         modules: [
           { name: 'Documents', key: 'document' },
@@ -315,6 +331,79 @@ export function UserDetailPageClient({
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
   
+  const { business } = useBusinessData()
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
+
+  const filteredTree = useMemo(() => {
+    if (!isBasic) return PERMISSION_TREE;
+    
+    return PERMISSION_TREE.map(category => {
+      if (category.name === 'Inventory' || category.name === 'HR') return null;
+      
+      let newCategory = { ...category };
+
+      if (category.name === 'Sales') {
+        newCategory.sections = category.sections.map(section => {
+          if (section.name === 'CRM & Customers') {
+            return { ...section, modules: section.modules.filter(m => m.name === 'Customers') }
+          }
+          if (section.name === 'Sales Operations') {
+            return { ...section, modules: section.modules.filter(m => ['Quotations', 'Invoices', 'Payments', 'Credit Notes'].includes(m.name)) }
+          }
+          if (['Activities', 'Marketing', 'Analytics'].includes(section.name)) {
+            return null;
+          }
+          return section;
+        }).filter(Boolean) as typeof category.sections;
+      }
+
+      if (category.name === 'Procurement') {
+        newCategory.sections = category.sections.map(section => {
+          if (section.name === 'Vendors') {
+            return { ...section, modules: section.modules.filter(m => m.name === 'Vendors') }
+          }
+          return null;
+        }).filter(Boolean) as typeof category.sections;
+      }
+
+      if (category.name === 'Accounting & Finance') {
+        newCategory.sections = category.sections.map(section => {
+          if (section.name === 'Accounting') {
+            return { ...section, modules: section.modules.filter(m => m.name === 'Expenses') }
+          }
+          return null;
+        }).filter(Boolean) as typeof category.sections;
+      }
+
+      if (category.name === 'Project Operations') {
+        newCategory.sections = [
+          {
+            name: 'Dashboard',
+            modules: [{ name: 'Project Dashboard', key: 'project' }]
+          },
+          {
+            name: 'Project',
+            modules: [{ name: 'Projects', key: 'project' }]
+          },
+          {
+            name: 'Documents',
+            modules: [{ name: 'Documents', key: 'document' }]
+          },
+          {
+            name: 'Reports',
+            modules: [{ name: 'System Reports', key: 'report' }]
+          },
+          {
+            name: 'Masters',
+            modules: [{ name: 'Masters', key: 'settings' }]
+          }
+        ];
+      }
+
+      return newCategory;
+    }).filter(Boolean) as typeof PERMISSION_TREE;
+  }, [isBasic]);
+
   const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
   
   const getCookie = React.useCallback((name: string) => {
@@ -792,7 +881,7 @@ export function UserDetailPageClient({
             <CardContent className="space-y-6">
               
               <Accordion type="multiple" className="w-full">
-                {PERMISSION_TREE.map((category) => (
+                {filteredTree.map((category) => (
                   <AccordionItem key={category.name} value={category.name} className="border rounded-lg mb-4 bg-card px-4">
                     <AccordionTrigger className="hover:no-underline py-4">
                       <div className="flex items-center gap-3">

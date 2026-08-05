@@ -396,27 +396,29 @@ export function QuotationForm({
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="deal" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Linked Deal</Label>
-                <Select
-                  value={formData.dealId || 'none'}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, dealId: value === 'none' ? '' : value }))
-                  }
-                >
-                  <SelectTrigger id="deal" className="h-11 rounded-xl border-border bg-muted/50 focus:bg-card transition-colors">
-                    <SelectValue placeholder="Select deal" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border shadow-lg">
-                    <SelectItem value="none" className="rounded-lg cursor-pointer">No deal</SelectItem>
-                    {deals.map((deal) => (
-                      <SelectItem key={deal.id} value={deal.id} className="rounded-lg cursor-pointer">
-                        {deal.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {!isBasic && (
+                <div className="space-y-2">
+                  <Label htmlFor="deal" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Linked Deal</Label>
+                  <Select
+                    value={formData.dealId || 'none'}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, dealId: value === 'none' ? '' : value }))
+                    }
+                  >
+                    <SelectTrigger id="deal" className="h-11 rounded-xl border-border bg-muted/50 focus:bg-card transition-colors">
+                      <SelectValue placeholder="Select deal" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-border shadow-lg">
+                      <SelectItem value="none" className="rounded-lg cursor-pointer">No deal</SelectItem>
+                      {deals.map((deal) => (
+                        <SelectItem key={deal.id} value={deal.id} className="rounded-lg cursor-pointer">
+                          {deal.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="assigned" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Assigned Representative</Label>
                 <Select
