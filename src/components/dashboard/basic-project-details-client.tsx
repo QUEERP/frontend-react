@@ -352,10 +352,10 @@ export function BasicProjectDetailsClient({ businessId, projectId }: BasicProjec
                         <div key={inv.id || i} className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer" onClick={() => navigate(`/dashboard/${businessId}/invoices/${inv.id}`)}>
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-1">{inv.invoiceNumber || 'Invoice'}</span>
-                            <span className="text-xs text-gray-500">{inv.issueDate ? new Date(inv.issueDate).toLocaleDateString() : 'No date'}</span>
+                            <span className="text-xs text-gray-500">{(inv.invoiceDate || inv.issueDate) ? new Date(inv.invoiceDate || inv.issueDate).toLocaleDateString() : 'No date'}</span>
                           </div>
                           <span className="text-sm font-bold text-blue-600 shrink-0">
-                            {formatCurrency(inv.totalAmount || inv.total || 0)}
+                            {formatCurrency(inv.grandTotal || inv.totalAmount || inv.total || 0)}
                           </span>
                         </div>
                       ))}

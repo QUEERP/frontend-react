@@ -526,6 +526,15 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
                                         <Download className="mr-2 h-4 w-4" />
                                         Download PDF
                                       </DropdownMenuItem>
+                                      {isBasic && (quotation.status === 'APPROVED' || quotation.status === 'Approved') && (
+                                        <DropdownMenuItem
+                                          onSelect={() => navigate(`/dashboard/${businessId}/project-operations/projects/create?quotationId=${quotation.id}&customerId=${quotation.customerId || ''}`)}
+                                          className="rounded-lg cursor-pointer font-medium text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700"
+                                        >
+                                          <Plus className="mr-2 h-4 w-4" />
+                                          Convert to Project
+                                        </DropdownMenuItem>
+                                      )}
                                       <div className="h-px bg-muted my-1" />
                                       <DropdownMenuItem
                                         onSelect={() => handleDelete(quotation.id)}
