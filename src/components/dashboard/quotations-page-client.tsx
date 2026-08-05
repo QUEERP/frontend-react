@@ -493,7 +493,8 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
                                         <XCircle className="mr-1 h-3.5 w-3.5" />
                                         Reject
                                       </Button>
-                                    )}
+                                    </>
+                                  )}
 
                                     {isBasic && (quotation.status === 'APPROVED' || quotation.status === 'Approved') && (
                                       <Button
