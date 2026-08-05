@@ -66,15 +66,30 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
   const handleDownloadPaySlip = async (payment: PaymentItem) => {
     setDownloadingPaymentId(payment.id)
     try {
-      const downloadUrl = `${API_BASE}/api/payments/download/${payment.id}?token=${getCookie('token') || getCookie('accessToken')}&x-business-id=${businessId}`
+      const downloadUrl = `${API_BASE}/api/payments/download/${payment.id}`
+      const token = getCookie('token') || getCookie('accessToken')
+      
+      const response = await fetch(downloadUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-business-id': businessId
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Unable to download pay slip file')
+      }
+
+      const blob = await response.blob()
+      const objectUrl = URL.createObjectURL(blob)
       
       const link = document.createElement('a')
-      link.href = downloadUrl
-      link.target = '_self'
+      link.href = objectUrl
       link.download = `Payment_Slip_${payment.invoiceNumber}.pdf`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+      URL.revokeObjectURL(objectUrl)
     } catch (error: any) {
       toast({
         title: 'Download failed',
