@@ -126,7 +126,31 @@ export function VendorPageClient({ businessId }: { businessId: string }) {
         throw new Error(data?.message || 'Failed to load vendors')
       }
 
-      setVendorList(data.vendors || [])
+      let vendors = data.vendors || [];
+
+      try {
+        const expensesRes = await fetch(`${API_BASE}/api/expenses`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'x-business-id': businessId,
+          },
+        });
+        const expensesData = await expensesRes.json();
+        if (expensesData.success && expensesData.data) {
+          vendors = vendors.map((v: any) => {
+            const vExpenses = expensesData.data.filter((e: any) => e.vendorId === v.id);
+            const totalExpense = vExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amount || 0), 0);
+            if (totalExpense > 0) {
+              return { ...v, balance: Number(v.openingBalance || 0) + totalExpense };
+            }
+            return v;
+          });
+        }
+      } catch (e) {
+        console.error("Failed to fetch expenses for balance calculation", e);
+      }
+
+      setVendorList(vendors)
       setTotalPages(data.totalPages || 1)
       setTotalRecords(data.total || 0)
     } catch (err: any) {
@@ -360,7 +384,7 @@ export function VendorPageClient({ businessId }: { businessId: string }) {
                     </TableCell>
                     <TableCell className="px-4 py-4 text-right">
                       <div className="flex flex-col items-end">
-                        <span className={`font-bold text-sm ${item.balance > 0 ? 'text-rose-600' : 'text-foreground'}`}>
+                        <span className={`font-bold text-sm ${item.balance > 0 ? 'text-emerald-600' : 'text-foreground'}`}>
                           {item.currency ? getCurrencySymbol(item.currency) : currencySymbol} {Number(item.balance || 0).toLocaleString()}
                         </span>
                       </div>
