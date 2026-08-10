@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import {  useNavigate, useParams  } from 'react-router-dom';
+import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { leadsAPI, Lead } from '@/lib/api/leads'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -51,6 +52,8 @@ export default function ConvertLeadToCustomerPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const leadId = id as string
+  const { business } = useBusinessData()
+  const isTrading = (business as any)?.businessType === 'Trading'
   
   const [lead, setLead] = useState<Lead | null>(null)
   const [loading, setLoading] = useState(true)
@@ -83,9 +86,9 @@ export default function ConvertLeadToCustomerPage() {
     shippingCountry: '',
     
     // Deal integration
-    createDeal: false,
+    createDeal: isTrading,
     dealName: '',
-    dealStage: '1', // New/Qualification
+    dealStage: 'New', // New/Qualification
     dealAmount: '',
     expectedCloseDate: '',
   })
@@ -104,6 +107,12 @@ export default function ConvertLeadToCustomerPage() {
             ...prev,
             company: leadData.company || leadData.name || '',
             phone: leadData.phone || '',
+            currency: leadData.currency || 'SYSTEM',
+            country: leadData.country || '',
+            city: leadData.city || '',
+            state: leadData.state || '',
+            address: leadData.address || '',
+            zipCode: leadData.zipCode || '',
             dealName: leadData.company ? `${leadData.company} - Initial Deal` : `${leadData.name} - Initial Deal`,
             expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // default 30 days
           }))
@@ -184,8 +193,8 @@ export default function ConvertLeadToCustomerPage() {
       const response = await leadsAPI.convertToCustomer(businessId, leadId, payload)
       
       if (response.success) {
-        toast.success('Lead converted to Customer successfully!')
-        navigate(`/dashboard/${businessId}/customers`)
+        toast.success(isTrading ? 'Lead converted to Deal successfully!' : 'Lead converted to Customer successfully!')
+        navigate(isTrading && formData.createDeal ? `/dashboard/${businessId}/deals` : `/dashboard/${businessId}/customers`)
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to convert lead')
@@ -217,10 +226,14 @@ export default function ConvertLeadToCustomerPage() {
             Back to Lead details
           </Button>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
-            Convert Lead <Sparkles className="h-5 w-5 text-amber-500" />
+            {isTrading ? 'Convert Lead to Deal' : 'Convert Lead'} <Sparkles className="h-5 w-5 text-amber-500" />
           </h1>
           <p className="text-muted-foreground mt-1">
-            Generate a full ERP Account/Customer Profile and initiate sales opportunities for <strong>{lead?.name}</strong>.
+            {isTrading ? (
+              <>Generate a full ERP Account and initiate a sales deal for <strong>{lead?.name}</strong>.</>
+            ) : (
+              <>Generate a full ERP Account/Customer Profile and initiate sales opportunities for <strong>{lead?.name}</strong>.</>
+            )}
           </p>
         </div>
       </div>
@@ -381,9 +394,9 @@ export default function ConvertLeadToCustomerPage() {
                       <SelectValue placeholder="Pipeline Stage" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">New / Qualified Opportunity</SelectItem>
-                      <SelectItem value="2">Initial Proposal Drafted</SelectItem>
-                      <SelectItem value="3">Active Negotiation / Contract Review</SelectItem>
+                      <SelectItem value="New">New / Qualified Opportunity</SelectItem>
+                      <SelectItem value="Proposal">Initial Proposal Drafted</SelectItem>
+                      <SelectItem value="Negotiation">Active Negotiation / Contract Review</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -497,7 +510,7 @@ export default function ConvertLeadToCustomerPage() {
                 Executing Conversion Engine...
               </>
             ) : (
-              'Confirm Lead Conversion'
+              isTrading ? 'Confirm Conversion to Deal' : 'Confirm Lead Conversion'
             )}
           </Button>
         </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import {  useNavigate, useParams  } from 'react-router-dom';
 import { leadsAPI, CreateLeadData } from '@/lib/api/leads'
 import { usersAPI, BusinessUser } from '@/lib/api/users'
+import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -16,6 +17,8 @@ import {
 } from '@/components/ui/select'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { CURRENCIES, getCurrencyByCountry, getCurrencySymbol } from '@/lib/currencies'
+import { COUNTRIES } from '@/lib/countries'
 
 export default function AddLeadPage() {
   const routerParams = useParams() as any;
@@ -23,6 +26,7 @@ export default function AddLeadPage() {
 
   const navigate = useNavigate()
   const params = useParams()
+  const { business } = useBusinessData()
   
   const [formData, setFormData] = useState<CreateLeadData>({
     name: '',
@@ -216,20 +220,26 @@ export default function AddLeadPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="country" className="text-slate-700 font-medium">Country</Label>
-                    <Select value={formData.country} onValueChange={(value) => setFormData(prev => ({ ...prev, country: value }))}>
+                    <Select 
+                      value={formData.country} 
+                      onValueChange={(value) => {
+                        setFormData(prev => {
+                          const updates: any = { country: value };
+                          const newCurrency = getCurrencyByCountry(value);
+                          if (newCurrency) updates.currency = newCurrency;
+                          return { ...prev, ...updates };
+                        });
+                      }}
+                    >
                       <SelectTrigger id="country" className="border-slate-200 focus:ring-blue-500 h-10 rounded-lg shadow-sm w-full">
                         <SelectValue placeholder="Select country" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl border-slate-200 shadow-lg">
-                        <SelectItem value="UAE" className="py-2 focus:bg-blue-50">United Arab Emirates</SelectItem>
-                        <SelectItem value="Saudi Arabia" className="py-2 focus:bg-blue-50">Saudi Arabia</SelectItem>
-                        <SelectItem value="Qatar" className="py-2 focus:bg-blue-50">Qatar</SelectItem>
-                        <SelectItem value="Kuwait" className="py-2 focus:bg-blue-50">Kuwait</SelectItem>
-                        <SelectItem value="Oman" className="py-2 focus:bg-blue-50">Oman</SelectItem>
-                        <SelectItem value="Bahrain" className="py-2 focus:bg-blue-50">Bahrain</SelectItem>
-                        <SelectItem value="India" className="py-2 focus:bg-blue-50">India</SelectItem>
-                        <SelectItem value="United States" className="py-2 focus:bg-blue-50">United States</SelectItem>
-                        <SelectItem value="United Kingdom" className="py-2 focus:bg-blue-50">United Kingdom</SelectItem>
+                      <SelectContent className="rounded-xl border-slate-200 shadow-lg max-h-[300px]">
+                        {COUNTRIES.map(country => (
+                          <SelectItem key={country} value={country} className="py-2 focus:bg-blue-50">
+                            {country}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -292,7 +302,7 @@ export default function AddLeadPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="leadValue" className="text-slate-700 font-medium">Estimated Value (₹)</Label>
+                    <Label htmlFor="leadValue" className="text-slate-700 font-medium">Estimated Value ({getCurrencySymbol(formData.currency)})</Label>
                     <Input
                       id="leadValue"
                       type="number"
@@ -302,6 +312,27 @@ export default function AddLeadPage() {
                       className="border-slate-200 focus-visible:ring-blue-500 shadow-sm h-10 rounded-lg font-semibold text-emerald-700"
                     />
                   </div>
+
+                  {business?.businessType === 'Trading' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="currency" className="text-slate-700 font-medium">Currency</Label>
+                      <Select
+                        value={formData.currency || ''}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                      >
+                        <SelectTrigger id="currency" className="w-full border-slate-200 focus:ring-blue-500 h-10 rounded-lg shadow-sm">
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-lg max-h-[300px]">
+                          {CURRENCIES.map(curr => (
+                            <SelectItem key={curr.code} value={curr.code} className="py-2 focus:bg-blue-50">
+                              {curr.flag} {curr.code} - {curr.name} ({curr.symbol})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               </div>
 

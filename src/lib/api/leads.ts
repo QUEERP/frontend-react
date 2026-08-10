@@ -70,6 +70,7 @@ export interface CreateLeadData {
   contactedToday?: boolean
   defaultLanguage?: string
 
+
   // New enterprise inquiry fields
   inquiryNumber?: string
   inquiryTitle?: string

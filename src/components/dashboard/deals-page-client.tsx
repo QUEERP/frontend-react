@@ -1,5 +1,6 @@
 import * as React from 'react'
 import {  useNavigate  } from 'react-router-dom';
+import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { dealsAPI, Deal, DEAL_STAGES } from '@/lib/api/deals'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -43,6 +44,7 @@ import {
   Zap,
   Users,
   CheckCircle2,
+  FileText,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -64,11 +66,18 @@ function getStageCfg(stage: string) {
   return STAGE_CONFIG.find(s => s.key === stage) ?? STAGE_CONFIG[0]
 }
 
-const fmt = (amount: number, currency = 'INR') =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
+const fmt = (amount: number, currency = 'INR') => {
+  const validCurrency = currency === 'SYSTEM' || !currency ? 'INR' : currency;
+  try {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: validCurrency, maximumFractionDigits: 0 }).format(amount)
+  } catch(e) {
+    return `${validCurrency} ${amount}`;
+  }
+}
 
 export function DealsPageClient({ businessId }: DealsPageClientProps) {
   const navigate = useNavigate()
+  const { business } = useBusinessData()
   const [deals, setDeals] = React.useState<Deal[]>([])
   const [loading, setLoading] = React.useState(true)
   const [viewMode, setViewMode] = React.useState<'board' | 'table'>('board')
@@ -78,7 +87,16 @@ export function DealsPageClient({ businessId }: DealsPageClientProps) {
     try {
       setLoading(true)
       const response = await dealsAPI.getDeals(businessId)
-      if (response.success) setDeals(response.deals || [])
+      if (response.success) {
+        const sanitizedDeals = (response.deals || []).map((d: Deal) => {
+          const isValidStage = STAGE_CONFIG.some(s => s.key === d.stage)
+          return {
+            ...d,
+            stage: isValidStage ? d.stage : 'New'
+          }
+        })
+        setDeals(sanitizedDeals)
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to fetch deals')
     } finally {
@@ -323,6 +341,11 @@ export function DealsPageClient({ businessId }: DealsPageClientProps) {
                                   <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/dashboard/${businessId}/deals/${deal.id}/edit`)}>
                                     <Edit className="mr-2 h-4 w-4 text-indigo-500" /> Edit Deal
                                   </DropdownMenuItem>
+                                  {business?.businessType === 'Trading' && (
+                                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/dashboard/${businessId}/quotations/add?customerId=${deal.customerId || deal.customer?.id || ''}&dealId=${deal.id}`)}>
+                                      <FileText className="mr-2 h-4 w-4 text-emerald-600" /> Convert to Quotation
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuSeparator className="bg-muted dark:bg-muted" />
                                   <DropdownMenuItem disabled className="text-[10px] uppercase font-bold text-slate-400 dark:text-muted-foreground tracking-wider pt-2">
                                     Move to Stage
@@ -496,6 +519,11 @@ export function DealsPageClient({ businessId }: DealsPageClientProps) {
                                 <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/dashboard/${businessId}/deals/${deal.id}/edit`)}>
                                   <Edit className="mr-2 h-4 w-4 text-indigo-500" /> Edit
                                 </DropdownMenuItem>
+                                {business?.businessType === 'Trading' && (
+                                  <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/dashboard/${businessId}/quotations/add?customerId=${deal.customerId || deal.customer?.id || ''}&dealId=${deal.id}`)}>
+                                    <FileText className="mr-2 h-4 w-4 text-emerald-600" /> Convert to Quotation
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator className="bg-muted dark:bg-muted" />
                                 <DropdownMenuItem className="cursor-pointer focus:bg-emerald-50 focus:text-emerald-700" onClick={() => handleStageUpdate(deal.id, 'Won')}>
                                   <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" /> Mark as Won

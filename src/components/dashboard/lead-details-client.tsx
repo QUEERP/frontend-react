@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import {  useParams, useNavigate  } from 'react-router-dom';
+import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { leadsAPI, Lead, LeadActivity } from '@/lib/api/leads'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -72,6 +73,8 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
   const navigate = useNavigate()
   const { id } = useParams();
   const leadId = id as string
+  const { business } = useBusinessData()
+  const isTrading = (business as any)?.businessType === 'Trading'
 
   const [lead, setLead] = useState<Lead | null>(null)
   const [loading, setLoading] = useState(true)
@@ -238,7 +241,7 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
               onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert`)}
               className="h-9 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm rounded-lg border-none"
             >
-              <Sparkles className="h-4 w-4" /> Convert to Customer
+              <Sparkles className="h-4 w-4" /> {isTrading ? 'Convert to Deal' : 'Convert to Customer'}
             </Button>
           )}
           {isConverted && (
@@ -304,7 +307,7 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
             </div>
 
             <p className="text-xs font-medium text-muted-foreground mt-2 text-center sm:text-left">
-              Click any stage to move this lead, or use <strong className="text-emerald-600 font-semibold">Convert to Customer</strong> to complete the workflow.
+              Click any stage to move this lead, or use <strong className="text-emerald-600 font-semibold">{isTrading ? 'Convert to Deal' : 'Convert to Customer'}</strong> to complete the workflow.
             </p>
           </CardContent>
         </Card>
@@ -620,7 +623,7 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
                   className="w-full h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm border-none font-semibold rounded-lg"
                   onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert`)}
                 >
-                  <Sparkles className="h-4 w-4" /> Convert to Customer
+                  <Sparkles className="h-4 w-4" /> {isTrading ? 'Convert to Deal' : 'Convert to Customer'}
                 </Button>
               )}
               <Button

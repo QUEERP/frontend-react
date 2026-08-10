@@ -6,10 +6,21 @@ import { Toaster } from "@/components/ui/toaster"
 import { BusinessDataProvider } from "@/components/dashboard/business-data-provider"
 import { DashboardLoadingGate } from "@/components/dashboard/dashboard-loading-gate"
 import { DashboardGlobalHeader } from "@/components/dashboard/global-header"
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { getCookie } from "@/lib/utils";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { businessId } = useParams()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  React.useEffect(() => {
+    const token = getCookie('token') || getCookie('accessToken')
+    if (!token) {
+      navigate('/signin')
+    }
+  }, [location.pathname, navigate])
+
   return (
     <DashboardThemeProvider>
       <SidebarProvider>

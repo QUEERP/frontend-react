@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import {  useNavigate  } from 'react-router-dom';
+import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { leadsAPI, Lead } from '@/lib/api/leads'
+import { getCurrencySymbol } from '@/lib/currencies'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -65,6 +67,7 @@ function getStageConfig(status: string) {
 
 export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
   const navigate = useNavigate()
+  const { business } = useBusinessData()
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'board' | 'table'>('board')
@@ -308,9 +311,11 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
                                   <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/leads/${lead.id}/edit`)} className="cursor-pointer text-foreground focus:text-blue-700 focus:bg-blue-50 py-2">
                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/leads/${lead.id}/convert`)} className="cursor-pointer text-emerald-700 focus:text-emerald-800 focus:bg-emerald-50 py-2">
-                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Convert to Customer
-                                  </DropdownMenuItem>
+                                  {lead.status !== 'CONVERTED' && (
+                                    <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/leads/${lead.id}/convert`)} className="cursor-pointer text-emerald-700 focus:text-emerald-800 focus:bg-emerald-50 py-2">
+                                      <CheckCircle2 className="mr-2 h-4 w-4" /> {(business as any)?.businessType === 'Trading' ? 'Convert to Deal' : 'Convert to Customer'}
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuItem onClick={() => handleDelete(lead.id)} className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 py-2">
                                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                                   </DropdownMenuItem>
@@ -340,7 +345,7 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
                               </div>
                               {(lead as any).leadValue > 0 && (
                                 <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-semibold shadow-none px-2 py-0.5">
-                                  ₹{Number((lead as any).leadValue).toLocaleString()}
+                                  {getCurrencySymbol(lead.currency)}{Number((lead as any).leadValue).toLocaleString()}
                                 </Badge>
                               )}
                             </div>
@@ -427,7 +432,7 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
                           </TableCell>
                           <TableCell className="font-medium text-emerald-700 py-3">
                             {(lead as any).leadValue > 0
-                              ? `₹${Number((lead as any).leadValue).toLocaleString()}`
+                              ? `${getCurrencySymbol(lead.currency)}${Number((lead as any).leadValue).toLocaleString()}`
                               : '—'
                             }
                           </TableCell>
@@ -448,9 +453,11 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
                                 <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/leads/${lead.id}/edit`)} className="cursor-pointer text-foreground focus:text-blue-700 focus:bg-blue-50 py-2">
                                   <Edit className="mr-2 h-4 w-4" /> Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/leads/${lead.id}/convert`)} className="cursor-pointer text-emerald-700 focus:text-emerald-800 focus:bg-emerald-50 py-2">
-                                  <CheckCircle2 className="mr-2 h-4 w-4" /> Convert to Customer
-                                </DropdownMenuItem>
+                                {lead.status !== 'CONVERTED' && (
+                                  <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/leads/${lead.id}/convert`)} className="cursor-pointer text-emerald-700 focus:text-emerald-800 focus:bg-emerald-50 py-2">
+                                    <CheckCircle2 className="mr-2 h-4 w-4" /> {(business as any)?.businessType === 'Trading' ? 'Convert to Deal' : 'Convert to Customer'}
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={() => handleDelete(lead.id)} className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 py-2">
                                   <Trash2 className="mr-2 h-4 w-4" /> Delete
                                 </DropdownMenuItem>

@@ -14,6 +14,8 @@ import { toast } from 'sonner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
+import { useBusinessData } from '@/components/dashboard/business-data-provider'
+import { CURRENCIES, getCurrencyByCountry } from '@/lib/currencies'
 
 interface DealFormProps {
   businessId: string
@@ -56,6 +58,7 @@ export function DealForm({
     ...DEFAULT_FORM_DATA,
     ...initialData,
   })
+  const { business } = useBusinessData()
   const [customers, setCustomers] = React.useState<Customer[]>([])
   const [contacts, setContacts] = React.useState<Contact[]>([])
   const [loadingContacts, setLoadingContacts] = React.useState(false)
@@ -163,6 +166,7 @@ export function DealForm({
             : undefined,
         source: formData.source?.trim() || undefined,
         description: formData.description?.trim() || undefined,
+        currency: formData.currency?.trim() || undefined,
       })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to save deal')
@@ -218,6 +222,26 @@ export function DealForm({
                   />
                 </div>
               </div>
+              {business?.businessType === 'Trading' && (
+                <div className="space-y-2">
+                  <Label htmlFor="currency" className="text-sm font-semibold text-foreground">Currency</Label>
+                  <Select
+                    value={formData.currency || ''}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                  >
+                    <SelectTrigger id="currency" className="w-full rounded-xl border-border bg-muted/50 h-11 focus:ring-blue-500 shadow-sm">
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-border shadow-lg max-h-[300px]">
+                      {CURRENCIES.map(curr => (
+                        <SelectItem key={curr.code} value={curr.code} className="cursor-pointer focus:bg-muted font-medium">
+                          {curr.flag} {curr.code} - {curr.name} ({curr.symbol})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
 
@@ -228,9 +252,17 @@ export function DealForm({
                 <Label htmlFor="customerId" className="text-sm font-semibold text-foreground">Customer *</Label>
                 <Select
                   value={formData.customerId}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, customerId: value, contactId: '' }))
-                  }
+                  onValueChange={(value) => {
+                    setFormData((prev) => {
+                      const updates: any = { customerId: value, contactId: '' };
+                      const selectedCustomer = customers.find(c => c.id === value);
+                      if (selectedCustomer?.country) {
+                        const newCurrency = getCurrencyByCountry(selectedCustomer.country);
+                        if (newCurrency) updates.currency = newCurrency;
+                      }
+                      return { ...prev, ...updates };
+                    });
+                  }}
                   disabled={loadingLookups}
                 >
                   <SelectTrigger id="customerId" className="w-full rounded-xl border-border bg-muted/50 h-11 focus:ring-blue-500 shadow-sm">
