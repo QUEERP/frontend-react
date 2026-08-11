@@ -119,6 +119,14 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
   const { toast } = useToast()
   const { business, loading: businessLoading, currencySymbol } = useBusinessData()
 
+  const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+
+  const getCookie = (name: string) => {
+    if (typeof document === 'undefined') return ''
+    const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\]\^])/g, '\\$1') + '=([^;]*)'))
+    return match ? decodeURIComponent(match[1]) : ''
+  }
+
   const [creditNotes, setCreditNotes] = useState<CreditNoteItem[]>([])
   const [loadingCreditNotes, setLoadingCreditNotes] = useState(false)
   const [downloadingCreditNoteId, setDownloadingCreditNoteId] = useState<string | null>(null)
@@ -193,13 +201,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
   const [directCustomer, setDirectCustomer] = useState<any>(null)
   const [customerLoading, setCustomerLoading] = useState(false)
 
-  const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
 
-  const getCookie = (name: string) => {
-    if (typeof document === 'undefined') return ''
-    const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\]\^])/g, '\\$1') + '=([^;]*)'))
-    return match ? decodeURIComponent(match[1]) : ''
-  }
 
   // Load customer direct if missing in provider
   useEffect(() => {
