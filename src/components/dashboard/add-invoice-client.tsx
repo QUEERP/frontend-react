@@ -559,8 +559,9 @@ export function AddInvoiceClient({
                    setFormData(prev => ({ ...prev, currency: quote.currency }))
                  }
                }
-               if ((!fetchedItems || fetchedItems.length === 0) && proj.items?.length > 0) {
-                 fetchedItems = proj.items
+               let projectItems = proj.items || proj.projectItems;
+               if ((!fetchedItems || fetchedItems.length === 0) && projectItems?.length > 0) {
+                 fetchedItems = projectItems;
                }
 
                if (fetchedItems.length > 0) {
