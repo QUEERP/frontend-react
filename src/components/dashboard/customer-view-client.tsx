@@ -159,7 +159,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
         const token = getCookie('token') || getCookie('accessToken')
         if (!token) return
 
-        const response = await fetch(`${API_BASE}/api/invoice?customerId=${customerId}`, {
+        const response = await fetch(`${API_BASE}/api/invoices?customerId=${customerId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'x-business-id': businessId
@@ -392,34 +392,40 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
       setLoadingPaymentsSummary(true)
       try {
         const docs = [...customerInvoices, ...quotations]
-        const settled = await Promise.allSettled(
-          docs.map(async (doc: any) => {
-            const isQuote = !!doc.quoteNumber || !!doc.projectCode
-            const endpoint = isQuote ? `/api/payments/quotation/${encodeURIComponent(String(doc.id))}` : `/api/payments/invoice/${encodeURIComponent(String(doc.id))}`
-            const res = await fetch(
-              `${API_BASE}${endpoint}`,
-              {
-                method: 'GET',
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  'x-business-id': businessId,
+        let paidTotal = 0
+        const chunkSize = 5
+
+        for (let i = 0; i < docs.length; i += chunkSize) {
+          const chunk = docs.slice(i, i + chunkSize)
+          const settled = await Promise.allSettled(
+            chunk.map(async (doc: any) => {
+              const isQuote = !!doc.quoteNumber || !!doc.projectCode
+              const endpoint = isQuote ? `/api/payments/quotation/${encodeURIComponent(String(doc.id))}` : `/api/payments/invoice/${encodeURIComponent(String(doc.id))}`
+              const res = await fetch(
+                `${API_BASE}${endpoint}`,
+                {
+                  method: 'GET',
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    'x-business-id': businessId,
+                  },
                 },
-              },
-            )
+              )
 
-            if (!res.ok) return 0
-            const payload = await res.json()
-            const list = Array.isArray(payload?.data) ? payload.data : []
-            return list.reduce((sum: number, payment: any) => sum + Number(payment?.amount || 0), 0)
-          }),
-        )
+              if (!res.ok) return 0
+              const payload = await res.json()
+              const list = Array.isArray(payload?.data) ? payload.data : []
+              return list.reduce((sum: number, payment: any) => sum + Number(payment?.amount || 0), 0)
+            }),
+          )
 
-        const paidTotal = settled.reduce((sum, item) => {
-          if (item.status === 'fulfilled') {
-            return sum + Number(item.value || 0)
-          }
-          return sum
-        }, 0)
+          paidTotal += settled.reduce((sum, item) => {
+            if (item.status === 'fulfilled') {
+              return sum + Number(item.value || 0)
+            }
+            return sum
+          }, 0)
+        }
 
         setTotalPayments(paidTotal)
       } catch {
