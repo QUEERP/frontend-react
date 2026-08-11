@@ -117,14 +117,7 @@ interface PaymentItem {
 export function CustomerViewClient({ businessId, customerId }: { businessId: string; customerId: string }) {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { business, loading: businessLoading, currencySymbol, refresh } = useBusinessData()
-
-  useEffect(() => {
-    if (refresh) {
-      refresh()
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const { business, loading: businessLoading, currencySymbol } = useBusinessData()
 
   const [creditNotes, setCreditNotes] = useState<CreditNoteItem[]>([])
   const [loadingCreditNotes, setLoadingCreditNotes] = useState(false)
@@ -146,10 +139,39 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
   
   const isBasic = business?.businessType?.toLowerCase() === 'basic'
 
-  const customerInvoices = useMemo(() => {
-    const invoices = Array.isArray((business as any)?.invoices) ? (business as any).invoices : []
-    return invoices.filter((inv: any) => String(inv.customerId) === String(customerId))
-  }, [business, customerId])
+  const [customerInvoices, setCustomerInvoices] = useState<any[]>([])
+  const [invoicesLoading, setInvoicesLoading] = useState(false)
+
+  // Fetch Invoices directly to ensure we have the latest ones (bypassing business cache)
+  useEffect(() => {
+    if (!businessId || !customerId) return
+    const fetchCustomerInvoices = async () => {
+      setInvoicesLoading(true)
+      try {
+        const token = getCookie('token') || getCookie('accessToken')
+        if (!token) return
+
+        const response = await fetch(`${API_BASE}/api/invoice?customerId=${customerId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'x-business-id': businessId
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && Array.isArray(data.data)) {
+            setCustomerInvoices(data.data)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch customer invoices:', error)
+      } finally {
+        setInvoicesLoading(false)
+      }
+    }
+    fetchCustomerInvoices()
+  }, [businessId, customerId, API_BASE])
 
   const pendingDocs = useMemo(() => {
     if (isBasic) {
