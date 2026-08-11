@@ -170,8 +170,7 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
             <div className="flex w-max items-center justify-between gap-4 pr-4">
               {[
                 { icon: Zap, label: 'Lead Capture', sub: 'Identify prospects', color: 'text-blue-600', bg: 'bg-blue-100', border: 'ring-blue-200' },
-                { icon: Target, label: 'Qualification', sub: 'Score & rank leads', color: 'text-indigo-600', bg: 'bg-indigo-100', border: 'ring-indigo-200' },
-                { icon: TrendingUp, label: 'Opportunity', sub: 'Create deal & quote', color: 'text-sky-600', bg: 'bg-sky-100', border: 'ring-sky-200' },
+                { icon: TrendingUp, label: 'Deals', sub: 'Create deal & quote', color: 'text-sky-600', bg: 'bg-sky-100', border: 'ring-sky-200' },
                 { icon: Users, label: 'Customer', sub: 'Win & onboard client', color: 'text-emerald-600', bg: 'bg-emerald-100', border: 'ring-emerald-200' },
               ].map((step, i, arr) => (
                 <React.Fragment key={step.label}>
@@ -345,7 +344,7 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
                               </div>
                               {(lead as any).leadValue > 0 && (
                                 <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-semibold shadow-none px-2 py-0.5">
-                                  {getCurrencySymbol(lead.currency)}{Number((lead as any).leadValue).toLocaleString()}
+                                  {getCurrencySymbol((lead as any).currency)}{Number((lead as any).leadValue).toLocaleString()}
                                 </Badge>
                               )}
                             </div>
@@ -432,7 +431,7 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
                           </TableCell>
                           <TableCell className="font-medium text-emerald-700 py-3">
                             {(lead as any).leadValue > 0
-                              ? `${getCurrencySymbol(lead.currency)}${Number((lead as any).leadValue).toLocaleString()}`
+                              ? `${getCurrencySymbol((lead as any).currency)}${Number((lead as any).leadValue).toLocaleString()}`
                               : '—'
                             }
                           </TableCell>

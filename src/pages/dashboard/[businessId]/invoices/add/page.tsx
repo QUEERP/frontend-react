@@ -11,5 +11,5 @@ export default function AddInvoicePage() {
 const salesOrderId = searchParams.get('salesOrderId');
 const projectId = searchParams.get('projectId');
 
-  return <AddInvoiceClient businessId={businessId as string} invoiceId={id as string} salesOrderId={salesOrderId || undefined} projectId={projectId || undefined} />
+  return <AddInvoiceClient businessId={businessId as string} salesOrderId={salesOrderId || undefined} projectId={projectId || undefined} />
 }

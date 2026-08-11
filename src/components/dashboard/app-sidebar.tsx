@@ -567,7 +567,7 @@ export function AppSidebar() {
       let label = key === 'leave' ? 'Leaves' : key.charAt(0).toUpperCase() + key.slice(1)
 
       // Apply renames
-      if (key === 'deal') label = 'Opportunities'
+      if (key === 'deal') label = 'Deals'
       if (key === 'sales_returns') label = 'Returns'
       if (key === 'purchase_returns') label = 'Returns'
       if (key === 'grn') label = 'Receipts'
@@ -979,7 +979,7 @@ export function AppSidebar() {
                             <CollapsibleContent>
                               <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
                                 {[{ href: `${baseDashboardPath}/leads`, label: 'Leads', icon: UserIcon, path: '/leads' },
-                                { href: `${baseDashboardPath}/deals`, label: 'Opportunities', icon: TrendingUpIcon, path: '/deals' },
+                                { href: `${baseDashboardPath}/deals`, label: 'Deals', icon: TrendingUpIcon, path: '/deals' },
                                 { href: `${baseDashboardPath}/customers`, label: 'Customers', icon: UsersIcon, path: '/customers' },
                                 { href: `${baseDashboardPath}/contacts`, label: 'Contacts', icon: UserCheckIcon, path: '/contacts' },
                               ].filter(item => isMenuVisible(bType, 'Sales', 'CRM & Customers', item.label)).map(({ href, label, icon: Icon, path }) => (

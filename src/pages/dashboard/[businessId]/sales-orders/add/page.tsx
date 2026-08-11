@@ -73,7 +73,13 @@ export default function AddSalesOrderPage() {
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => navigate(`/dashboard/${businessId}/sales-orders`)}
+          onClick={() => {
+            if (quotationId) {
+              navigate(`/dashboard/${businessId}/quotations/${quotationId}`)
+            } else {
+              navigate(`/dashboard/${businessId}/sales-orders`)
+            }
+          }}
           className="h-10 w-10 rounded-xl hover:bg-slate-100 text-slate-600 shrink-0 cursor-pointer"
         >
           <ArrowLeft className="h-5 w-5" />

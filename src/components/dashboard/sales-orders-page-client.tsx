@@ -94,6 +94,18 @@ export function SalesOrdersPageClient({ businessId }: SalesOrdersPageClientProps
     }
   }
 
+  const handleChangeStatus = async (orderId: string, status: string) => {
+    try {
+      const response = await salesOrdersAPI.changeStatus(businessId, orderId, status)
+      if (response.success) {
+        toast.success(`Sales order marked as ${status}`)
+        fetchOrders()
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update status')
+    }
+  }
+
   const formatCurrency = (value: number, currencyCode: string = 'INR') => {
     try {
       return new Intl.NumberFormat(currencyCode === 'INR' ? 'en-IN' : 'en-US', { 
@@ -351,8 +363,45 @@ export function SalesOrdersPageClient({ businessId }: SalesOrdersPageClientProps
                           {order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                         </TableCell>
                         <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                          <div className="flex items-center justify-end gap-2">
+                            {['DRAFT', 'Draft'].includes(order.status) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => { e.stopPropagation(); handleChangeStatus(order.id, 'CONFIRMED') }}
+                                className="h-8 border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                              >
+                                <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                                Confirm Order
+                              </Button>
+                            )}
+                            {['CONFIRMED', 'Confirmed'].includes(order.status) && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => { e.stopPropagation(); handleChangeStatus(order.id, 'COMPLETED') }}
+                                  className="h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                                >
+                                  <PackageCheck className="mr-1 h-3.5 w-3.5" />
+                                  Complete Order
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    navigate(`/dashboard/${businessId}/invoices/add?salesOrderId=${order.id}`)
+                                  }}
+                                  className="h-8 border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
+                                >
+                                  <ReceiptText className="mr-1 h-3.5 w-3.5" />
+                                  Convert to Invoice
+                                </Button>
+                              </>
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
                               <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-muted" onClick={(e) => e.stopPropagation()}>
                                 <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                               </Button>
@@ -372,6 +421,7 @@ export function SalesOrdersPageClient({ businessId }: SalesOrdersPageClientProps
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )

@@ -66,8 +66,11 @@ function getStageCfg(stage: string) {
   return STAGE_CONFIG.find(s => s.key === stage) ?? STAGE_CONFIG[0]
 }
 
-const fmt = (amount: number, currency = 'INR') => {
-  const validCurrency = currency === 'SYSTEM' || !currency ? 'INR' : currency;
+const fmt = (amount: number, currency?: string) => {
+  if (!currency) {
+    return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(amount);
+  }
+  const validCurrency = currency === 'SYSTEM' ? 'INR' : currency;
   try {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: validCurrency, maximumFractionDigits: 0 }).format(amount)
   } catch(e) {
@@ -186,7 +189,7 @@ export function DealsPageClient({ businessId }: DealsPageClientProps) {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground dark:text-slate-100">Opportunities</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground dark:text-slate-100">Deals</h1>
           <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1">Track deal value, stage movement, and pipeline health</p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -223,7 +226,7 @@ export function DealsPageClient({ businessId }: DealsPageClientProps) {
             </React.Fragment>
           ))}
           <div className="ml-auto hidden lg:block text-[11px] font-bold text-slate-400 dark:text-muted-foreground uppercase tracking-wider">
-            Managing Opportunities
+            Managing Deals
           </div>
         </div>
       </div>
@@ -342,7 +345,7 @@ export function DealsPageClient({ businessId }: DealsPageClientProps) {
                                     <Edit className="mr-2 h-4 w-4 text-indigo-500" /> Edit Deal
                                   </DropdownMenuItem>
                                   {business?.businessType === 'Trading' && (
-                                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/dashboard/${businessId}/quotations/add?customerId=${deal.customerId || deal.customer?.id || ''}&dealId=${deal.id}`)}>
+                                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/dashboard/${businessId}/quotations/add?customerId=${deal.customerId || deal.customer?.id || ''}&dealId=${deal.id}&dealTitle=${encodeURIComponent(deal.name)}&source=deals`)}>
                                       <FileText className="mr-2 h-4 w-4 text-emerald-600" /> Convert to Quotation
                                     </DropdownMenuItem>
                                   )}
@@ -520,7 +523,7 @@ export function DealsPageClient({ businessId }: DealsPageClientProps) {
                                   <Edit className="mr-2 h-4 w-4 text-indigo-500" /> Edit
                                 </DropdownMenuItem>
                                 {business?.businessType === 'Trading' && (
-                                  <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/dashboard/${businessId}/quotations/add?customerId=${deal.customerId || deal.customer?.id || ''}&dealId=${deal.id}`)}>
+                                  <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/dashboard/${businessId}/quotations/add?customerId=${deal.customerId || deal.customer?.id || ''}&dealId=${deal.id}&dealTitle=${encodeURIComponent(deal.name)}&source=deals`)}>
                                     <FileText className="mr-2 h-4 w-4 text-emerald-600" /> Convert to Quotation
                                   </DropdownMenuItem>
                                 )}

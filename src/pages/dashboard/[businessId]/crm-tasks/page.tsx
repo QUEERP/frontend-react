@@ -201,7 +201,7 @@ export default function CrmTasksPage() {
           </div>
           <div className="flex flex-col leading-tight">
             <span className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">CRM Pipeline Tasks</span>
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Orchestrate operational tasks for Leads and Sales Opportunities.</span>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Orchestrate operational tasks for Leads and Sales Deals.</span>
           </div>
         </div>
         <Button onClick={() => setShowAddForm(!showAddForm)} className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm cursor-pointer transition-colors shrink-0">
