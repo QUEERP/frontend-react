@@ -117,7 +117,14 @@ interface PaymentItem {
 export function CustomerViewClient({ businessId, customerId }: { businessId: string; customerId: string }) {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { business, loading: businessLoading, currencySymbol } = useBusinessData()
+  const { business, loading: businessLoading, currencySymbol, refresh } = useBusinessData()
+
+  useEffect(() => {
+    if (refresh) {
+      refresh()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const [creditNotes, setCreditNotes] = useState<CreditNoteItem[]>([])
   const [loadingCreditNotes, setLoadingCreditNotes] = useState(false)
