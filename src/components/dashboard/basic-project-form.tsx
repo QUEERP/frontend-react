@@ -8,6 +8,15 @@ import { useBusinessData } from "@/components/dashboard/business-data-provider";
 import { useBusinessCustomers } from "@/hooks/use-business-data";
 import { quotationsAPI } from "@/lib/api/quotations";
 import { projectOperationsAPI } from "@/lib/api/project-operations";
+import { CreateCustomerModal } from '@/components/dashboard/create-customer-modal';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { UserPlus } from 'lucide-react';
 
 export function BasicProjectForm({ businessId }: { businessId: string }) {
   const navigate = useNavigate();
@@ -16,9 +25,10 @@ export function BasicProjectForm({ businessId }: { businessId: string }) {
   const queryCustomerId = searchParams.get('customerId') || '';
   const { toast } = useToast();
   const { business } = useBusinessData();
-  const { customers } = useBusinessCustomers(businessId);
+  const { customers, retry: refreshCustomers } = useBusinessCustomers(businessId);
   const [quotations, setQuotations] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
 
   const [formData, setFormData] = useState({
     projNumber: 'PRJ-001',
@@ -274,16 +284,32 @@ export function BasicProjectForm({ businessId }: { businessId: string }) {
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                   Customer <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={formData.customerId}
-                  onChange={(e) => handleChange('customerId', e.target.value)}
-                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                <Select
+                  value={formData.customerId || '__none__'}
+                  onValueChange={(val) => handleChange('customerId', val === '__none__' ? '' : val)}
                 >
-                  <option value="" disabled>Select Customer...</option>
-                  {customers?.map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.company || c.name}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full h-11 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition-all outline-none">
+                    <SelectValue placeholder="Select Customer..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-80">
+                    <SelectItem value="__none__" disabled>Select Customer...</SelectItem>
+                    {customers?.map((customer: any) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name || customer.company || 'Unknown Customer'}
+                      </SelectItem>
+                    ))}
+                    <div className="border-t border-border mt-1 pt-1">
+                      <button
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); setShowCreateCustomer(true) }}
+                        className="flex w-full items-center gap-2 px-2 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded cursor-pointer transition-colors"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        + Create Customer
+                      </button>
+                    </div>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -458,6 +484,19 @@ export function BasicProjectForm({ businessId }: { businessId: string }) {
 
         </div>
       </div>
+
+      <CreateCustomerModal
+        open={showCreateCustomer}
+        onClose={() => setShowCreateCustomer(false)}
+        businessId={businessId}
+        onCreated={(newCust) => {
+          setFormData(prev => ({
+            ...prev,
+            customerId: newCust.id
+          }));
+          if (refreshCustomers) refreshCustomers();
+        }}
+      />
     </div>
   );
 }
