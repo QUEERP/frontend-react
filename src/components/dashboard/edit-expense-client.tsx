@@ -299,6 +299,39 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
         if (res.success && inv?.items) {
            fetchedItems = inv.items;
         }
+      } else if (type === 'Project') {
+        const token = getCookie('token') || getCookie('accessToken');
+        const res = await fetch(`${API_BASE}/api/projects/${id}`, {
+           headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId }
+        });
+        const projData = await res.json();
+        const proj = projData.project || projData.data;
+        
+        if (projData.success && proj) {
+           setFormData(prev => ({ 
+             ...prev, 
+             title: prev.title || `Expense for Project: ${proj.projectCode || proj.id}` 
+           }));
+           
+           if (proj.quotationId) {
+             try {
+               const quotRes = await fetch(`${API_BASE}/api/quotation/${proj.quotationId}`, { 
+                 headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId } 
+               });
+               const quotData = await quotRes.json();
+               const quote = quotData.quotation || quotData.data;
+               if (quote?.items) {
+                 fetchedItems = quote.items;
+               }
+             } catch (err) {
+               console.error('Failed to fetch project quotation', err);
+             }
+           }
+           
+           if ((!fetchedItems || fetchedItems.length === 0) && proj.items?.length > 0) {
+             fetchedItems = proj.items;
+           }
+        }
       }
 
       if (fetchedItems.length > 0) {
@@ -577,16 +610,16 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
                 </div>
                 
                 <div className="space-y-2">
-                  <Label className="text-foreground font-semibold">Quotation / Invoice (Optional)</Label>
+                  <Label className="text-foreground font-semibold">Reference (Optional)</Label>
                   <Select
-                    disabled={!formData.customerId || submitting}
+                    disabled={(!formData.customerId && formData.referenceType !== 'Project') || submitting}
                     value={formData.referenceId ? `${formData.referenceType}|${formData.referenceId}` : '__none__'}
                     onValueChange={handleReferenceChange}
                   >
                     <SelectTrigger className="h-11 rounded-xl transition-all focus:ring-2 focus:ring-blue-500/20">
                       <div className="flex items-center gap-2">
                         <FileTextIcon className="size-4 text-muted-foreground" />
-                        <SelectValue placeholder={formData.customerId ? "Select Quotation/Invoice" : "Select Customer First"} />
+                        <SelectValue placeholder={formData.customerId || formData.referenceType === 'Project' ? "Select Reference" : "Select Customer First"} />
                       </div>
                     </SelectTrigger>
                     <SelectContent className="rounded-xl max-h-60">
@@ -608,6 +641,21 @@ export function EditExpenseClient({ businessId, expenseId }: { businessId: strin
                           <SelectItem key={`Invoice|${i.id}`} value={`Invoice|${i.id}`}>{i.invoiceNumber}</SelectItem>
                         ))}
                       </SelectGroup>
+                      
+                      <SelectGroup>
+                        <SelectLabel>Projects</SelectLabel>
+                        {projects.filter(p => !formData.customerId || p.customerId === formData.customerId).map(p => (
+                          <SelectItem key={`Project|${p.id}`} value={`Project|${p.id}`}>{p.projectName || p.projectCode}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                      {formData.referenceType === 'Project' && formData.referenceId && !projects.find(p => p.id === formData.referenceId) && (
+                        <SelectGroup>
+                          <SelectLabel>Project</SelectLabel>
+                          <SelectItem key={`Project|${formData.referenceId}`} value={`Project|${formData.referenceId}`}>
+                            Selected Project
+                          </SelectItem>
+                        </SelectGroup>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
