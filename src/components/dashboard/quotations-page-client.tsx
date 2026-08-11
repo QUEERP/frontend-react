@@ -445,10 +445,12 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
                   {filteredQuotations.map((quotation) => (
                     <TableRow 
                       key={quotation.id} 
-                      className={`border-border transition-colors ${business?.businessType?.toLowerCase() === 'basic' ? 'cursor-pointer hover:bg-muted/80' : 'hover:bg-muted/50'}`}
+                      className="cursor-pointer border-border transition-colors hover:bg-muted/80"
                       onClick={() => {
                         if (business?.businessType?.toLowerCase() === 'basic') {
                           navigate(`/dashboard/${businessId}/quotations/${quotation.id}/edit`)
+                        } else {
+                          navigate(`/dashboard/${businessId}/quotations/${quotation.id}`)
                         }
                       }}
                     >
@@ -497,18 +499,22 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
                                     </>
                                   )}
 
-                                    {isBasic && (quotation.status === 'APPROVED' || quotation.status === 'Approved') && (
+                                    {(quotation.status === 'APPROVED' || quotation.status === 'Approved') && (
                                       <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
-                                          navigate(`/dashboard/${businessId}/project-operations/projects/create?quotationId=${quotation.id}&customerId=${quotation.customerId || ''}`) 
+                                          if (isBasic) {
+                                            navigate(`/dashboard/${businessId}/project-operations/projects/create?quotationId=${quotation.id}&customerId=${quotation.customerId || ''}`) 
+                                          } else {
+                                            navigate(`/dashboard/${businessId}/sales-orders/add?quotationId=${quotation.id}`)
+                                          }
                                         }}
                                         className="h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
                                       >
                                         <Plus className="mr-1 h-3.5 w-3.5" />
-                                        Convert to Project
+                                        {isBasic ? 'Convert to Project' : 'Convert to Sales Order'}
                                       </Button>
                                     )}
 

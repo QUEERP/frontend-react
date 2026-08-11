@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { QuotationForm } from '@/components/dashboard/quotation-form'
 import { CreateQuotationData, quotationsAPI } from '@/lib/api/quotations'
+import { dealsAPI } from '@/lib/api/deals'
 import React, { Suspense } from 'react'
 
 function AddQuotationContent() {
@@ -13,11 +14,22 @@ function AddQuotationContent() {
   
   const [searchParams] = useSearchParams()
   const customerId = searchParams.get('customerId') || ''
+  const dealId = searchParams.get('dealId') || ''
+  const dealTitle = searchParams.get('dealTitle') || ''
+  const source = searchParams.get('source') || ''
 
   const handleSubmit = async (data: any) => {
     const response = await quotationsAPI.createQuotation(businessId, data)
     if (response.success) {
       toast.success('Quotation created successfully')
+      if (dealId) {
+        try {
+          await dealsAPI.updateDeal(businessId, dealId, { stage: 'Won' })
+          toast.success('Deal marked as Won')
+        } catch (e) {
+          console.error('Failed to update deal stage:', e)
+        }
+      }
       navigate(`/dashboard/${businessId}/quotations`)
     }
   }
@@ -38,11 +50,17 @@ function AddQuotationContent() {
         </div>
         <Button
           variant="outline"
-          onClick={() => navigate(`/dashboard/${businessId}/quotations`)}
+          onClick={() => {
+            if (source === 'deals') {
+              navigate(`/dashboard/${businessId}/deals`)
+            } else {
+              navigate(`/dashboard/${businessId}/quotations`)
+            }
+          }}
           className="h-11 px-6 rounded-xl cursor-pointer border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm font-semibold"
         >
           <ArrowLeft className="mr-2 h-5 w-5" />
-          Back to Directory
+          {source === 'deals' ? 'Back to Deals' : 'Back to Directory'}
         </Button>
       </div>
 
@@ -54,7 +72,7 @@ function AddQuotationContent() {
             description="Fill out the information below to create a comprehensive quotation."
             submitLabel="Save and Create Quotation"
             mode="create"
-            initialData={{ customerId }}
+            initialData={{ customerId, title: dealTitle, dealId }}
             onSubmit={handleSubmit}
           />
         </div>

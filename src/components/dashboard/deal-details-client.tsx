@@ -1,6 +1,6 @@
 import * as React from 'react'
 import {  useNavigate  } from 'react-router-dom';
-import { dealsAPI, Deal } from '@/lib/api/deals'
+import { dealsAPI, Deal, DEAL_STAGES } from '@/lib/api/deals'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -87,7 +87,14 @@ export function DealDetailsClient({ businessId, dealId }: DealDetailsClientProps
     try {
       setLoading(true)
       const response = await dealsAPI.getDealById(businessId, dealId)
-      if (response.success) setDeal(response.deal)
+      if (response.success) {
+        const d = response.deal;
+        const isValidStage = DEAL_STAGES.includes(d.stage as any);
+        setDeal({
+          ...d,
+          stage: isValidStage ? d.stage : 'New'
+        });
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to fetch deal details')
     } finally {

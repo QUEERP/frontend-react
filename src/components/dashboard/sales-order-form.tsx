@@ -84,8 +84,8 @@ export function SalesOrderForm({
   const [items, setItems] = React.useState<any[]>(() => {
     const initialItems = Array.isArray(initialData?.items) ? initialData.items : []
     if (initialItems.length > 0) {
-      return initialItems.map(it => ({
-        id: Math.random().toString(36).substr(2, 9),
+      return initialItems.map((it: any) => ({
+        id: it.id || Math.random().toString(36).substr(2, 9),
         productId: it.productId || '',
         warehouseId: it.warehouseId || '',
         description: it.description || '',
@@ -618,16 +618,7 @@ export function SalesOrderForm({
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="customerReference">Customer Reference</Label>
-                  <Input
-                    id="customerReference"
-                    className="h-10"
-                    value={formData.customerReference}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, customerReference: e.target.value }))}
-                    placeholder="Ref #123"
-                  />
-                </div>
+
 
                 <div className="space-y-2">
                   <Label htmlFor="quotation" className="flex items-center gap-2">

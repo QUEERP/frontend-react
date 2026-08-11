@@ -1,3 +1,5 @@
+import { COUNTRY_TO_CURRENCY } from './country_to_currency';
+
 export interface Currency {
   code: string;
   name: string;
@@ -179,4 +181,27 @@ export const getCurrencyName = (code: string | undefined | null): string => {
   if (!code) return '';
   const c = CURRENCIES.find(curr => curr.code === code);
   return c ? c.name : '';
+};
+
+export const getCurrencyByCountry = (country: string | undefined | null): string | undefined => {
+  if (!country) return undefined;
+  
+  // First try direct map match
+  if (COUNTRY_TO_CURRENCY[country]) {
+    return COUNTRY_TO_CURRENCY[country];
+  }
+
+  // Fallback to lower case checking for backwards compatibility / alternate names
+  const c = country.toLowerCase();
+  if (c.includes('united arab emirates') || c === 'uae') return 'AED';
+  if (c.includes('saudi arabia') || c === 'ksa') return 'SAR';
+  if (c.includes('qatar')) return 'QAR';
+  if (c.includes('kuwait')) return 'KWD';
+  if (c.includes('oman')) return 'OMR';
+  if (c.includes('bahrain')) return 'BHD';
+  if (c.includes('india')) return 'INR';
+  if (c.includes('united states') || c === 'usa' || c === 'us') return 'USD';
+  if (c.includes('united kingdom') || c === 'uk') return 'GBP';
+  
+  return undefined;
 };

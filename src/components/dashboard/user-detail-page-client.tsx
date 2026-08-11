@@ -60,7 +60,7 @@ const PERMISSION_TREE = [
         name: 'CRM & Customers',
         modules: [
           { name: 'Leads', key: 'lead' },
-          { name: 'Opportunities', key: 'deal' },
+          { name: 'Deals', key: 'deal' },
           { name: 'Customers', key: 'customer' },
           { name: 'Contacts', key: 'contact' }
         ]

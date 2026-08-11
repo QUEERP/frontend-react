@@ -66,6 +66,7 @@ export interface CreateDealData {
   probability?: number
   source?: string
   description?: string
+  currency?: string
 }
 
 const normalizeDeal = (deal: Deal): Deal => {
