@@ -327,7 +327,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
       setLoadingCreditNotes(true)
       try {
         const res = await fetch(
-          `${API_BASE}/api/credit-notes`,
+          `${API_BASE}/api/credit-notes?customerId=${encodeURIComponent(customerId)}`,
           {
             method: 'GET',
             headers: {
@@ -576,7 +576,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
 
       setLoadingPaymentsList(true)
       try {
-        const res = await fetch(`${API_BASE}/api/payments?limit=1000`, {
+        const res = await fetch(`${API_BASE}/api/payments?limit=1000&customerId=${encodeURIComponent(customerId)}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'x-business-id': businessId,
