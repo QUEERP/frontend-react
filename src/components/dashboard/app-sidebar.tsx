@@ -1,4 +1,3 @@
-import { toast } from 'sonner';
 import * as React from 'react'
 import { Building2Icon, LayoutDashboardIcon, Plus, UsersIcon, UserIcon, SettingsIcon, FileTextIcon, UserCheckIcon, WalletIcon, CalendarDaysIcon, ChevronDownIcon, CreditCardIcon, ClockIcon, HandCoinsIcon, StoreIcon, ReceiptIcon, ActivityIcon, PackageIcon, Megaphone, CheckSquare, Mail, Phone, BarChart3, Undo2, RefreshCw, ShoppingCart, Truck, ClipboardList, PackageCheck, Tag, Layers, Ruler, AlertTriangle, ScanLine, ArrowLeftRight, History, SlidersHorizontal, QrCode, Archive, TrendingUpIcon, FileSignature, MessageSquare, StickyNote, MailSearch, PieChart, Calculator, Briefcase, Map as MapIcon, Flag, DollarSign, ShieldAlert, HeadphonesIcon } from 'lucide-react'
 import {  useLocation, useNavigate, useSearchParams  } from 'react-router-dom';
@@ -418,7 +417,7 @@ export function AppSidebar() {
     }
 
     fetchUserBusinesses()
-  }, [API_ROOT, currentBusinessId, getBusinessLogo, getCookie, toast])
+  }, [API_ROOT, currentBusinessId, getBusinessLogo, getCookie])
 
   React.useEffect(() => {
     // Modules are predefined. We don't fetch them.
@@ -787,7 +786,7 @@ export function AppSidebar() {
 
       navigate(`/dashboard/${encodeURIComponent(value)}`)
     },
-    [currentBusinessId, navigate, toast, userBusinesses],
+    [currentBusinessId, navigate, userBusinesses],
   )
 
   return (

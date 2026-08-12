@@ -232,7 +232,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
     }
 
     void fetchInvoices()
-  }, [API_BASE, businessId, currentPage, fromDate, loading, sanitizeUrl, searchTerm, statusFilter, toDate, toast])
+  }, [API_BASE, businessId, currentPage, fromDate, loading, sanitizeUrl, searchTerm, statusFilter, toDate])
 
   const handleBulkSync = async () => {
     try {

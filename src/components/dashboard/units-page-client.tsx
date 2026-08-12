@@ -29,7 +29,7 @@ export default function UnitsPageClient() {
     try { setIsLoading(true); const r = await unitsAPI.getAll(businessId); setUnits(r.units || []) }
     catch { toast({ title: 'Failed to load units', variant: 'destructive' }) }
     finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
   useEffect(() => { fetchData() }, [fetchData])
 
   const filtered = units.filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.abbreviation.toLowerCase().includes(search.toLowerCase()))

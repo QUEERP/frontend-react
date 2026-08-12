@@ -106,7 +106,7 @@ export function BusinessDataProvider({
       }
       setLoading(false)
     }
-  }, [API_BASE, businessId, toast])
+  }, [API_BASE, businessId])
 
   React.useEffect(() => {
     fetchBusinessInternal(false)

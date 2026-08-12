@@ -70,7 +70,7 @@ export default function VendorBillsPageClient() {
     } finally {
       setIsLoading(false)
     }
-  }, [businessId, toast])
+  }, [businessId])
 
   useEffect(() => { fetchData() }, [fetchData])
 

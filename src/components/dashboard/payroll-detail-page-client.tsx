@@ -119,7 +119,7 @@ export function PayrollDetailPageClient({ businessId, payrollId }: { businessId:
     } finally {
       setLoadingPayslips(false)
     }
-  }, [API_BASE, businessId, payrollId, toast])
+  }, [API_BASE, businessId, payrollId])
 
   useEffect(() => {
     setCurrentPage(1)

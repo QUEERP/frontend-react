@@ -183,7 +183,7 @@ export function InvoicePaymentPageClient({
     }
 
     void loadPaymentSummary()
-  }, [API_BASE, targetInvoiceId, targetBusinessId, invoiceAmount, invoice, invoiceDate, toast])
+  }, [API_BASE, targetInvoiceId, targetBusinessId, invoiceAmount, invoice, invoiceDate])
 
   const handleSavePayment = async () => {
     if (!targetInvoiceId) {

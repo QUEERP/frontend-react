@@ -50,7 +50,7 @@ export default function JournalEntryDetailsClient({ entryId }: { entryId: string
     }
 
     loadEntry()
-  }, [businessId, entryId, toast, token])
+  }, [businessId, entryId, token])
 
   if (isLoading) {
     return (

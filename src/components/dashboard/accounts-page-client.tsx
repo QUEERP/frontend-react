@@ -136,7 +136,7 @@ export default function AccountsPageClient() {
     } finally {
       setIsLoading(false)
     }
-  }, [businessId, toast, token])
+  }, [businessId, token])
 
   React.useEffect(() => {
     loadAccounts()

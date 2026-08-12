@@ -109,7 +109,7 @@ export function EmployeeEditClient({ businessId, employeeId }: { businessId: str
     }
 
     void loadEmployee()
-  }, [API_BASE, businessId, employeeId, toast])
+  }, [API_BASE, businessId, employeeId])
 
   const handleChange = (key: keyof EmployeeForm, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }))

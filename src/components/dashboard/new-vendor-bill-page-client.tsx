@@ -48,7 +48,7 @@ export default function NewVendorBillPageClient() {
       setVendors(res.vendors || [])
     } catch { toast({ title: 'Failed to load vendors', variant: 'destructive' }) }
     finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
   
   useEffect(() => { fetchVendors() }, [fetchVendors])
 

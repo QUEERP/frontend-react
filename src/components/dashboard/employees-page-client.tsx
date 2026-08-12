@@ -141,7 +141,7 @@ export function EmployeesPageClient({ businessId }: { businessId: string }) {
     } finally {
       setListLoading(false)
     }
-  }, [API_BASE, businessId, toast])
+  }, [API_BASE, businessId])
 
   useEffect(() => {
     if (!businessLoading) {

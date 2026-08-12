@@ -80,7 +80,7 @@ export default function NewGRNPageClient() {
       }
     }
     load()
-  }, [businessId, toast])
+  }, [businessId])
 
   const handlePOSelect = async (poId: string) => {
     setSelectedPOId(poId)

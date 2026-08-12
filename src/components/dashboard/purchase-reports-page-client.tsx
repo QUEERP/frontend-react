@@ -35,7 +35,7 @@ export default function PurchaseReportsPageClient() {
     } catch {
       toast({ title: 'Failed to load reports', variant: 'destructive' })
     } finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
   useEffect(() => { fetchData() }, [fetchData])
 
   const totalPOs = summary.reduce((s, r) => s + r.count, 0)

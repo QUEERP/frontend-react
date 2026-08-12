@@ -204,7 +204,7 @@ export function OvertimePageClient({ businessId }: { businessId: string }) {
     } finally {
       setPageLoading(false)
     }
-  }, [API_BASE, businessId, formData.employeeId, toast])
+  }, [API_BASE, businessId, formData.employeeId])
 
   useEffect(() => {
     if (!businessLoading) {

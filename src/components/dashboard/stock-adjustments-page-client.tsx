@@ -28,7 +28,7 @@ export default function StockAdjustmentsPageClient() {
     try { setIsLoading(true); const r = await stockAPI.getAdjustments(businessId); setAdjustments(r.adjustments || []) }
     catch { toast({ title: 'Failed to load adjustments', variant: 'destructive' }) }
     finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
   useEffect(() => { fetchData() }, [fetchData])
 
   const handleDelete = async (id: string) => {

@@ -162,7 +162,7 @@ export function VendorPageClient({ businessId }: { businessId: string }) {
     } finally {
       setPageLoading(false)
     }
-  }, [API_BASE, businessId, getCookie, toast, currentPage, searchTerm, filterType, filterStatus])
+  }, [API_BASE, businessId, getCookie, currentPage, searchTerm, filterType, filterStatus])
 
   useEffect(() => {
     if (!businessLoading) {

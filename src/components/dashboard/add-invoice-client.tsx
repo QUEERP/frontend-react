@@ -352,7 +352,7 @@ export function AddInvoiceClient({
     } finally {
       setFetchingSO(false)
     }
-  }, [businessId, toast])
+  }, [businessId])
 
   const handleSOSelect = React.useCallback((soId: string) => {
     if (soId === 'none') {
@@ -593,7 +593,7 @@ export function AddInvoiceClient({
     }
     load()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [businessId, invoiceId, toast, salesOrderId, projectId])
+  }, [businessId, invoiceId, salesOrderId, projectId])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

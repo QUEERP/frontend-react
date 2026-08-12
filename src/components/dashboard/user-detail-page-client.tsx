@@ -557,7 +557,7 @@ export function UserDetailPageClient({
     } finally {
       setIsLoading(false)
     }
-  }, [applyUserPermissions, fetchUserDetail, fetchUserPermissions, toast])
+  }, [applyUserPermissions, fetchUserDetail, fetchUserPermissions])
 
   useEffect(() => {
     const storedName = window.localStorage.getItem('businessName')

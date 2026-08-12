@@ -131,7 +131,7 @@ export function PayrollsPageClient({ businessId }: { businessId: string }) {
     } finally {
       setLoadingPayrolls(false)
     }
-  }, [API_BASE, businessId, toast])
+  }, [API_BASE, businessId])
 
   useEffect(() => {
     setCurrentPage(1)

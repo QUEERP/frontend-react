@@ -30,7 +30,7 @@ export default function BatchTrackingPageClient() {
     try { setIsLoading(true); const r = await stockAPI.getBatches(businessId); setBatches(r.batches || []) }
     catch { toast({ title: 'Failed to load batches', variant: 'destructive' }) }
     finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
   useEffect(() => { fetchData() }, [fetchData])
 
   const filtered = batches.filter(b => !search || b.batchNumber.toLowerCase().includes(search.toLowerCase()) || (b.product?.name || '').toLowerCase().includes(search.toLowerCase()))
