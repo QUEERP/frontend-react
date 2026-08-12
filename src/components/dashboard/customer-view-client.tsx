@@ -375,68 +375,11 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
     void fetchCreditNotes()
   }, [API_BASE, businessId, customerId])
 
-  // Fetch Payment Totals
+  // Compute Payment Totals from Payments List
   useEffect(() => {
-    const fetchPaymentTotals = async () => {
-      if (customerInvoices.length === 0) {
-        setTotalPayments(0)
-        return
-      }
-
-      const token = getCookie('token') || getCookie('accessToken')
-      if (!token) {
-        setTotalPayments(0)
-        return
-      }
-
-      setLoadingPaymentsSummary(true)
-      try {
-        const docs = [...customerInvoices, ...quotations]
-        let paidTotal = 0
-        const chunkSize = 5
-
-        for (let i = 0; i < docs.length; i += chunkSize) {
-          const chunk = docs.slice(i, i + chunkSize)
-          const settled = await Promise.allSettled(
-            chunk.map(async (doc: any) => {
-              const isQuote = !!doc.quoteNumber || !!doc.projectCode
-              const endpoint = isQuote ? `/api/payments/quotation/${encodeURIComponent(String(doc.id))}` : `/api/payments/invoice/${encodeURIComponent(String(doc.id))}`
-              const res = await fetch(
-                `${API_BASE}${endpoint}`,
-                {
-                  method: 'GET',
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    'x-business-id': businessId,
-                  },
-                },
-              )
-
-              if (!res.ok) return 0
-              const payload = await res.json()
-              const list = Array.isArray(payload?.data) ? payload.data : []
-              return list.reduce((sum: number, payment: any) => sum + Number(payment?.amount || 0), 0)
-            }),
-          )
-
-          paidTotal += settled.reduce((sum, item) => {
-            if (item.status === 'fulfilled') {
-              return sum + Number(item.value || 0)
-            }
-            return sum
-          }, 0)
-        }
-
-        setTotalPayments(paidTotal)
-      } catch {
-        setTotalPayments(0)
-      } finally {
-        setLoadingPaymentsSummary(false)
-      }
-    }
-
-    void fetchPaymentTotals()
-  }, [businessId, customerInvoices, quotations, API_BASE])
+    const total = paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0)
+    setTotalPayments(total)
+  }, [paymentsList])
 
   // Fetch Statements
   useEffect(() => {
