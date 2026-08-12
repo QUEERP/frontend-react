@@ -78,7 +78,10 @@ export function CustomerContacts({ businessId, customerId }: CustomerContactsPro
   }
 
   useEffect(() => {
-    fetchContacts()
+    const timer = setTimeout(() => {
+      fetchContacts()
+    }, 1000)
+    return () => clearTimeout(timer)
   }, [businessId, customerId])
 
   const handleCreate = () => {

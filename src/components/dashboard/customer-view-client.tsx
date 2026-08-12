@@ -372,7 +372,10 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
       }
     }
 
-    void fetchCreditNotes()
+    const timer = setTimeout(() => {
+      void fetchCreditNotes()
+    }, 600)
+    return () => clearTimeout(timer)
   }, [API_BASE, businessId, customerId])
 
   // Compute Payment Totals from Payments List
@@ -450,7 +453,10 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
       }
     }
 
-    void fetchStatements()
+    const timer = setTimeout(() => {
+      void fetchStatements()
+    }, 800)
+    return () => clearTimeout(timer)
   }, [API_BASE, businessId, customerId, statementRange])
 
   // Fetch Quotations
@@ -479,7 +485,10 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
       }
     }
 
-    fetchQuotations()
+    const timer = setTimeout(() => {
+      fetchQuotations()
+    }, 200)
+    return () => clearTimeout(timer)
   }, [API_BASE, businessId, customerId])
 
   // Fetch Sales Orders
@@ -508,7 +517,10 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
       }
     }
 
-    fetchSalesOrders()
+    const timer = setTimeout(() => {
+      fetchSalesOrders()
+    }, 400)
+    return () => clearTimeout(timer)
   }, [API_BASE, businessId, customerId])
 
   // Fetch Payments List
