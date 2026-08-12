@@ -47,7 +47,7 @@ export default function NewStockAdjustmentPageClient() {
     } catch {
       toast({ title: 'Failed to load data', variant: 'destructive' })
     } finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
 
   useEffect(() => { fetchData() }, [fetchData])
 

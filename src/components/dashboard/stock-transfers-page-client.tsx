@@ -35,7 +35,7 @@ export default function StockTransfersPageClient() {
     try { setIsLoading(true); const r = await stockAPI.getTransfers(businessId); setTransfers(r.transfers || []) }
     catch { toast({ title: 'Failed to load transfers', variant: 'destructive' }) }
     finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
   useEffect(() => { fetchData() }, [fetchData])
 
   const handleDelete = async (id: string) => {

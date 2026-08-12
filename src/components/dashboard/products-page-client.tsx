@@ -112,7 +112,7 @@ export default function ProductsPageClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [API_ROOT, businessId, getCookie, toast]);
+  }, [API_ROOT, businessId, getCookie]);
 
   useEffect(() => {
     fetchProducts();

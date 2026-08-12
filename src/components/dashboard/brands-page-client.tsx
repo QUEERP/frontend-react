@@ -29,7 +29,7 @@ export default function BrandsPageClient() {
     try { setIsLoading(true); const r = await brandsAPI.getAll(businessId); setBrands(r.brands || []) }
     catch { toast({ title: 'Failed to load brands', variant: 'destructive' }) }
     finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
   useEffect(() => { fetchData() }, [fetchData])
 
   const filtered = brands.filter(b => !search || b.name.toLowerCase().includes(search.toLowerCase()))

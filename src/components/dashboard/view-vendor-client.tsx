@@ -100,7 +100,7 @@ export function ViewVendorClient({ businessId, vendorId }: { businessId: string,
     } finally {
       setLoading(false)
     }
-  }, [API_BASE, businessId, vendorId, getCookie, toast])
+  }, [API_BASE, businessId, vendorId, getCookie])
 
   useEffect(() => {
     if (!businessLoading) {

@@ -208,7 +208,7 @@ export function BankChangeRequestsPageClient({ businessId }: { businessId: strin
     } finally {
       setPageLoading(false)
     }
-  }, [API_BASE, businessId, toast])
+  }, [API_BASE, businessId])
 
   useEffect(() => {
     if (!businessLoading) {

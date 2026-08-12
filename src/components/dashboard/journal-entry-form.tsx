@@ -96,7 +96,7 @@ export default function JournalEntryForm() {
     }
 
     loadAccounts()
-  }, [businessId, getAuthToken, toast])
+  }, [businessId, getAuthToken])
 
   const totals = React.useMemo(() => {
     return lines.reduce(

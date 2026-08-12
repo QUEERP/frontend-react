@@ -119,7 +119,7 @@ export default function ReportsPageClient() {
     } finally {
       setIsLoading(false)
     }
-  }, [businessId, appliedFromDate, appliedToDate, toast, token])
+  }, [businessId, appliedFromDate, appliedToDate, token])
 
   React.useEffect(() => {
     loadData()

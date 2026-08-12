@@ -53,7 +53,7 @@ export default function PurchaseReturnsPageClient() {
     }
     catch { toast({ title: 'Failed to load purchase returns', variant: 'destructive' }) }
     finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
   
   useEffect(() => { fetchData() }, [fetchData])
 

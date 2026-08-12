@@ -52,7 +52,7 @@ export default function NewStockTransferPageClient() {
     } finally {
       setIsLoading(false)
     }
-  }, [businessId, toast])
+  }, [businessId])
 
   useEffect(() => { fetchData() }, [fetchData])
 

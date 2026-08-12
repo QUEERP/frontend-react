@@ -463,7 +463,7 @@ export function DashboardPageClient({ businessId }: { businessId: string }) {
 
     }
 
-  }, [API_BASE, business, businessId, businessLoading, toast, invoices])
+  }, [API_BASE, business, businessId, businessLoading, invoices])
 
 
 

@@ -115,7 +115,7 @@ export default function ActivitiesPageClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [API_ROOT, getCookie, toast]);
+  }, [API_ROOT, getCookie]);
 
   useEffect(() => {
     fetchActivities();

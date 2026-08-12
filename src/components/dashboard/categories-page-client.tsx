@@ -29,7 +29,7 @@ export default function CategoriesPageClient() {
     try { setIsLoading(true); const r = await categoriesAPI.getAll(businessId); setCategories(r.categories || []) }
     catch { toast({ title: 'Failed to load categories', variant: 'destructive' }) }
     finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
   useEffect(() => { fetchData() }, [fetchData])
 
   const filtered = categories.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()))

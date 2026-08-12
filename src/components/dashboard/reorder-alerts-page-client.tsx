@@ -31,7 +31,7 @@ export default function ReorderAlertsPageClient() {
     } catch {
       toast({ title: 'Failed to load reorder alerts', variant: 'destructive' })
     } finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
   useEffect(() => { fetchData() }, [fetchData])
 
   const filtered = alerts.filter(a => !search || a.product.name.toLowerCase().includes(search.toLowerCase()) || a.warehouse.name.toLowerCase().includes(search.toLowerCase()))

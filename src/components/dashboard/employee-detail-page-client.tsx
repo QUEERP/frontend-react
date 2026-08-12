@@ -170,7 +170,7 @@ export function EmployeeDetailPageClient({
     }
 
     void fetchEmployee()
-  }, [API_BASE, businessId, employeeId, toast])
+  }, [API_BASE, businessId, employeeId])
 
   const leaveTypes = useMemo(() => {
     const settingsData = (business as any)?.settings

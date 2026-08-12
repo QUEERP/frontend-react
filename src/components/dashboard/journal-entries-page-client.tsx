@@ -91,7 +91,7 @@ export default function JournalEntriesPageClient() {
     } finally {
       setIsLoading(false)
     }
-  }, [businessId, toast, token])
+  }, [businessId, token])
 
   React.useEffect(() => {
     loadEntries()

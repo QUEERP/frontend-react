@@ -531,7 +531,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
 
       setLoadingPaymentsList(true)
       try {
-        const res = await fetch(`${API_BASE}/api/payments?limit=1000&customerId=${encodeURIComponent(customerId)}`, {
+        const res = await fetch(`${API_BASE}/api/payments?limit=500&customerId=${encodeURIComponent(customerId)}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'x-business-id': businessId,
@@ -568,7 +568,10 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
       }
     }
 
-    fetchPayments()
+    const timer = setTimeout(() => {
+      fetchPayments()
+    }, 1200)
+    return () => clearTimeout(timer)
   }, [API_BASE, businessId, customerId, customerInvoices, quotations])
 
   const downloadStatementPdf = async () => {

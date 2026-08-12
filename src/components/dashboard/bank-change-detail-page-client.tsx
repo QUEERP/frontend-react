@@ -125,7 +125,7 @@ export function BankChangeDetailPageClient({
     }
 
     void fetchDetail()
-  }, [API_BASE, businessId, businessLoading, requestId, toast])
+  }, [API_BASE, businessId, businessLoading, requestId])
 
   const handleStatusUpdate = async (status: 'APPROVED' | 'REJECTED') => {
     const token = getCookie('token') || getCookie('accessToken')

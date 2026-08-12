@@ -71,7 +71,7 @@ export default function VendorPaymentsPageClient() {
     } finally {
       setIsLoading(false)
     }
-  }, [businessId, toast])
+  }, [businessId])
 
   useEffect(() => { fetchData() }, [fetchData])
 

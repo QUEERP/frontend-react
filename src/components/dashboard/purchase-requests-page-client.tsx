@@ -74,7 +74,7 @@ export default function PurchaseRequestsPageClient() {
     } finally {
       setIsLoading(false)
     }
-  }, [businessId, toast])
+  }, [businessId])
 
   useEffect(() => { fetchData() }, [fetchData])
 

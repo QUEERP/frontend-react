@@ -222,7 +222,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
     if (!businessLoading) {
       fetchPayments()
     }
-  }, [API_BASE, businessId, businessLoading, currentPage, fromDate, searchTerm, toDate, toast])
+  }, [API_BASE, businessId, businessLoading, currentPage, fromDate, searchTerm, toDate])
 
   const totalAmount = useMemo(() => {
     return payments.reduce((sum, item) => sum + Number(item.amount || 0), 0)

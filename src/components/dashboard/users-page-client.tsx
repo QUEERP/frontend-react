@@ -189,7 +189,7 @@ export function UsersPageClient({ businessId }: { businessId: string }) {
     } finally {
       setUsersLoading(false)
     }
-  }, [API_BASE, getCookie, resolvedBusinessId, toast])
+  }, [API_BASE, getCookie, resolvedBusinessId])
 
   useEffect(() => {
     if (businessLoading) return

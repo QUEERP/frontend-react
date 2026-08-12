@@ -135,7 +135,7 @@ export function UserMenu() {
     } catch {}
     toast({ title: 'Logged out successfully' })
     navigate('/signin')
-  }, [navigate, toast])
+  }, [navigate])
 
   return (
       <DropdownMenu>

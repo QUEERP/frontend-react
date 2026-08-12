@@ -71,7 +71,7 @@ export default function StockMovementsPageClient() {
     } finally {
       setIsLoading(false)
     }
-  }, [businessId, toast, productIdParam])
+  }, [businessId, productIdParam])
 
   useEffect(() => { fetchData() }, [fetchData])
 

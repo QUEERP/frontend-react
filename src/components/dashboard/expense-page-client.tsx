@@ -239,7 +239,7 @@ export function ExpensePageClient({ businessId }: { businessId: string }) {
     } finally {
       setPageLoading(false)
     }
-  }, [API_BASE, businessId, toast])
+  }, [API_BASE, businessId])
 
   useEffect(() => {
     if (!businessLoading) {

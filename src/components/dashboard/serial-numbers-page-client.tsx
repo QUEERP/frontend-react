@@ -32,7 +32,7 @@ export default function SerialNumbersPageClient() {
     try { setIsLoading(true); const r = await stockAPI.getSerials(businessId); setSerials(r.serials || []) }
     catch { toast({ title: 'Failed to load serial numbers', variant: 'destructive' }) }
     finally { setIsLoading(false) }
-  }, [businessId, toast])
+  }, [businessId])
   useEffect(() => { fetchData() }, [fetchData])
 
   const filtered = serials.filter(s => {

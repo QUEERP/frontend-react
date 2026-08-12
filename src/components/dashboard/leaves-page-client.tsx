@@ -360,7 +360,7 @@ export function LeavesPageClient({ businessId }: { businessId: string }) {
     } finally {
       setPageLoading(false)
     }
-  }, [API_BASE, businessId, decodeJwtPayload, formData.employeeId, toast])
+  }, [API_BASE, businessId, decodeJwtPayload, formData.employeeId])
 
   useEffect(() => {
     if (!businessLoading) {

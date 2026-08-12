@@ -71,7 +71,7 @@ export default function WarehousesPageClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [businessId, toast]);
+  }, [businessId]);
 
   useEffect(() => {
     fetchWarehouses();
