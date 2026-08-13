@@ -123,7 +123,7 @@ export function BasicProjectDetailsClient({ businessId, projectId }: BasicProjec
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
           <Button
-            onClick={() => navigate(project.quotationId ? `/dashboard/${businessId}/payments/add?quotationId=${project.quotationId}&projectId=${project.id}` : `#`)}
+            onClick={() => navigate(`/dashboard/${businessId}/payments/add?projectId=${project.id}${project.quotationId ? `&quotationId=${project.quotationId}` : ''}`)}
             className="h-10 rounded-xl cursor-pointer gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm w-full md:w-auto"
           >
             <Banknote className="h-4 w-4" />

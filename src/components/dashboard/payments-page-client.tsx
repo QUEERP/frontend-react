@@ -1,5 +1,6 @@
 import { toast } from 'sonner';
 import React, { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom';
 import { BellIcon, Loader2Icon, FileDownIcon, DollarSignIcon, SearchIcon, DownloadIcon } from 'lucide-react'
 import { exportToExcel } from '@/lib/export-utils'
 
@@ -26,6 +27,8 @@ type PaymentItem = {
   id: string
   invoiceId: string
   invoiceNumber: string
+  projectId: string
+  projectName: string
   amount: number
   paymentDate: string
   paymentMode: string
@@ -33,12 +36,16 @@ type PaymentItem = {
   note: string
   createdAt: string
   pdfUrl: string
-  currency: string     // inherited from linked invoice
+  currency: string
+  customerId: string
+  status: string
+  amountAllocated: number
 }
 
 export function PaymentsPageClient({ businessId }: { businessId: string }) {
   const { loading: businessLoading, currencySymbol } = useBusinessData()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [loadingPayments, setLoadingPayments] = useState(false)
   const [payments, setPayments] = useState<PaymentItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -62,6 +69,86 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
     if (!raw) return ''
     return raw.replace(/^`+|`+$/g, '').replace(/^"+|"+$/g, '').replace(/^'+|'+$/g, '').trim()
   }
+
+  const fetchPayments = async () => {
+    const token = getCookie('token') || getCookie('accessToken')
+    if (!token) return
+
+    setLoadingPayments(true)
+    try {
+      const params = new URLSearchParams()
+      params.set('page', String(currentPage))
+      params.set('limit', '10')
+      if (searchTerm.trim()) params.set('search', searchTerm.trim())
+      if (fromDate) params.set('fromDate', fromDate)
+      if (toDate) params.set('toDate', toDate)
+
+      const res = await fetch(`${API_BASE}/api/payments?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-business-id': businessId,
+        },
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || 'Failed to load payments')
+      }
+
+      const payload = data?.data
+      const paymentList = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.items)
+          ? payload.items
+          : []
+
+      const rows = paymentList.map((p: any) => {
+        let proj = p.project || p.invoice?.project || (p.quotation?.projects && p.quotation.projects[0]) || null;
+        let refNumber = proj ? (proj.projectName || proj.projectCode) : (p.invoice?.invoiceNumber || p.quotation?.quoteNumber || '-');
+        
+        return {
+          id: p.id,
+          invoiceId: p.invoice?.id || p.invoiceId || p.quotation?.id || '',
+          invoiceNumber: refNumber,
+          projectId: proj?.id || '',
+          projectName: proj?.projectName || '',
+          amount: Number(p.amount || 0),
+          paymentDate: p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : '',
+          paymentMode: p.paymentMode || '-',
+          transactionId: p.transactionId || '-',
+          note: p.note || '-',
+          createdAt: p.createdAt || '',
+          pdfUrl: sanitizeUrl(p.pdfUrl),
+          currency: p.invoice?.currency || p.quotation?.currency || p.currency || '',
+          customerId: p.customerId || p.invoice?.customerId || p.quotation?.customerId || '',
+          status: p.status || 'unapplied',
+          amountAllocated: Number(p.amountAllocated || 0)
+        };
+      })
+
+      setPayments(rows)
+      setTotalPages(Number(payload && !Array.isArray(payload) ? payload?.pagination?.totalPages || 1 : 1))
+    } catch (err: any) {
+      toast({
+        title: 'Failed to load payments',
+        description: err?.message || 'Unknown error',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoadingPayments(false)
+    }
+  }
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, fromDate, toDate])
+
+  useEffect(() => {
+    if (!businessLoading) {
+      fetchPayments()
+    }
+  }, [API_BASE, businessId, businessLoading, currentPage, fromDate, searchTerm, toDate])
 
   const handleDownloadPaySlip = async (payment: PaymentItem) => {
     setDownloadingPaymentId(payment.id)
@@ -107,7 +194,6 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
       const token = getCookie('token') || getCookie('accessToken')
       if (!token) return
 
-      // Fetch all payments without pagination limit
       const params = new URLSearchParams()
       params.set('page', '1')
       params.set('limit', '1000') 
@@ -146,87 +232,6 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
       setExportLoading(false)
     }
   }
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, fromDate, toDate])
-
-  useEffect(() => {
-    const fetchPayments = async () => {
-      const token = getCookie('token') || getCookie('accessToken')
-      if (!token) return
-
-      setLoadingPayments(true)
-      try {
-        const params = new URLSearchParams()
-        params.set('page', String(currentPage))
-        params.set('limit', '10')
-        if (searchTerm.trim()) params.set('search', searchTerm.trim())
-        if (fromDate) params.set('fromDate', fromDate)
-        if (toDate) params.set('toDate', toDate)
-
-        const res = await fetch(`${API_BASE}/api/payments?${params.toString()}`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'x-business-id': businessId,
-          },
-        })
-
-        const data = await res.json()
-        if (!res.ok || !data?.success) {
-          throw new Error(data?.message || 'Failed to load payments')
-        }
-
-        const payload = data?.data
-        const paymentList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.items)
-            ? payload.items
-            : []
-
-        const rows = paymentList.map((p: any) => {
-          let proj = p.invoice?.project || (p.quotation?.projects && p.quotation.projects[0]) || null;
-          let refNumber = proj ? (proj.projectName || proj.projectCode) : (p.invoice?.invoiceNumber || p.quotation?.quoteNumber || '-');
-          
-          return {
-            id: p.id,
-            invoiceId: p.invoice?.id || p.invoiceId || p.quotation?.id || '',
-            invoiceNumber: refNumber,
-            projectId: proj?.id || '',
-            projectName: proj?.projectName || '',
-            amount: Number(p.amount || 0),
-            paymentDate: p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : '',
-            paymentMode: p.paymentMode || '-',
-            transactionId: p.transactionId || '-',
-            note: p.note || '-',
-            createdAt: p.createdAt || '',
-            pdfUrl: sanitizeUrl(p.pdfUrl),
-            currency: p.invoice?.currency || p.quotation?.currency || p.currency || '',
-          };
-        })
-
-        setPayments(rows)
-        setTotalPages(Number(payload && !Array.isArray(payload) ? payload?.pagination?.totalPages || 1 : 1))
-      } catch (err: any) {
-        toast({
-          title: 'Failed to load payments',
-          description: err?.message || 'Unknown error',
-          variant: 'destructive',
-        })
-      } finally {
-        setLoadingPayments(false)
-      }
-    }
-
-    if (!businessLoading) {
-      fetchPayments()
-    }
-  }, [API_BASE, businessId, businessLoading, currentPage, fromDate, searchTerm, toDate])
-
-  const totalAmount = useMemo(() => {
-    return payments.reduce((sum, item) => sum + Number(item.amount || 0), 0)
-  }, [payments])
 
   if (businessLoading) {
     return <DashboardPageSkeleton />
@@ -294,7 +299,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                 <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Payment Date</TableHead>
                 <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Mode</TableHead>
                 <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Transaction ID</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground max-w-[200px]">Note</TableHead>
+                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground max-w-[200px]">Status / Note</TableHead>
                 <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -328,7 +333,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                     <TableCell className="py-4">
                       <div className="flex flex-col">
                         <span className="font-bold text-sm text-foreground">{payment.invoiceNumber}</span>
-                        {(payment as any).projectName && (
+                        {(payment as any).projectName && (payment as any).projectName !== payment.invoiceNumber && (
                           <span className="text-[11px] text-muted-foreground font-medium mt-0.5 truncate max-w-[150px]" title={(payment as any).projectName}>
                             {(payment as any).projectName}
                           </span>
@@ -356,24 +361,43 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                     <TableCell className="py-4 text-sm text-muted-foreground">
                       {payment.transactionId || '-'}
                     </TableCell>
-                    <TableCell className="py-4 text-sm text-muted-foreground max-w-[200px] truncate" title={payment.note}>
-                      {payment.note || '-'}
+                    <TableCell className="py-4 text-sm">
+                      <div className="flex flex-col gap-1">
+                        {payment.status === 'unapplied' && <Badge variant="outline" className="w-fit bg-slate-100 text-slate-700">Unapplied</Badge>}
+                        {payment.status === 'partially_applied' && <Badge variant="outline" className="w-fit bg-amber-100 text-amber-700">Partially Applied</Badge>}
+                        {payment.status === 'fully_applied' && <Badge variant="outline" className="w-fit bg-emerald-100 text-emerald-700">Fully Applied</Badge>}
+                        <span className="text-muted-foreground max-w-[200px] truncate" title={payment.note}>
+                          {payment.note || ''}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell className="py-4 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-lg cursor-pointer bg-card border-border text-blue-600 hover:bg-blue-50 gap-2 font-semibold shadow-sm"
-                        onClick={() => void handleDownloadPaySlip(payment)}
-                        disabled={downloadingPaymentId === payment.id}
-                      >
-                        {downloadingPaymentId === payment.id ? (
-                          <Loader2Icon className="size-3.5 animate-spin" />
-                        ) : (
-                          <DownloadIcon className="size-3.5" />
+                      <div className="flex items-center justify-end gap-2">
+                        {payment.customerId && payment.status !== 'fully_applied' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 rounded-lg cursor-pointer bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 font-semibold shadow-sm"
+                            onClick={() => navigate(`/dashboard/${businessId}/payments/${payment.id}/allocate`)}
+                          >
+                            Allocate
+                          </Button>
                         )}
-                        Pay Slip
-                      </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 rounded-lg cursor-pointer bg-card border-border text-slate-700 hover:bg-slate-50 gap-2 font-semibold shadow-sm"
+                          onClick={() => void handleDownloadPaySlip(payment)}
+                          disabled={downloadingPaymentId === payment.id}
+                        >
+                          {downloadingPaymentId === payment.id ? (
+                            <Loader2Icon className="size-3.5 animate-spin" />
+                          ) : (
+                            <DownloadIcon className="size-3.5" />
+                          )}
+                          Pay Slip
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
