@@ -206,7 +206,8 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
           number: inv.invoiceNumber,
           customerName: inv.customer?.company ?? '',
           customerId: inv.customerId,
-          amount: inv.grandTotal,
+          amountDue: Number(inv.grandTotal || 0) - Number(inv.amountPaid || 0),
+          amountPaid: Number(inv.amountPaid || 0),
           status: normalizeInvoiceStatus(inv.status),
           dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().split('T')[0] : '',
           issueDate: inv.invoiceDate ? new Date(inv.invoiceDate).toISOString().split('T')[0] : '',
@@ -562,11 +563,11 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="flex flex-col">
-                      <span className="font-bold text-foreground text-sm">
-                        {invoice.currency === 'INR' ? '₹' : invoice.currency} {Number(invoice.amount || 0).toLocaleString(invoice.currency === 'CAD' ? 'en-CA' : 'en-IN')}
+                      <span className={`font-bold text-sm ${invoice.status === 'PAID' ? 'text-emerald-600' : invoice.amountDue > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        {invoice.currency === 'INR' ? '₹' : invoice.currency} {Number(invoice.status === 'PAID' ? invoice.amountPaid : invoice.amountDue).toLocaleString(invoice.currency === 'CAD' ? 'en-CA' : 'en-IN')}
                       </span>
                       <span className="text-[11px] text-muted-foreground font-medium mt-0.5">
-                        Total: {invoice.currency === 'INR' ? '₹' : invoice.currency} {Number(invoice.total || 0).toLocaleString(invoice.currency === 'CAD' ? 'en-CA' : 'en-IN')}
+                        {invoice.status === 'PAID' ? 'Fully Paid' : `Total: ${invoice.currency === 'INR' ? '₹' : invoice.currency} ${Number(invoice.total || 0).toLocaleString(invoice.currency === 'CAD' ? 'en-CA' : 'en-IN')}`}
                       </span>
                     </div>
                   </TableCell>

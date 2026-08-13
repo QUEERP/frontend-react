@@ -139,6 +139,7 @@ export function QuotationPaymentPageClient({
   useEffect(() => {
     const loadPaymentSummary = async () => {
       let currentQuotationId = resolvedQuotationId
+      let currentProj: any = null;
       const token = getCookie('token') || getCookie('accessToken')
       if (!token) return;
 
@@ -151,12 +152,8 @@ export function QuotationPaymentPageClient({
           })
           const pData = await pResponse.json()
           if (pData?.success) {
-            const proj = pData.project || pData.data;
-            setProject(proj)
-            if (proj?.quotationId) {
-              currentQuotationId = proj.quotationId;
-              setResolvedQuotationId(currentQuotationId);
-            }
+            currentProj = pData.project || pData.data;
+            setProject(currentProj)
           }
         } else if (projectId) {
           const pResponse = await fetch(`${API_BASE}/api/projects/${encodeURIComponent(projectId)}`, {
@@ -164,28 +161,43 @@ export function QuotationPaymentPageClient({
           })
           const pData = await pResponse.json()
           if (pData?.success) {
-            setProject(pData.project || pData.data)
+            currentProj = pData.project || pData.data;
+            setProject(currentProj)
           }
         }
       } catch (e) {
         console.error('Failed to load project details', e)
       }
 
-      if (!currentQuotationId) {
+      if (!currentQuotationId && !projectId) {
         setIsLoadingPaymentSummary(false)
         return
       }
 
       try {
-        const qResponse = await quotationsAPI.getQuotationById(targetBusinessId, currentQuotationId)
-        if (qResponse.success) {
-          setQuotation(qResponse.quotation)
+        let currentQuotation: any = null;
+        if (currentQuotationId) {
+          const qResponse = await quotationsAPI.getQuotationById(targetBusinessId, currentQuotationId)
+          if (qResponse.success) {
+            setQuotation(qResponse.quotation)
+          }
+          currentQuotation = qResponse.quotation || null
         }
-        const currentQuotation = qResponse.quotation || null
-        const isBasic = business?.businessType?.toLowerCase() === 'basic' || project?.executionType === 'BASIC' || project?.department === 'Basic'
-        const currentQuotationAmount = isBasic && project?.budget ? Number(project.budget) : Number(currentQuotation?.totalAmount || 0)
+        
+        const isBasic = business?.businessType?.toLowerCase() === 'basic' || currentProj?.executionType === 'BASIC' || currentProj?.department === 'Basic'
+        
+        let targetAmount = 0;
+        let endpoint = '';
 
-        const response = await fetch(`${API_BASE}/api/payments/quotation/${encodeURIComponent(currentQuotationId)}`, {
+        if (currentQuotationId) {
+          targetAmount = isBasic && currentProj?.budget ? Number(currentProj.budget) : Number(currentQuotation?.totalAmount || 0)
+          endpoint = `${API_BASE}/api/payments/quotation/${encodeURIComponent(currentQuotationId)}`;
+        } else if (projectId) {
+          targetAmount = Number(currentProj?.budget || 0);
+          endpoint = `${API_BASE}/api/payments/project/${encodeURIComponent(projectId)}`;
+        }
+
+        const response = await fetch(endpoint, {
           method: 'GET',
           headers: {
             Accept: 'application/json',
@@ -196,13 +208,13 @@ export function QuotationPaymentPageClient({
 
         const payload = await response.json()
         if (!response.ok || !payload?.success) {
-          throw new Error(payload?.message || 'Failed to load quotation payments')
+          throw new Error(payload?.message || 'Failed to load payments')
         }
 
         const list = Array.isArray(payload?.data) ? payload.data : []
         const paidAmount = list.reduce((sum: number, payment: any) => sum + Number(payment?.amount || 0), 0)
-        const calculatedRemaining = Math.max(currentQuotationAmount - paidAmount, 0)
-        const backendStatus = currentQuotation?.status || 'DRAFT'
+        const calculatedRemaining = Math.max(targetAmount - paidAmount, 0)
+        const backendStatus = currentQuotationId ? (currentQuotation?.status || 'DRAFT') : (currentProj?.status || 'ONGOING')
         const computedStatus: string =
           calculatedRemaining === 0 && paidAmount > 0 ? 'PAID' : paidAmount > 0 ? 'PARTIALLY_PAID' : backendStatus
 
@@ -217,10 +229,14 @@ export function QuotationPaymentPageClient({
         if (computedStatus === 'PAID' || (computedStatus as any) === 'OVERPAID') {
           toast({
             title: 'Payment not allowed',
-            description: `This quotation is already ${computedStatus.toLowerCase().replace('_', ' ')}. No additional payment can be recorded.`,
+            description: `This document is already ${computedStatus.toLowerCase().replace('_', ' ')}. No additional payment can be recorded.`,
             variant: 'destructive',
           })
-          navigate(`/dashboard/${businessId}/quotations`)
+          if (currentQuotationId) {
+            navigate(`/dashboard/${businessId}/quotations`)
+          } else {
+            navigate(`/dashboard/${businessId}/project-operations/projects`)
+          }
           return
         }
       } catch (err: any) {
@@ -238,7 +254,7 @@ export function QuotationPaymentPageClient({
   }, [API_BASE, targetBusinessId, projectId, resolvedQuotationId])
 
   const handleSavePayment = async () => {
-    if (!resolvedQuotationId && !customerId) {
+    if (!resolvedQuotationId && !customerId && !projectId) {
       toast({
         title: 'Project or Customer not selected',
         description: 'Missing project or customer context for payment creation.',
@@ -310,7 +326,9 @@ export function QuotationPaymentPageClient({
       }
       const endpoint = resolvedQuotationId 
         ? `${API_BASE}/api/payments/quotation/${encodeURIComponent(resolvedQuotationId)}`
-        : `${API_BASE}/api/payments/customer/${encodeURIComponent(customerId || '')}`;
+        : projectId 
+          ? `${API_BASE}/api/payments/project/${encodeURIComponent(projectId)}`
+          : `${API_BASE}/api/payments/customer/${encodeURIComponent(customerId || '')}`;
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -406,10 +424,6 @@ export function QuotationPaymentPageClient({
               <div className="flex flex-col items-center justify-center p-6 text-sm text-muted-foreground font-medium">
                 <Loader2Icon className="h-6 w-6 animate-spin mb-2" />
                 Loading project details...
-              </div>
-            ) : !resolvedQuotationId && !customerId ? (
-              <div className="text-sm text-rose-500 font-medium bg-rose-50 p-4 rounded-xl border border-rose-100">
-                This project does not have an associated quotation. A payment can only be recorded if a quotation exists.
               </div>
             ) : (
               <>

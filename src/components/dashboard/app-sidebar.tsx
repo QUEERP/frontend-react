@@ -40,7 +40,7 @@ const MENU_CONFIG: Record<string, any> = {
     moduleVisibility: {
       Sales: {
         "CRM & Customers": ["Customers"],
-        "Sales Operations": ["Quotations", "Invoices", "Payments", "Credit Notes"]
+        "Sales Operations": ["Quotations", "Sales Orders", "Invoices", "Payments", "Credit Notes", "Returns", "Recurring Invoices", "Sales Report"],
       },
       Procurement: {
         allowedItems: ["Vendors", "Vendor"]
@@ -234,7 +234,7 @@ export function AppSidebar() {
 
   React.useEffect(() => {
     const isCrmPath = pathname.includes('/leads') || pathname.includes('/deals') || pathname.includes('/customers') || pathname.includes('/contacts')
-    const isOpsPath = pathname.includes('/quotations') || pathname.includes('/sales-orders') || pathname.includes('/invoices') || pathname.includes('/payments') || pathname.includes('/credit-notes') || pathname.includes('/sales-returns') || pathname.includes('/recurring-invoices')
+    const isOpsPath = pathname.includes('/quotations') || pathname.includes('/sales-orders') || pathname.includes('/invoices') || pathname.includes('/payments') || pathname.includes('/credit-notes') || pathname.includes('/sales-returns') || pathname.includes('/recurring-invoices') || pathname.includes('/sales-report')
     const isActivitiesPath = pathname.includes('/activities') || pathname.includes('/meetings') || pathname.includes('/calls') || (pathname.includes('/tasks') && !pathname.includes('/project-operations')) || pathname.includes('/notes')
     const isMarketingPath = pathname.includes('/campaigns') || pathname.includes('/email-logs')
     const isAnalyticsPath = pathname.includes('/reports') && !pathname.includes('/purchase-reports') && !pathname.includes('/inventory-reports')
@@ -1014,6 +1014,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/credit-notes`, label: 'Credit Notes', icon: CreditCardIcon, path: '/credit-notes' },
                                 { href: `${baseDashboardPath}/sales-returns`, label: 'Returns', icon: Undo2, path: '/sales-returns' },
                                 { href: `${baseDashboardPath}/recurring-invoices`, label: 'Recurring Invoices', icon: RefreshCw, path: '/recurring-invoices' },
+                                { href: `${baseDashboardPath}/sales-report`, label: 'Sales Report', icon: FileTextIcon, path: '/sales-report' },
                               ].filter(item => isMenuVisible(bType, 'Sales', 'Sales Operations', item.label)).map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
                                   <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>

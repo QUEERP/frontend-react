@@ -153,3 +153,30 @@ export async function getSalesDashboardReport(
 
   return payload.data
 }
+
+export interface BasicSalesReportData {
+  totalCustomers: number;
+  totalPaymentsMade: number;
+  paymentsAllocated: number;
+  paymentsRemaining: number;
+  totalCreditNotes: number;
+  customersList: any[];
+  paymentsList: any[];
+  creditNotesList: any[];
+}
+
+export async function getBasicSalesReport(
+  token: string,
+  businessId: string
+): Promise<BasicSalesReportData> {
+  const response = await fetch(`${API_ROOT}/sales-reports/basic`, {
+    headers: buildHeaders(token, businessId),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(payload?.message || `Failed to fetch basic sales report: ${response.status}`)
+  }
+
+  return payload.data
+}

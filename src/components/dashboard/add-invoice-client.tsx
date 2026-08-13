@@ -80,12 +80,18 @@ export function AddInvoiceClient({
   businessId,
   invoiceId,
   salesOrderId,
-  projectId
+  projectId,
+  paymentIdForAllocation,
+  unallocatedAmount,
+  prefillCustomerId,
 }: {
   businessId: string;
   invoiceId?: string;
   salesOrderId?: string;
   projectId?: string;
+  paymentIdForAllocation?: string;
+  unallocatedAmount?: number;
+  prefillCustomerId?: string;
 }) {
   const navigate = useNavigate()
   const { business, currency = 'AED' } = useBusinessData()
@@ -127,7 +133,7 @@ export function AddInvoiceClient({
   }])
 
   const [formData, setFormData] = useState({
-    customerId: '',
+    customerId: prefillCustomerId || '',
     invoiceDate: new Date().toISOString().slice(0, 10),
     dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
     poNumber: '',
@@ -471,7 +477,22 @@ export function AddInvoiceClient({
           productsAPI.getAll(businessId),
           warehousesAPI.getWarehouses(businessId)
         ])
-        if (custRes.status === 'fulfilled') setCustomers(custRes.value.customers || [])
+        if (custRes.status === 'fulfilled') {
+          const loadedCustomers = custRes.value.customers || []
+          setCustomers(loadedCustomers)
+          if (prefillCustomerId && !invoiceId) {
+            const cust = loadedCustomers.find((c: any) => c.id === prefillCustomerId)
+            if (cust) {
+              setFormData(prev => ({
+                ...prev,
+                country: cust.country || '',
+                state: cust.billingState || cust.state || '',
+                emirate: cust.emirate || '',
+                currency: (cust.currency && cust.currency !== 'SYSTEM') ? cust.currency : prev.currency
+              }))
+            }
+          }
+        }
         if (soRes.status === 'fulfilled') setSalesOrders(soRes.value.orders || [])
         if (prodRes.status === 'fulfilled') setProducts(prodRes.value.products || [])
         if (whRes.status === 'fulfilled') setWarehouses(whRes.value.warehouses || [])
@@ -660,9 +681,32 @@ export function AddInvoiceClient({
         toast({ title: 'Success', description: 'Invoice created successfully' })
       }
 
-      if (download && result?.invoice?.id) {
-        const downloadUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/invoices/${result.invoice.id}/download-pdf?businessId=${businessId}`
+      const createdInvoiceId = result?.invoice?.id || result?.data?.id
+
+      if (download && createdInvoiceId) {
+        const downloadUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/invoices/${createdInvoiceId}/download-pdf?businessId=${businessId}`
         window.open(downloadUrl, '_blank')
+      }
+
+      // Auto Allocation handling
+      if (paymentIdForAllocation && createdInvoiceId) {
+        const allocAmount = Math.min(summary.total, unallocatedAmount || 0);
+        if (allocAmount > 0) {
+          const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+          const token = getCookie('token') || getCookie('accessToken')
+          await fetch(`${API_BASE}/api/payments/${paymentIdForAllocation}/allocate-existing-invoice`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+              'x-business-id': businessId,
+            },
+            body: JSON.stringify({ invoiceId: createdInvoiceId, amount: allocAmount })
+          })
+          toast({ title: 'Payment Allocated', description: `Successfully applied to this invoice.` })
+        }
+        navigate(`/dashboard/${businessId}/payments`)
+        return;
       }
 
       if (formData.projectId) {
