@@ -1677,6 +1677,18 @@ export function AppSidebar() {
                 </Collapsible>
               </SidebarMenuItem>
 
+              {/* 6.6 General Report */}
+              {business?.businessType?.toLowerCase() === 'basic' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="General Report" isActive={pathname.includes('/general-reports')} className="rounded-xl my-0.5">
+                    <Link to={`${baseDashboardPath}/general-reports`} className="flex items-center gap-2">
+                      <BarChart3 className="size-4" />
+                      <span>General Report</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
               {/* 7. Reorganized HR Module */}
               {(() => {
                 const bType = business?.businessType || business?.industry || (business as any)?.type || (business as any)?.businessCategory || 'unknown';

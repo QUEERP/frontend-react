@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import { getCurrencySymbol } from '@/lib/currencies'
 import { quotationsAPI } from '@/lib/api/quotations'
+import { creditNotesAPI, CreditNote } from '@/lib/api/credit-notes'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
 
 const formatProjectCode = (code: any) => {
@@ -72,6 +73,10 @@ export function QuotationPaymentPageClient({
   const [pendingDocs, setPendingDocs] = useState<any[]>([])
   const [isLoadingPending, setIsLoadingPending] = useState(false)
   const [customerData, setCustomerData] = useState<any>(null)
+  
+  const [availableCreditNotes, setAvailableCreditNotes] = useState<CreditNote[]>([])
+  const isBasic = business?.businessType?.toLowerCase() === 'basic' || project?.executionType === 'BASIC' || project?.department === 'Basic'
+
 
   const targetBusinessId = businessId || business?.id || getClientBusinessId() || ''
 
@@ -94,6 +99,7 @@ export function QuotationPaymentPageClient({
     paymentMode: '',
     transactionId: '',
     note: '',
+    creditNoteId: 'none',
   })
 
   useEffect(() => {
@@ -167,6 +173,18 @@ export function QuotationPaymentPageClient({
         }
       } catch (e) {
         console.error('Failed to load project details', e)
+      }
+
+      if (currentProj && currentProj.customerId && business?.businessType?.toLowerCase() === 'basic') {
+        try {
+          const cnRes = await creditNotesAPI.getCreditNotes(targetBusinessId);
+          if (cnRes.success && cnRes.data) {
+            const customerNotes = cnRes.data.filter(cn => cn.customer?.id === currentProj.customerId && cn.status === 'OPEN');
+            setAvailableCreditNotes(customerNotes);
+          }
+        } catch (e) {
+          console.error('Failed to load credit notes', e)
+        }
       }
 
       if (!currentQuotationId && !projectId) {
@@ -344,6 +362,7 @@ export function QuotationPaymentPageClient({
           paymentMode: paymentForm.paymentMode,
           transactionId: paymentForm.transactionId || null,
           note: paymentForm.note || null,
+          creditNoteId: paymentForm.creditNoteId && paymentForm.creditNoteId !== 'none' ? paymentForm.creditNoteId : undefined,
         }),
       })
 
@@ -519,6 +538,41 @@ export function QuotationPaymentPageClient({
                     className="h-10 rounded-xl border-border focus-visible:ring-blue-500 disabled:opacity-50"
                   />
                 </div>
+
+                {isBasic && projectId && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="creditNoteId" className="text-sm font-semibold text-foreground">Apply Credit Note</Label>
+                    <Select
+                      value={paymentForm.creditNoteId}
+                      onValueChange={(value) => {
+                        setPaymentForm((prev) => {
+                          const newForm = { ...prev, creditNoteId: value };
+                          if (value !== 'none') {
+                            const note = availableCreditNotes.find(cn => cn.id === value);
+                            if (note && note.remainingAmount > 0) {
+                              const amountToApply = Math.min(note.remainingAmount, remainingAmount);
+                              newForm.amountReceived = amountToApply.toString();
+                            }
+                          }
+                          return newForm;
+                        })
+                      }}
+                      disabled={isLoadingPaymentSummary || quotationPaymentStatus === 'PAID' || availableCreditNotes.length === 0}
+                    >
+                      <SelectTrigger id="creditNoteId" className="h-10 rounded-xl border-border focus-visible:ring-blue-500">
+                        <SelectValue placeholder="Select Credit Note (optional)" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="none">None</SelectItem>
+                        {availableCreditNotes.map((cn) => (
+                          <SelectItem key={cn.id} value={cn.id}>
+                            {cn.creditNumber} - {quotationCurrencySymbol} {cn.remainingAmount}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="grid gap-2">
                   <Label htmlFor="paymentNote" className="text-sm font-semibold text-foreground">Leave a Note</Label>
