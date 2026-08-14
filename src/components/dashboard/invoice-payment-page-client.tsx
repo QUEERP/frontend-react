@@ -19,6 +19,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { normalizeInvoiceStatus, type InvoiceStatus } from '@/lib/invoice-status'
 import { getCurrencySymbol } from '@/lib/currencies'
+import { creditNotesAPI, CreditNote } from '@/lib/api/credit-notes'
 
 export function InvoicePaymentPageClient({
   businessId,
@@ -62,6 +63,9 @@ export function InvoicePaymentPageClient({
   
   const [pendingInvoices, setPendingInvoices] = useState<any[]>([])
   const [isLoadingPending, setIsLoadingPending] = useState(false)
+  const [availableCreditNotes, setAvailableCreditNotes] = useState<CreditNote[]>([])
+  
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
 
   useEffect(() => {
     if (invoiceId) {
@@ -111,6 +115,7 @@ export function InvoicePaymentPageClient({
     paymentMode: '',
     transactionId: '',
     note: '',
+    creditNoteId: 'none',
   })
 
   useEffect(() => {
@@ -141,6 +146,19 @@ export function InvoicePaymentPageClient({
             'x-business-id': targetBusinessId,
           },
         })
+
+        const customerId = invoice?.customerId || invoice?.customer?.id;
+        if (customerId && isBasic) {
+          try {
+            const cnRes = await creditNotesAPI.getCreditNotes(targetBusinessId);
+            if (cnRes.success && cnRes.data) {
+              const customerNotes = cnRes.data.filter(cn => cn.customer?.id === customerId && cn.status === 'OPEN');
+              setAvailableCreditNotes(customerNotes);
+            }
+          } catch (e) {
+            console.error('Failed to load credit notes', e)
+          }
+        }
 
         const payload = await response.json()
         if (!response.ok || !payload?.success) {
@@ -270,6 +288,7 @@ export function InvoicePaymentPageClient({
           paymentMode: paymentForm.paymentMode,
           transactionId: paymentForm.transactionId || null,
           note: paymentForm.note || null,
+          creditNoteId: paymentForm.creditNoteId && paymentForm.creditNoteId !== 'none' ? paymentForm.creditNoteId : undefined,
         }),
       })
 
@@ -429,6 +448,41 @@ export function InvoicePaymentPageClient({
                     className="h-10 rounded-xl border-border focus-visible:ring-blue-500 disabled:opacity-50"
                   />
                 </div>
+
+                {isBasic && targetInvoiceId && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="creditNoteId" className="text-sm font-semibold text-foreground">Apply Credit Note</Label>
+                    <Select
+                      value={paymentForm.creditNoteId}
+                      onValueChange={(value) => {
+                        setPaymentForm((prev) => {
+                          const newForm = { ...prev, creditNoteId: value };
+                          if (value !== 'none') {
+                            const note = availableCreditNotes.find(cn => cn.id === value);
+                            if (note && note.remainingAmount > 0) {
+                              const amountToApply = Math.min(note.remainingAmount, remainingAmount);
+                              newForm.amountReceived = amountToApply.toString();
+                            }
+                          }
+                          return newForm;
+                        })
+                      }}
+                      disabled={isLoadingPaymentSummary || invoicePaymentStatus === 'PAID' || availableCreditNotes.length === 0}
+                    >
+                      <SelectTrigger id="creditNoteId" className="h-10 rounded-xl border-border focus-visible:ring-blue-500">
+                        <SelectValue placeholder="Select Credit Note (optional)" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="none">None</SelectItem>
+                        {availableCreditNotes.map((cn) => (
+                          <SelectItem key={cn.id} value={cn.id}>
+                            {cn.creditNumber} - {invoiceCurrencySymbol} {cn.remainingAmount}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="grid gap-2">
                   <Label htmlFor="paymentNote" className="text-sm font-semibold text-foreground">Leave a Note</Label>

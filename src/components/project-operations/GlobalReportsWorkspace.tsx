@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart2, FileText, TrendingUp, AlertCircle, DollarSign, Clock, FileSpreadsheet, Filter, RefreshCw } from 'lucide-react';
+import { BarChart2, FileText, TrendingUp, AlertCircle, DollarSign, Clock, FileSpreadsheet, Filter, RefreshCw, CreditCard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { API_ROOT } from "@/config/api";
@@ -10,6 +10,7 @@ const REPORT_TYPES = [
   { key: 'projects', label: 'Projects', icon: BarChart2, color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20' },
   { key: 'expenses', label: 'Expenses', icon: DollarSign, color: 'bg-red-50 text-red-600 dark:bg-red-900/20' },
   { key: 'billing', label: 'Billing / Invoices', icon: FileText, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20' },
+  { key: 'payments', label: 'Payments', icon: CreditCard, color: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20' },
   { key: 'timesheets', label: 'Timesheets', icon: Clock, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20' },
   { key: 'issues', label: 'Issues', icon: AlertCircle, color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20' },
   { key: 'profitability', label: 'Profitability', icon: TrendingUp, color: 'bg-purple-50 text-purple-600 dark:bg-purple-900/20' },
@@ -42,6 +43,7 @@ export function GlobalReportsWorkspace({ businessId }: { businessId: string }) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('');
+  const [viewMode, setViewMode] = useState<'chart' | 'table' | 'both'>('both');
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const { toast } = useToast();
@@ -115,6 +117,11 @@ export function GlobalReportsWorkspace({ businessId }: { businessId: string }) {
       data.invoices.forEach((i: any) => { byStatus[i.status] = (byStatus[i.status] || 0) + (i.grandTotal || 0); });
       return Object.entries(byStatus).map(([name, value]) => ({ name, value }));
     }
+    if (activeReport === 'payments' && data.payments) {
+      const byMode: Record<string, number> = {};
+      data.payments.forEach((p: any) => { byMode[p.paymentMode] = (byMode[p.paymentMode] || 0) + (p.amount || 0); });
+      return Object.entries(byMode).map(([name, value]) => ({ name, value }));
+    }
     if (activeReport === 'issues' && data.issues) {
       const byPriority: Record<string, number> = {};
       data.issues.forEach((i: any) => { byPriority[i.priority || 'Unknown'] = (byPriority[i.priority || 'Unknown'] || 0) + 1; });
@@ -128,21 +135,27 @@ export function GlobalReportsWorkspace({ businessId }: { businessId: string }) {
     if (activeReport === 'projects') return data.projects || [];
     if (activeReport === 'expenses') return data.expenses || [];
     if (activeReport === 'billing') return data.invoices || [];
+    if (activeReport === 'payments') return data.payments || [];
     if (activeReport === 'timesheets') return data.timeEntries || [];
     if (activeReport === 'issues') return data.issues || [];
     return [];
   }, [data, activeReport]);
 
   const fmt = (n: number) => `$${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const isPie = ['expenses', 'billing', 'issues'].includes(activeReport);
+  const isPie = ['expenses', 'billing', 'issues', 'payments'].includes(activeReport);
 
   return (
     <div className="flex flex-col h-full bg-gray-50/50 dark:bg-[#0a0a0a]">
       {/* Header */}
       <div className="flex justify-between items-center p-6 pb-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reports Engine</h1>
-          <p className="text-sm text-gray-500 mt-1">Dynamic cross-module ERP reporting from live data.</p>
+          <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            <span>Project Operations</span>
+            <span className="text-gray-300 dark:text-gray-600">/</span>
+            <span className="text-blue-600 dark:text-blue-400">Reports</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reporting & Analytics</h1>
+          <p className="text-sm text-gray-500 mt-1">Generate custom project, financial, and resource reports.</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => handleExport('excel')} disabled={isExportingExcel}
@@ -187,6 +200,27 @@ export function GlobalReportsWorkspace({ businessId }: { businessId: string }) {
           className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-50">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Run
         </button>
+
+        <div className="ml-auto flex items-center bg-gray-200/50 dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700">
+          <button 
+            onClick={() => setViewMode('chart')}
+            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${viewMode === 'chart' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+          >
+            Chart
+          </button>
+          <button 
+            onClick={() => setViewMode('table')}
+            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${viewMode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+          >
+            Table
+          </button>
+          <button 
+            onClick={() => setViewMode('both')}
+            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${viewMode === 'both' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+          >
+            Both
+          </button>
+        </div>
       </div>
 
       {/* KPI Summary */}
@@ -209,7 +243,7 @@ export function GlobalReportsWorkspace({ businessId }: { businessId: string }) {
         ) : (
           <>
             {/* Chart */}
-            {chartData.length > 0 && (
+            {(viewMode === 'chart' || viewMode === 'both') && chartData.length > 0 && (
               <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
                   {REPORT_TYPES.find(r => r.key === activeReport)?.label} — Visual Overview
@@ -241,7 +275,7 @@ export function GlobalReportsWorkspace({ businessId }: { businessId: string }) {
             )}
 
             {/* Data Table */}
-            {tableRows.length > 0 && (
+            {(viewMode === 'table' || viewMode === 'both') && tableRows.length > 0 && (
               <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50">
                   <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">{tableRows.length} Records</h3>
@@ -253,6 +287,7 @@ export function GlobalReportsWorkspace({ businessId }: { businessId: string }) {
                         {activeReport === 'projects' && ['Project', 'Customer', 'Status', 'Budget', 'Revenue', 'Cost', 'Profit', 'Margin'].map(h => <th key={h} className="px-5 py-3 text-left">{h}</th>)}
                         {activeReport === 'expenses' && ['Title', 'Project', 'Employee', 'Category', 'Amount', 'Status'].map(h => <th key={h} className="px-5 py-3 text-left">{h}</th>)}
                         {activeReport === 'billing' && ['Invoice #', 'Customer', 'Project', 'Amount', 'Status'].map(h => <th key={h} className="px-5 py-3 text-left">{h}</th>)}
+                        {activeReport === 'payments' && ['Payment #', 'Date', 'Project', 'Amount', 'Mode'].map(h => <th key={h} className="px-5 py-3 text-left">{h}</th>)}
                         {activeReport === 'timesheets' && ['Project', 'Employee', 'Task', 'Hours', 'Date'].map(h => <th key={h} className="px-5 py-3 text-left">{h}</th>)}
                         {activeReport === 'issues' && ['Title', 'Project', 'Priority', 'Status', 'Created'].map(h => <th key={h} className="px-5 py-3 text-left">{h}</th>)}
                       </tr>
@@ -284,6 +319,13 @@ export function GlobalReportsWorkspace({ businessId }: { businessId: string }) {
                             <td className="px-5 py-3">{row.project?.projectName || '-'}</td>
                             <td className="px-5 py-3 font-bold">{fmt(row.grandTotal)}</td>
                             <td className="px-5 py-3">{row.status}</td>
+                          </>}
+                          {activeReport === 'payments' && <>
+                            <td className="px-5 py-3 font-bold text-gray-900 dark:text-gray-100">{row.paymentNumber}</td>
+                            <td className="px-5 py-3">{new Date(row.paymentDate).toLocaleDateString()}</td>
+                            <td className="px-5 py-3">{row.project?.projectName || '-'}</td>
+                            <td className="px-5 py-3 font-bold text-green-600 dark:text-green-400">{fmt(row.amount)}</td>
+                            <td className="px-5 py-3">{row.paymentMode}</td>
                           </>}
                           {activeReport === 'timesheets' && <>
                             <td className="px-5 py-3">{row.project?.projectName || '-'}</td>

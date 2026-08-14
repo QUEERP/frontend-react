@@ -50,6 +50,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useBusinessData } from '@/components/dashboard/business-data-provider'
 
 interface Props {
   businessId: string
@@ -80,8 +81,8 @@ const REFUND_CONFIG: Record<string, string> = {
   REFUNDED: 'bg-emerald-100 text-emerald-700 border-emerald-200',
 }
 
-const formatCurrency = (v: number) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(Number(v || 0))
+const formatCurrency = (v: number, currencyCode: string = 'INR') =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: currencyCode, maximumFractionDigits: 2 }).format(Number(v || 0))
 
 const formatDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -96,6 +97,7 @@ const newItem = () => ({
 })
 
 export function SalesReturnsPageClient({ businessId }: Props) {
+  const { business } = useBusinessData()
   const [returns, setReturns] = React.useState<SalesReturn[]>([])
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState('')
@@ -112,6 +114,11 @@ export function SalesReturnsPageClient({ businessId }: Props) {
     reason: '',
   })
   const [items, setItems] = React.useState([newItem()])
+
+  const isBasic = business?.businessType?.toLowerCase() === 'basic'
+  const selectedInvoice = invoices.find((inv) => inv.id === form.invoiceId)
+  const formCurrency = selectedInvoice?.currency || business?.currency || 'INR'
+  const baseCurrency = business?.currency || 'INR'
 
   const fetchReturns = React.useCallback(async () => {
     try {
@@ -265,7 +272,7 @@ export function SalesReturnsPageClient({ businessId }: Props) {
               <div className="overflow-y-auto p-6 custom-scrollbar" style={{ maxHeight: 'calc(90vh - 160px)' }}>
                 <div className="grid gap-6">
                 {/* References */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className={`grid grid-cols-1 gap-4 ${isBasic ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
                   <div className="space-y-1.5">
                     <Label htmlFor="sr-cust" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Customer ID <span className="text-rose-500">*</span></Label>
                     <Select value={form.customerId} onValueChange={(val) => setForm(f => ({ ...f, customerId: val, invoiceId: '' }))}>
@@ -291,6 +298,7 @@ export function SalesReturnsPageClient({ businessId }: Props) {
                       </SelectContent>
                     </Select>
                   </div>
+                  {!isBasic && (
                   <div className="space-y-1.5">
                     <Label htmlFor="sr-so" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Sales Order ID <span className="text-slate-400 font-normal normal-case tracking-normal">(optional)</span></Label>
                     <Input
@@ -301,6 +309,7 @@ export function SalesReturnsPageClient({ businessId }: Props) {
                       className="rounded-xl border-border h-10 focus-visible:ring-blue-500"
                     />
                   </div>
+                  )}
                 </div>
 
                 {/* Reason */}
@@ -402,7 +411,7 @@ export function SalesReturnsPageClient({ businessId }: Props) {
                               />
                             </TableCell>
                             <TableCell className="p-2 text-right font-mono text-sm font-bold text-foreground">
-                              {formatCurrency(item.total)}
+                              {formatCurrency(item.total, formCurrency)}
                             </TableCell>
                             <TableCell className="p-2">
                               <Button
@@ -424,7 +433,7 @@ export function SalesReturnsPageClient({ businessId }: Props) {
                   <div className="flex justify-end pt-2">
                     <span className="text-sm font-medium text-muted-foreground">
                       Total Return Value:&nbsp;
-                      <span className="text-xl font-bold text-orange-600">{formatCurrency(lineTotal)}</span>
+                      <span className="text-xl font-bold text-orange-600">{formatCurrency(lineTotal, formCurrency)}</span>
                     </span>
                   </div>
                 </div>
@@ -510,7 +519,7 @@ export function SalesReturnsPageClient({ businessId }: Props) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{formatCurrency(stats.totalReturned)}</div>
+            <div className="text-2xl font-bold text-foreground">{formatCurrency(stats.totalReturned, baseCurrency)}</div>
             <p className="text-xs text-muted-foreground font-medium mt-1">All time returns</p>
           </CardContent>
         </Card>
@@ -596,7 +605,7 @@ export function SalesReturnsPageClient({ businessId }: Props) {
                       </TableCell>
                       <TableCell className="py-4 text-sm font-medium text-muted-foreground">{formatDate(ret.createdAt)}</TableCell>
                       <TableCell className="py-4 text-right">
-                        <span className="font-bold text-sm text-orange-600">{formatCurrency(ret.totalAmount)}</span>
+                        <span className="font-bold text-sm text-orange-600">{formatCurrency(ret.totalAmount, (ret.invoice as any)?.currency || baseCurrency)}</span>
                       </TableCell>
                       <TableCell className="py-4 text-right">
                         <Button asChild variant="outline" size="sm" className="h-8 rounded-lg cursor-pointer border-border bg-card hover:bg-blue-50 hover:text-blue-600 text-muted-foreground font-medium shadow-sm">
