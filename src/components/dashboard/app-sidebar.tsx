@@ -40,7 +40,7 @@ const MENU_CONFIG: Record<string, any> = {
     moduleVisibility: {
       Sales: {
         "CRM & Customers": ["Customers"],
-        "Sales Operations": ["Quotations", "Sales Orders", "Invoices", "Payments", "Credit Notes", "Returns", "Recurring Invoices", "Sales Report"],
+        "Sales Operations": ["Quotations", "Invoices", "Payments", "Credit Notes", "Returns", "Recurring Invoices", "Sales Report"],
       },
       Procurement: {
         allowedItems: ["Vendors", "Vendor"]
