@@ -13,7 +13,7 @@ export function AddPaymentSetupClient({ businessId }: { businessId: string }) {
   
   const { business } = useBusinessData()
   const isBasic = business?.businessType?.toLowerCase() === 'basic'
-  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
 
   const [pendingDocs, setPendingDocs] = useState<any[]>([])
   const [selectedDocId, setSelectedDocId] = useState('')

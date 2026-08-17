@@ -51,7 +51,7 @@ export function ViewVendorClient({ businessId, vendorId }: { businessId: string,
   const [expenses, setExpenses] = useState<ExpenseIncomeItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5002'
 
   const getCookie = useCallback((name: string) => {
     if (typeof document === 'undefined') return ''

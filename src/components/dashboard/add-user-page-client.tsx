@@ -30,7 +30,7 @@ export function AddUserPageClient({ businessId }: { businessId: string }) {
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
 
   const getCookie = (name: string) => {
     if (typeof document === 'undefined') return ''

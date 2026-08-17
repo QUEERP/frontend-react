@@ -24,7 +24,7 @@ export function SelectDesignClient({ businessId }: { businessId: string }) {
   const [selectedTemplate, setSelectedTemplate] = useState('modern')
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5002'
 
   // Read the saved default template from business settings
   useEffect(() => {

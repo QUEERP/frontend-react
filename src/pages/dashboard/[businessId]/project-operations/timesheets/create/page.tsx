@@ -170,7 +170,7 @@ export default function LogTimePage() {
       }
       
       // Auto-set employee to logged in user if available
-      const API = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+      const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
       const token = localStorage.getItem('token') || document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] || '';
       const meRes = await fetch(`${API}/api/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null);
       if (meRes && meRes.ok) {

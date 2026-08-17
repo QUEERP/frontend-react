@@ -58,7 +58,7 @@ export function GlobalPlanningWorkspace({ businessId: propBusinessId }: { busine
     if (!businessId) return;
     try {
       setLoading(true);
-      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
       const res = await fetch(`${API_BASE}/api/projects/global/plannings`, {
         headers: { 'Authorization': `Bearer ${getToken()}`, 'x-business-id': businessId }
       });

@@ -92,7 +92,7 @@ export function VendorPageClient({ businessId }: { businessId: string }) {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5002'
 
   const getCookie = useCallback((name: string) => {
     if (typeof document === 'undefined') return ''

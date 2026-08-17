@@ -92,7 +92,7 @@ export default function DocumentsPage() {
   const [formData, setFormData] = useState({ name: '', type: 'Other', category: 'Other', url: '' })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
 
   const getHeaders = () => {
     const token = getCookie('token') || getCookie('accessToken')

@@ -84,7 +84,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
     if (!businessId) return;
     try {
       setLoading(true);
-      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
       const getCookie = (name: string) => {
         if (typeof document === 'undefined') return '';
         const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\]\\^])/g, '\\$1') + '=([^;]*)'));
@@ -194,7 +194,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
         token = localStorage.getItem('token') || localStorage.getItem('accessToken') || undefined;
       }
       
-      const API_BASE_RAW = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').trim();
+      const API_BASE_RAW = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').trim();
       const API_BASE = API_BASE_RAW.replace(/\/$/, '');
       const apiRoot = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`;
       

@@ -8,7 +8,7 @@ import { purchaseOrdersAPI } from '@/lib/api/purchase-orders'
 import { purchaseRequestsAPI } from '@/lib/api/purchase'
 import { getCookie } from '@/lib/utils'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5002'
 
 export default function AddPurchaseOrderPage() {
   const routerParams = useParams() as any;

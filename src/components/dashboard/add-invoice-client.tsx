@@ -553,7 +553,7 @@ export function AddInvoiceClient({
         } else if (projectId) {
           try {
              const token = getCookie('token') || getCookie('accessToken');
-             const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+             const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
              const projRes = await fetch(`${API_BASE}/api/projects/${projectId}`, { 
                headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId } 
              })
@@ -684,7 +684,7 @@ export function AddInvoiceClient({
       const createdInvoiceId = result?.invoice?.id || result?.data?.id
 
       if (download && createdInvoiceId) {
-        const downloadUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/invoices/${createdInvoiceId}/download-pdf?businessId=${businessId}`
+        const downloadUrl = `${import.meta.env.VITE_API_BASE || 'http://localhost:5002'}/api/invoices/${createdInvoiceId}/download-pdf?businessId=${businessId}`
         window.open(downloadUrl, '_blank')
       }
 
@@ -692,7 +692,7 @@ export function AddInvoiceClient({
       if (paymentIdForAllocation && createdInvoiceId) {
         const allocAmount = Math.min(summary.total, unallocatedAmount || 0);
         if (allocAmount > 0) {
-          const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+          const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5002'
           const token = getCookie('token') || getCookie('accessToken')
           await fetch(`${API_BASE}/api/payments/${paymentIdForAllocation}/allocate-existing-invoice`, {
             method: 'POST',

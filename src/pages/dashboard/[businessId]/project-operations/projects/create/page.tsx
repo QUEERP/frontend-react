@@ -178,7 +178,7 @@ export default function CreateProjectPage() {
   useEffect(() => {
     const loadAllData = async () => {
       try {
-        const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+        const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
         let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         if (!token || token === 'null' || token === 'undefined') {
           token = getCookie('token') || getCookie('accessToken') || '';
@@ -288,7 +288,7 @@ export default function CreateProjectPage() {
     try {
       isSubmittingRef.current = true;
       setIsSubmitting(true);
-      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
       const payload = {
         projectCode: formData.projNumber,
         projectName: formData.projName,

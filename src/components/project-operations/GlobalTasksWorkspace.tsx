@@ -48,7 +48,7 @@ export function GlobalTasksWorkspace({ businessId: propBusinessId }: { businessI
       if (!businessId) return;
       try {
         setLoading(true);
-        const API = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+        const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
         let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         if (!token || token === 'null' || token === 'undefined') {
           token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] || 

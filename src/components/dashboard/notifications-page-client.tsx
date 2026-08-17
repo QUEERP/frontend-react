@@ -40,7 +40,7 @@ export default function NotificationsPageClient() {
       if (!token) return
 
       try {
-        const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+        const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
         const res = await fetch(`${API_BASE}/api/notifications/summary`, {
           headers: {
             'Authorization': `Bearer ${token}`,
