@@ -97,14 +97,24 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
       }
 
       const payload = data?.data
-      const paymentList = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.items)
-          ? payload.items
-          : []
+      let paymentList: any[] = []
+      
+      if (Array.isArray(payload)) {
+        paymentList = payload
+      } else if (payload && Array.isArray(payload.items)) {
+        paymentList = payload.items
+      } else if (payload && Array.isArray(payload.payments)) {
+        paymentList = payload.payments
+      } else if (payload && Array.isArray(payload.data)) {
+        paymentList = payload.data
+      } else if (Array.isArray(data?.items)) {
+        paymentList = data.items
+      } else if (Array.isArray(data?.payments)) {
+        paymentList = data.payments
+      }
 
       const rows = paymentList.map((p: any) => {
-        let proj = p.project || p.invoice?.project || (p.quotation?.projects && p.quotation.projects[0]) || null;
+        let proj = p.project || (p.invoice?.projects && p.invoice.projects[0]) || (p.quotation?.projects && p.quotation.projects[0]) || null;
         let refNumber = proj ? (proj.projectName || proj.projectCode) : (p.invoice?.invoiceNumber || p.quotation?.quoteNumber || (p.customer?.name ? `Advance: ${p.customer.name}` : '-'));
         
         return {
