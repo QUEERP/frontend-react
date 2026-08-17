@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
-import { BellIcon, Loader2Icon, FileDownIcon, DollarSignIcon, SearchIcon, DownloadIcon } from 'lucide-react'
+import { BellIcon, Loader2Icon, FileDownIcon, DollarSignIcon, SearchIcon, DownloadIcon, EyeIcon, PencilIcon } from 'lucide-react'
 import { exportToExcel } from '@/lib/export-utils'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -120,7 +120,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
           note: p.note || '-',
           createdAt: p.createdAt || '',
           pdfUrl: sanitizeUrl(p.pdfUrl),
-          currency: p.invoice?.currency || p.quotation?.currency || p.currency || '',
+          currency: p.invoice?.currency || p.quotation?.currency || p.project?.currency || p.currency || '',
           customerId: p.customerId || p.invoice?.customerId || p.quotation?.customerId || '',
           status: p.status || 'unapplied',
           amountAllocated: Number(p.amountAllocated || 0)
@@ -383,6 +383,24 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                             Allocate
                           </Button>
                         )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 rounded-lg cursor-pointer bg-card border-border text-slate-700 hover:bg-slate-50 font-semibold shadow-sm px-2"
+                          title="View"
+                          onClick={() => navigate(`/dashboard/${businessId}/payments/${payment.id}/view`)}
+                        >
+                          <EyeIcon className="size-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 rounded-lg cursor-pointer bg-card border-border text-slate-700 hover:bg-slate-50 font-semibold shadow-sm px-2"
+                          title="Edit"
+                          onClick={() => navigate(`/dashboard/${businessId}/payments/${payment.id}/edit`)}
+                        >
+                          <PencilIcon className="size-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
