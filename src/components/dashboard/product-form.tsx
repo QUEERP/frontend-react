@@ -35,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useBusinessData } from './business-data-provider'
 import { Warehouse as WarehouseIcon, Package, Tag, Calculator, ShieldCheck, Image as ImageIcon, Barcode, Upload, Link as LinkIcon } from 'lucide-react'
 import { productsAPI, warehousesAPI, categoriesAPI, brandsAPI, Warehouse, Product } from '@/lib/api/inventory'
+import { warehousesAPI as locationsAPI, WarehouseLocation } from '@/lib/api/warehouses'
 import { toast } from 'sonner'
 
 interface ProductFormData {
@@ -54,6 +55,7 @@ interface ProductFormData {
   isActive: boolean
   openingStock: number
   openingWarehouseId: string
+  openingLocationId: string
   image: string
   availableStock: number
 }
@@ -94,9 +96,12 @@ export default function ProductForm({ productId }: ProductFormProps) {
     isActive: true,
     openingStock: 0,
     openingWarehouseId: '',
+    openingLocationId: '',
     image: '',
     availableStock: 0,
   })
+  
+  const [locations, setLocations] = React.useState<WarehouseLocation[]>([])
 
   React.useEffect(() => {
     const load = async () => {
@@ -137,6 +142,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
               isActive: p.isActive ?? true,
               openingStock: 0,
               openingWarehouseId: '',
+              openingLocationId: '',
               image: p.imageUrl || '',
               availableStock: (p as any).stock ? (p as any).stock.reduce((acc: number, curr: any) => acc + ((curr.quantity || 0) - (curr.reservedQty || 0)), 0) : 0,
             })
@@ -183,11 +189,44 @@ export default function ProductForm({ productId }: ProductFormProps) {
       openingStock: type === 'SERVICE' ? 0 : prev.openingStock,
       reorderLevel: type === 'SERVICE' ? 0 : prev.reorderLevel,
       openingWarehouseId: type === 'SERVICE' ? '' : prev.openingWarehouseId,
+      openingLocationId: type === 'SERVICE' ? '' : prev.openingLocationId,
     }));
   };
 
   const isIndia = currency === 'INR';
   const isUae = currency === 'AED';
+
+  React.useEffect(() => {
+    if (formData.openingWarehouseId && formData.type === 'GOODS') {
+      const fetchLocs = async () => {
+        try {
+          const res = await locationsAPI.getLocations(businessId, formData.openingWarehouseId)
+          if (res.success) {
+            const locs = res.locations || res.data || []
+            setLocations(locs)
+            
+            const validIds = locs.map((l: any) => l.id)
+            if (locs.length > 0 && (!formData.openingLocationId || !validIds.includes(formData.openingLocationId))) {
+              const defaultLoc = locs.find((l: any) => l.isDefault)
+              if (defaultLoc) {
+                setFormData(prev => ({ ...prev, openingLocationId: defaultLoc.id }))
+              } else {
+                setFormData(prev => ({ ...prev, openingLocationId: locs[0].id }))
+              }
+            } else if (locs.length === 0) {
+              setFormData(prev => ({ ...prev, openingLocationId: '' }))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch locations", error)
+        }
+      }
+      fetchLocs()
+    } else {
+      setLocations([])
+      setFormData(prev => ({ ...prev, openingLocationId: '' }))
+    }
+  }, [formData.openingWarehouseId, businessId, formData.type])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -216,6 +255,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         hsnCode: formData.taxCode,
         initialQty: formData.type === 'GOODS' ? formData.openingStock : undefined,
         warehouseId: formData.type === 'GOODS' ? formData.openingWarehouseId : undefined,
+        locationId: (formData.type === 'GOODS' && formData.openingLocationId) ? formData.openingLocationId : undefined,
         reorderLevel: formData.type === 'GOODS' ? formData.reorderLevel : undefined,
         imageUrl: formData.image,
       }
@@ -539,6 +579,24 @@ export default function ProductForm({ productId }: ProductFormProps) {
                               </SelectContent>
                             </Select>
                           </div>
+                          
+                          {locations.length > 0 && (
+                            <div className="space-y-2">
+                              <Label className="text-xs font-medium text-amber-700">Location (Bin)</Label>
+                              <Select value={formData.openingLocationId} onValueChange={(val) => setFormData(prev => ({ ...prev, openingLocationId: val }))}>
+                                <SelectTrigger className="h-10 border-amber-200">
+                                  <SelectValue placeholder="Select Location" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {locations.map(loc => (
+                                    <SelectItem key={loc.id} value={loc.id}>
+                                      {loc.name} ({loc.code}) {loc.isDefault ? ' (Default)' : ''}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

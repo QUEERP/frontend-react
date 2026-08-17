@@ -5,7 +5,10 @@ import { ArrowLeft, Edit2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { warehousesAPI, Warehouse } from '@/lib/api/warehouses';
+import { useBusinessData } from '@/components/dashboard/business-data-provider';
+import { WarehouseLocations } from '@/components/dashboard/warehouse-locations';
 
 interface WarehouseViewProps {
   warehouseId: string;
@@ -19,6 +22,9 @@ export default function WarehouseView({ warehouseId }: WarehouseViewProps) {
 
   const [isLoading, setIsLoading] = useState(true);
   const [warehouse, setWarehouse] = useState<Warehouse | null>(null);
+  
+  const { business } = useBusinessData();
+  const isTrading = business?.businessType?.toLowerCase() === 'trading';
 
   useEffect(() => {
     fetchWarehouse();
@@ -95,62 +101,77 @@ export default function WarehouseView({ warehouseId }: WarehouseViewProps) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Warehouse Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Name</label>
-                <p className="mt-1 text-lg font-semibold">{warehouse.name}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Status</label>
-                <p className="mt-1">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    warehouse.isActive
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {warehouse.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </p>
-              </div>
-            </div>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          {isTrading && <TabsTrigger value="locations">Locations (Bins)</TabsTrigger>}
+        </TabsList>
 
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Address</label>
-              <p className="mt-1">{warehouse.address || '-'}</p>
-            </div>
+        <TabsContent value="overview">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Warehouse Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Name</label>
+                    <p className="mt-1 text-lg font-semibold">{warehouse.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Status</label>
+                    <p className="mt-1">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        warehouse.isActive
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {warehouse.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">City</label>
-                <p className="mt-1">{warehouse.city || '-'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Country</label>
-                <p className="mt-1">{warehouse.country || '-'}</p>
-              </div>
-            </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Address</label>
+                  <p className="mt-1">{warehouse.address || '-'}</p>
+                </div>
 
-            <div className="pt-4 border-t">
-              <label className="text-sm font-medium text-muted-foreground">Created</label>
-              <p className="mt-1">
-                {new Date(warehouse.createdAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">City</label>
+                    <p className="mt-1">{warehouse.city || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Country</label>
+                    <p className="mt-1">{warehouse.country || '-'}</p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <label className="text-sm font-medium text-muted-foreground">Created</label>
+                  <p className="mt-1">
+                    {new Date(warehouse.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        {isTrading && (
+          <TabsContent value="locations">
+            <WarehouseLocations businessId={businessId} warehouseId={warehouseId} />
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }

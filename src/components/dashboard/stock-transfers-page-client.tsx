@@ -4,6 +4,7 @@ import {  useLocation  } from 'react-router-dom';
 import { ArrowRightLeft, Search, Plus, CheckCircle, Clock, XCircle, MoreVertical, Eye, Trash2, Loader2 } from 'lucide-react'
 import { stockAPI, StockTransfer } from '@/lib/api/inventory'
 import { useToast } from '@/components/ui/use-toast'
+import { useBusinessData } from './business-data-provider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -23,6 +24,8 @@ const STATUS_COLORS: Record<string, string> = {
 export default function StockTransfersPageClient() {
   const pathname = useLocation().pathname
   const { toast } = useToast()
+  const { business } = useBusinessData()
+  const isTrading = business?.businessType?.toLowerCase() === 'trading'
   const businessId = pathname.match(/\/dashboard\/([^/]+)/)?.[1] || ''
   const [transfers, setTransfers] = useState<StockTransfer[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -106,8 +109,22 @@ export default function StockTransfersPageClient() {
                   {filtered.map(t => (
                     <TableRow key={t.id} className="hover:bg-muted/20">
                       <TableCell className="pl-4 font-mono font-semibold text-sm">{t.transferNumber}</TableCell>
-                      <TableCell className="text-sm">{t.fromWarehouse?.name || '—'}</TableCell>
-                      <TableCell className="text-sm">{t.toWarehouse?.name || '—'}</TableCell>
+                      <TableCell className="text-sm">
+                        <div className="font-medium">{t.fromWarehouse?.name || '—'}</div>
+                        {isTrading && t.fromLocation && (
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            Loc: {t.fromLocation.name ? `${t.fromLocation.code} - ${t.fromLocation.name}` : t.fromLocation.code}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <div className="font-medium">{t.toWarehouse?.name || '—'}</div>
+                        {isTrading && t.toLocation && (
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            Loc: {t.toLocation.name ? `${t.toLocation.code} - ${t.toLocation.name}` : t.toLocation.code}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm">{t.items?.length || 0}</TableCell>
                       <TableCell><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[t.status] || 'bg-gray-100 text-gray-700'}`}>{t.status}</span></TableCell>
                       <TableCell className="text-sm text-muted-foreground">{new Date(t.createdAt).toLocaleDateString()}</TableCell>

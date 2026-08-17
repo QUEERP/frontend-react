@@ -12,10 +12,13 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Link } from 'react-router-dom';
+import { useBusinessData } from './business-data-provider'
 
 export default function StockAdjustmentsPageClient() {
   const pathname = useLocation().pathname
   const { toast } = useToast()
+  const { business } = useBusinessData()
+  const isTrading = business?.businessType?.toLowerCase() === 'trading'
   const businessId = pathname.match(/\/dashboard\/([^/]+)/)?.[1] || ''
   const [adjustments, setAdjustments] = useState<StockAdjustment[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -76,6 +79,7 @@ export default function StockAdjustmentsPageClient() {
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
                     <TableHead className="pl-4">Reason</TableHead>
+                    <TableHead>Warehouse</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Items</TableHead>
                     <TableHead>Date</TableHead>
@@ -86,6 +90,14 @@ export default function StockAdjustmentsPageClient() {
                   {filtered.map(a => (
                     <TableRow key={a.id} className="hover:bg-muted/20">
                       <TableCell className="pl-4 font-medium text-sm">{a.reason}</TableCell>
+                      <TableCell className="text-sm">
+                        <div className="font-medium">{a.warehouse?.name || '—'}</div>
+                        {isTrading && a.location && (
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            Loc: {a.location.name ? `${a.location.code} - ${a.location.name}` : a.location.code}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[a.status] || 'bg-gray-100 text-gray-700'}`}>{a.status}</span></TableCell>
                       <TableCell className="text-sm">{a.items?.length || 0} items</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{new Date(a.createdAt).toLocaleDateString()}</TableCell>

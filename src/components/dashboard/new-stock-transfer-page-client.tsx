@@ -4,6 +4,8 @@ import {  useNavigate, useParams  } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { ArrowRightLeft, ArrowLeft, Plus, Trash2, Loader2 } from 'lucide-react'
 import { stockAPI, warehousesAPI, productsAPI, Warehouse, Product } from '@/lib/api/inventory'
+import { warehousesAPI as locationsAPI, WarehouseLocation } from '@/lib/api/warehouses'
+import { useBusinessData } from './business-data-provider'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,7 +26,9 @@ export default function NewStockTransferPageClient() {
   const params = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
-  
+  const { business } = useBusinessData()
+  const isTrading = business?.businessType?.toLowerCase() === 'trading'
+
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -33,6 +37,10 @@ export default function NewStockTransferPageClient() {
 
   const [fromWarehouseId, setFromWarehouseId] = useState('')
   const [toWarehouseId, setToWarehouseId] = useState('')
+  const [fromLocations, setFromLocations] = useState<WarehouseLocation[]>([])
+  const [toLocations, setToLocations] = useState<WarehouseLocation[]>([])
+  const [fromLocationId, setFromLocationId] = useState('')
+  const [toLocationId, setToLocationId] = useState('')
   const [transferDate, setTransferDate] = useState(new Date().toISOString().slice(0, 10))
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<TransferItem[]>([{ productId: '', quantity: 1, notes: '' }])
@@ -56,6 +64,62 @@ export default function NewStockTransferPageClient() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  useEffect(() => {
+    const fetchFromLocs = async () => {
+      if (!isTrading || !fromWarehouseId) {
+        setFromLocations([])
+        return
+      }
+      try {
+        const res = await locationsAPI.getLocations(businessId, fromWarehouseId)
+        if (res.success) {
+          const locs = res.locations || res.data || []
+          setFromLocations(locs)
+          const validIds = locs.map(l => l.id)
+          if (locs.length > 0 && (!fromLocationId || !validIds.includes(fromLocationId))) {
+            const defaultLoc = locs.find(l => l.isDefault)
+            if (defaultLoc) {
+              setFromLocationId(defaultLoc.id)
+            } else {
+              setFromLocationId(locs[0].id)
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch from locations", err)
+      }
+    }
+    fetchFromLocs()
+  }, [fromWarehouseId, businessId, isTrading, fromLocationId])
+
+  useEffect(() => {
+    const fetchToLocs = async () => {
+      if (!isTrading || !toWarehouseId) {
+        setToLocations([])
+        return
+      }
+      try {
+        const res = await locationsAPI.getLocations(businessId, toWarehouseId)
+        if (res.success) {
+          const locs = res.locations || res.data || []
+          setToLocations(locs)
+          const validIds = locs.map(l => l.id)
+          if (locs.length > 0 && (!toLocationId || !validIds.includes(toLocationId))) {
+            const defaultLoc = locs.find(l => l.isDefault)
+            if (defaultLoc) {
+              setToLocationId(defaultLoc.id)
+            } else {
+              setToLocationId(locs[0].id)
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch to locations", err)
+      }
+    }
+    fetchToLocs()
+  }, [toWarehouseId, businessId, isTrading, toLocationId])
+
   const addItem = () => setItems(prev => [...prev, { productId: '', quantity: 1, notes: '' }])
   const removeItem = (i: number) => setItems(prev => prev.length === 1 ? prev : prev.filter((_, idx) => idx !== i))
   const updateItem = (i: number, field: keyof TransferItem, value: string | number) =>
@@ -75,7 +139,12 @@ export default function NewStockTransferPageClient() {
     }
     try {
       setIsSubmitting(true)
-      await stockAPI.createTransfer(businessId, { fromWarehouseId, toWarehouseId, transferDate, notes, items: validItems } as any)
+      const payload: any = { fromWarehouseId, toWarehouseId, transferDate, notes, items: validItems }
+      if (isTrading) {
+        if (fromLocationId) payload.fromLocationId = fromLocationId
+        if (toLocationId) payload.toLocationId = toLocationId
+      }
+      await stockAPI.createTransfer(businessId, payload)
       toast({ title: 'Stock transfer created successfully' })
       navigate(`/dashboard/${businessId}/stock-transfers`)
     } catch (err: any) {
@@ -102,23 +171,49 @@ export default function NewStockTransferPageClient() {
           <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><ArrowRightLeft className="h-4 w-4" />Transfer Details</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>From Warehouse *</Label>
-                <Select value={fromWarehouseId} onValueChange={setFromWarehouseId} disabled={isLoading}>
-                  <SelectTrigger><SelectValue placeholder="Select source warehouse" /></SelectTrigger>
-                  <SelectContent>
-                    {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>From Warehouse *</Label>
+                  <Select value={fromWarehouseId} onValueChange={(val) => { setFromWarehouseId(val); setFromLocationId(''); }} disabled={isLoading}>
+                    <SelectTrigger><SelectValue placeholder="Select source warehouse" /></SelectTrigger>
+                    <SelectContent>
+                      {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isTrading && (
+                  <div className="space-y-2">
+                    <Label>From Location</Label>
+                    <Select value={fromLocationId} onValueChange={setFromLocationId} disabled={!fromWarehouseId || fromLocations.length === 0}>
+                      <SelectTrigger><SelectValue placeholder={fromLocations.length > 0 ? "Select Location" : "No Locations"} /></SelectTrigger>
+                      <SelectContent>
+                        {fromLocations.map(l => <SelectItem key={l.id} value={l.id}>{l.name ? `${l.code} - ${l.name}` : l.code}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label>To Warehouse *</Label>
-                <Select value={toWarehouseId} onValueChange={setToWarehouseId} disabled={isLoading}>
-                  <SelectTrigger><SelectValue placeholder="Select destination warehouse" /></SelectTrigger>
-                  <SelectContent>
-                    {warehouses.filter(w => w.id !== fromWarehouseId).map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>To Warehouse *</Label>
+                  <Select value={toWarehouseId} onValueChange={(val) => { setToWarehouseId(val); setToLocationId(''); }} disabled={isLoading}>
+                    <SelectTrigger><SelectValue placeholder="Select destination warehouse" /></SelectTrigger>
+                    <SelectContent>
+                      {warehouses.filter(w => w.id !== fromWarehouseId).map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isTrading && (
+                  <div className="space-y-2">
+                    <Label>To Location</Label>
+                    <Select value={toLocationId} onValueChange={setToLocationId} disabled={!toWarehouseId || toLocations.length === 0}>
+                      <SelectTrigger><SelectValue placeholder={toLocations.length > 0 ? "Select Location" : "No Locations"} /></SelectTrigger>
+                      <SelectContent>
+                        {toLocations.map(l => <SelectItem key={l.id} value={l.id}>{l.name ? `${l.code} - ${l.name}` : l.code}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             </div>
             <div className="space-y-2">

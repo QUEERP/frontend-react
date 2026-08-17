@@ -1,5 +1,6 @@
 import { getCookie } from '@/lib/utils'
 import { API_ROOT } from "@/config/api";
+import { WarehouseLocation } from './warehouses'
 
 
 function authHeaders(businessId: string) {
@@ -36,6 +37,7 @@ export interface Product {
   taxPercent?: number
   initialQty?: number
   warehouseId?: string
+  locationId?: string
   hsnCode?: string
   openingStock?: number
   openingWarehouseId?: string
@@ -54,24 +56,31 @@ export interface StockLevel {
   quantity: number; reservedQty: number; damagedQty: number; incomingQty: number
   updatedAt: string
   product?: Product; warehouse?: Warehouse
+  locationId?: string; location?: WarehouseLocation
 }
 
 export interface StockMovement {
   id: string; type: string; quantity: number; referenceId?: string; referenceType?: string
   notes?: string; performedById?: string; productId: string; warehouseId: string; batchId?: string
+  locationId?: string
   createdAt: string
   product?: { id: string; name: string; sku: string }
   warehouse?: { id: string; name: string }
+  location?: WarehouseLocation
   performedBy?: { id: string; user?: { name: string } }
 }
 
 export interface StockAdjustment {
   id: string; reason: string; notes?: string; status: string; createdAt: string
-  items: { productId: string; warehouseId: string; adjustmentType: string; quantity: number; notes?: string }[]
+  adjustmentNumber?: string; warehouseId?: string; locationId?: string
+  warehouse?: Warehouse; location?: WarehouseLocation
+  items: { productId: string; warehouseId?: string; locationId?: string; adjustmentType: string; quantity: number; notes?: string }[]
 }
 
 export interface StockTransfer {
   id: string; transferNumber: string; status: string; fromWarehouseId: string; toWarehouseId: string
+  fromLocationId?: string; toLocationId?: string
+  fromLocation?: WarehouseLocation; toLocation?: WarehouseLocation
   notes?: string; createdAt: string
   fromWarehouse?: Warehouse; toWarehouse?: Warehouse
   items: { productId: string; quantity: number; product?: Product }[]
