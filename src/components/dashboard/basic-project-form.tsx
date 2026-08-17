@@ -168,7 +168,7 @@ export function BasicProjectForm({ businessId }: { businessId: string }) {
     try {
       isSubmittingRef.current = true;
       setIsSubmitting(true);
-      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
       const payload = {
         projectCode: formData.projNumber,
         projectName: formData.projName,

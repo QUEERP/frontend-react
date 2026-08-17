@@ -110,7 +110,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
   const [syncLoading, setSyncLoading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
 
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5002'
 
   const getCookie = (name: string) => {
     if (typeof document === 'undefined') return ''

@@ -29,7 +29,7 @@ export function BasicProjectDetailsClient({ businessId, projectId }: BasicProjec
   const [loading, setLoading] = React.useState(true)
   const { business } = useBusinessData()
 
-  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
 
   const loadData = React.useCallback(async () => {
     try {

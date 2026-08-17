@@ -107,7 +107,7 @@ export function QuotationDetailsClient({ businessId, quotationId }: QuotationDet
   }, [role, business])
 
   const isBasic = business?.businessType?.toLowerCase() === 'basic'
-  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
 
   const [payments, setPayments] = React.useState<any[]>([])
   const [expenses, setExpenses] = React.useState<any[]>([])

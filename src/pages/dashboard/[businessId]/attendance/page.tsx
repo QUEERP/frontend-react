@@ -53,7 +53,7 @@ export default function AttendancePage() {
     try {
       setLoading(true)
       const token = getCookie('token') || getCookie('accessToken')
-      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
       
       // Fetch employees
       const empRes = await fetch(`${API_BASE}/api/employees`, {

@@ -24,7 +24,7 @@ export function PaymentAllocationPageClient({ businessId, paymentId }: { busines
   const [allocatingPayment, setAllocatingPayment] = useState(false)
   const [allocationAmounts, setAllocationAmounts] = useState<Record<string, string>>({})
 
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5002'
 
   const fetchPaymentDetails = async () => {
     try {

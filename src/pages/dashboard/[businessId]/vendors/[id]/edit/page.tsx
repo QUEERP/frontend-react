@@ -14,7 +14,7 @@ const vendorId = id as string
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5002'
 
   useEffect(() => {
     const fetchVendor = async () => {

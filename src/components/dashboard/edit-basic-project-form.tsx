@@ -78,7 +78,7 @@ export function EditBasicProjectForm({ businessId, projectId }: { businessId: st
 
     const fetchProject = async () => {
       try {
-        const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+        const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
         const token = getCookie('token') || getCookie('accessToken');
         const res = await fetch(`${API_BASE}/api/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId } });
         const data = await res.json();
@@ -187,7 +187,7 @@ export function EditBasicProjectForm({ businessId, projectId }: { businessId: st
 
     try {
       setIsSubmitting(true);
-      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
       const payload = {
         projectCode: formData.projNumber,
         projectName: formData.projName,

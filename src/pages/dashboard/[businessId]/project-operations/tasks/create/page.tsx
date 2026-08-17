@@ -69,7 +69,7 @@ export default function CreateTaskPage() {
 
   useEffect(() => {
     const load = async () => {
-      const API = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+      const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
       let token = localStorage.getItem('token');
       if (!token || token === 'null' || token === 'undefined') {
         token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] || 
@@ -100,7 +100,7 @@ export default function CreateTaskPage() {
     }
     setSaving(true);
     try {
-      const API = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+      const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
       let token = localStorage.getItem('token');
       if (!token || token === 'null' || token === 'undefined') {
         token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] || 

@@ -72,7 +72,7 @@ export function UserMenu() {
   const { toast } = useToast()
   const { permissions, business, role, businessId } = useBusinessData()
 
-  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+  const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
 
   React.useEffect(() => {
     const token = getCookie('token') || getCookie('accessToken')

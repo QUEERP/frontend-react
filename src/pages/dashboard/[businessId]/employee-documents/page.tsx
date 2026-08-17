@@ -53,7 +53,7 @@ export default function EmployeeDocumentsPage() {
     try {
       setLoading(true)
       const token = getCookie('token') || getCookie('accessToken')
-      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
       
       const empRes = await fetch(`${API_BASE}/api/employees`, {
         headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId as string }
@@ -91,7 +91,7 @@ export default function EmployeeDocumentsPage() {
     setSubmitting(true)
     try {
       const token = getCookie('token') || getCookie('accessToken')
-      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
 
       const res = await fetch(`${API_BASE}/api/employee-documents`, {
         method: 'POST',
@@ -120,7 +120,7 @@ export default function EmployeeDocumentsPage() {
     if(!confirm("Are you sure you want to delete this document?")) return;
     try {
       const token = getCookie('token') || getCookie('accessToken')
-      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3001').replace(/\/$/, '')
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
 
       await fetch(`${API_BASE}/api/employee-documents/${id}`, {
         method: 'DELETE',
