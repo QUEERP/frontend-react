@@ -686,7 +686,13 @@ export function AddInvoiceClient({
       if (download && createdInvoiceId) {
         const token = getCookie('token') || getCookie('accessToken')
         const downloadUrl = `${import.meta.env.VITE_API_BASE || 'http://localhost:5002'}/api/invoices/${createdInvoiceId}/download-pdf?x-business-id=${businessId}&token=${token}`
-        window.open(downloadUrl, '_blank')
+        const a = document.createElement('a')
+        a.href = downloadUrl
+        a.target = '_self'
+        a.download = `Invoice_${createdInvoiceId}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
       }
 
       // Auto Allocation handling
