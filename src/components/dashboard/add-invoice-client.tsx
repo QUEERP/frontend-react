@@ -685,7 +685,7 @@ export function AddInvoiceClient({
 
       if (download && createdInvoiceId) {
         const token = getCookie('token') || getCookie('accessToken')
-        const downloadUrl = `${import.meta.env.VITE_API_BASE || 'http://localhost:5002'}/api/invoices/${createdInvoiceId}/download-pdf?businessId=${businessId}&token=${token}`
+        const downloadUrl = `${import.meta.env.VITE_API_BASE || 'http://localhost:5002'}/api/invoices/${createdInvoiceId}/download-pdf?x-business-id=${businessId}&token=${token}`
         window.open(downloadUrl, '_blank')
       }
 

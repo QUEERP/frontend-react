@@ -155,7 +155,7 @@ export function GlobalBillingWorkspace({ businessId }: { businessId: string }) {
           });
           
           if (pdfRes.ok) {
-            window.open(`${API_ROOT}/invoices/${res.invoice.id}/download-pdf?token=${token}&businessId=${businessId}`, '_blank');
+            window.open(`${API_ROOT}/invoices/${res.invoice.id}/download-pdf?token=${token}&x-business-id=${businessId}`, '_blank');
           }
         } catch (pdfErr) {
           console.error("Auto PDF generation failed:", pdfErr);
