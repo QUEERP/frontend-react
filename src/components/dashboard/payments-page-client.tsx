@@ -105,7 +105,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
 
       const rows = paymentList.map((p: any) => {
         let proj = p.project || p.invoice?.project || (p.quotation?.projects && p.quotation.projects[0]) || null;
-        let refNumber = proj ? (proj.projectName || proj.projectCode) : (p.invoice?.invoiceNumber || p.quotation?.quoteNumber || '-');
+        let refNumber = proj ? (proj.projectName || proj.projectCode) : (p.invoice?.invoiceNumber || p.quotation?.quoteNumber || (p.customer?.name ? `Advance: ${p.customer.name}` : '-'));
         
         return {
           id: p.id,
@@ -120,7 +120,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
           note: p.note || '-',
           createdAt: p.createdAt || '',
           pdfUrl: sanitizeUrl(p.pdfUrl),
-          currency: p.invoice?.currency || p.quotation?.currency || p.project?.currency || p.currency || '',
+          currency: p.invoice?.currency || p.quotation?.currency || p.project?.currency || p.customer?.currency || p.currency || '',
           customerId: p.customerId || p.invoice?.customerId || p.quotation?.customerId || '',
           status: p.status || 'unapplied',
           amountAllocated: Number(p.amountAllocated || 0)
