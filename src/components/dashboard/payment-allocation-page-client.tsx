@@ -60,7 +60,6 @@ export function PaymentAllocationPageClient({ businessId, paymentId }: { busines
       if (projectId) {
         url += `?projectId=${projectId}`
       }
-      
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,

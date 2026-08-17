@@ -1,5 +1,6 @@
 import React from 'react';
 import {  useNavigate  } from 'react-router-dom';
+import { getCurrencySymbol } from '@/lib/currencies';
 import { 
   Search, FileText, Plus, Loader2, ArrowRight, MoreHorizontal, Eye, Edit, Trash2, DollarSign, Receipt
 } from 'lucide-react';
@@ -127,7 +128,7 @@ export function ProjectsTable({
                       return strCode;
                     };
                     const c = proj.currency || 'CAD';
-                    const formatCur = (val: number) => new Intl.NumberFormat(c === 'CAD' ? 'en-CA' : 'en-IN', { style: 'currency', currency: c }).format(Number(val || 0));
+                    const formatCur = (val: number) => `${getCurrencySymbol(c)} ${new Intl.NumberFormat(c === 'CAD' ? 'en-CA' : 'en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(val || 0))}`;
                     return (
                       <>
                         <TableCell className="py-4">
