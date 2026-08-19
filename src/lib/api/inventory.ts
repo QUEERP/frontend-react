@@ -184,6 +184,62 @@ export const inventoryReportsAPI = {
   },
   getExpiringBatches: (bId: string, params?: Record<string, string>) => {
     const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; batches: Batch[] }>(`${API_ROOT}/reports/expiring-batches${q}`, bId)
+    return apiFetch<{ success: boolean; batches: InventoryReport['expiringBatches'] }>(`${API_ROOT}/reports/expiring-batches${q}`, bId)
   },
+  getTradingInventoryReport: (
+    bId: string, 
+    dateRange: string = 'this_month',
+    tab: string = 'products',
+    page: number = 1,
+    pageSize: number = 25
+  ) => {
+    let url = `${API_ROOT}/inventory-reports/trading?tab=${tab}&page=${page}&pageSize=${pageSize}`;
+    
+    if (dateRange && typeof dateRange === 'string') {
+        url += `&dateRange=${dateRange}`;
+    } else if (dateRange && typeof dateRange === 'object') {
+        const dr = dateRange as any;
+        if (dr.startDate && dr.endDate) {
+           url += `&startDate=${dr.startDate}&endDate=${dr.endDate}`;
+        }
+    }
+    
+    return apiFetch<{ success: boolean; data: TradingInventoryReportData }>(url, bId)
+  }
+}
+
+export interface TradingInventoryReportData {
+  kpis: {
+    totalProducts: number;
+    totalStockValue: number;
+    lowStockCount: number;
+    activeWarehouses: number;
+    stockMovementsCount: number;
+  };
+  funnel: {
+    receipts: { count: number; quantity: number };
+    transfers: { count: number; quantity: number };
+    adjustments: { count: number; quantity: number };
+    stockOut: { count: number; quantity: number };
+  };
+  productsList: any[];
+  productsTotalCount: number;
+  categoriesList: any[];
+  categoriesTotalCount: number;
+  brandsList: any[];
+  brandsTotalCount: number;
+  unitsList: any[];
+  unitsTotalCount: number;
+  warehousesList: any[];
+  warehousesTotalCount: number;
+  stockOverviewList: any[];
+  stockOverviewTotalCount: number;
+  transfersList: any[];
+  transfersTotalCount: number;
+  adjustmentsList: any[];
+  adjustmentsTotalCount: number;
+  movementHistoryList: any[];
+  movementsTotalCount: number;
+  reorderAlertsList: any[];
+  alertsTotalCount: number;
 }

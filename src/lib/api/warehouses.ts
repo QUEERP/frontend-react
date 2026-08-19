@@ -29,6 +29,7 @@ export interface CreateWarehouseData {
   city?: string;
   country?: string;
   isActive?: boolean;
+  locations?: { id?: string; name?: string; code: string; isDefault?: boolean }[];
 }
 
 class WarehousesAPI {

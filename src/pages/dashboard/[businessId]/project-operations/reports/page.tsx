@@ -1,14 +1,8 @@
 import React from 'react';
-import { GlobalReportsWorkspace } from '@/components/project-operations/GlobalReportsWorkspace';
+import { ProjectOperationsReportClient } from '@/components/dashboard/project-operations-report-client';
 import { useParams } from "react-router-dom";
 
 export default function ReportsPage() {
   const { businessId } = useParams();
-  return (
-    <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] overflow-hidden bg-gray-50 dark:bg-gray-950">
-      <div className="flex-1 overflow-hidden bg-gray-100/50 dark:bg-gray-950">
-        <GlobalReportsWorkspace businessId={businessId as string} />
-      </div>
-    </div>
-  );
+  return <ProjectOperationsReportClient businessId={businessId as string} />;
 }

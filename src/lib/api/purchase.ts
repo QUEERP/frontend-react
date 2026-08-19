@@ -192,4 +192,60 @@ export const purchaseReportsAPI = {
     return apiFetch<{ success: boolean; data: { vendorId: string; vendorName: string; orderCount: number; totalAmount: number }[] }>(`${API_ROOT}/purchase/reports/by-vendor${q}`, bId)
   },
   getBillsAging: (bId: string) => apiFetch<{ success: boolean; aging: Record<string, { count: number; totalOutstanding: number }> }>(`${API_ROOT}/purchase/reports/bills-aging`, bId),
+  getTradingProcurementReport: (
+    bId: string, 
+    dateRange: string = 'this_month',
+    tab: string = 'vendors',
+    page: number = 1,
+    pageSize: number = 25
+  ) => {
+    let url = `${API_ROOT}/procurement-reports/trading?tab=${tab}&page=${page}&pageSize=${pageSize}`;
+    
+    if (dateRange && typeof dateRange === 'string') {
+        url += `&dateRange=${dateRange}`;
+    } else if (dateRange && typeof dateRange === 'object') {
+        const dr = dateRange as any;
+        if (dr.startDate && dr.endDate) {
+           url += `&startDate=${dr.startDate}&endDate=${dr.endDate}`;
+        }
+    }
+    
+    return apiFetch<{ success: boolean; data: TradingProcurementReportData }>(url, bId)
+  }
+}
+
+export interface TradingProcurementReportData {
+  kpis: {
+    totalVendors: number;
+    totalPOs: number;
+    totalPOValue: number;
+    totalBills: number;
+    totalBillsValue: number;
+    totalPayments: number;
+    totalPaymentsValue: number;
+    outstandingValue: number;
+    overdueBillsCount: number;
+  };
+  funnel: {
+    requests: { count: number; value: number };
+    pos: { count: number; value: number };
+    receipts: { count: number; value: number };
+    bills: { count: number; value: number };
+    payments: { count: number; value: number };
+    returns: { count: number; value: number };
+  };
+  vendorsList: any[];
+  vendorsTotalCount: number;
+  purchaseRequestsList: any[];
+  requestsTotalCount: number;
+  purchaseOrdersList: any[];
+  ordersTotalCount: number;
+  receiptsList: any[];
+  receiptsTotalCount: number;
+  billsList: any[];
+  billsTotalCount: number;
+  vendorPaymentsList: any[];
+  paymentsTotalCount: number;
+  returnsList: any[];
+  returnsTotalCount: number;
 }

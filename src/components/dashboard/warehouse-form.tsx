@@ -1,13 +1,14 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect, useCallback } from 'react';
 import {  useNavigate, useLocation  } from 'react-router-dom';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { warehousesAPI, CreateWarehouseData } from '@/lib/api/warehouses';
+import { useBusinessData } from '@/components/dashboard/business-data-provider';
 
 interface WarehouseFormProps {
   warehouseId?: string;
@@ -18,6 +19,8 @@ export default function WarehouseForm({ warehouseId }: WarehouseFormProps) {
   const pathname = useLocation().pathname;
   const { toast } = useToast();
   const businessId = pathname.match(/\/dashboard\/([^/]+)/)?.[1] || '';
+  const { business } = useBusinessData();
+  const isTrading = business?.businessType === 'Trading';
 
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingWarehouse, setIsLoadingWarehouse] = useState(!!warehouseId);
@@ -27,6 +30,7 @@ export default function WarehouseForm({ warehouseId }: WarehouseFormProps) {
     city: '',
     country: '',
     isActive: true,
+    locations: [],
   });
 
   useEffect(() => {
@@ -40,12 +44,22 @@ export default function WarehouseForm({ warehouseId }: WarehouseFormProps) {
       const response = await warehousesAPI.getWarehouse(businessId, warehouseId!);
       if (response.success) {
         const warehouse = response.warehouse;
+        
+        let fetchedLocations: any[] = [];
+        if (isTrading) {
+          const locRes = await warehousesAPI.getLocations(businessId, warehouseId!);
+          if (locRes.success) {
+            fetchedLocations = locRes.locations || locRes.data || [];
+          }
+        }
+
         setFormData({
           name: warehouse.name,
           address: warehouse.address || '',
           city: warehouse.city || '',
           country: warehouse.country || '',
           isActive: warehouse.isActive,
+          locations: fetchedLocations.map(l => ({ id: l.id, name: l.name, code: l.code, isDefault: l.isDefault })),
         });
       }
     } catch (error) {
@@ -75,14 +89,52 @@ export default function WarehouseForm({ warehouseId }: WarehouseFormProps) {
     try {
       setIsLoading(true);
 
+      const payload = { ...formData };
+      delete payload.locations;
+
       if (warehouseId) {
-        await warehousesAPI.updateWarehouse(businessId, warehouseId, formData);
+        await warehousesAPI.updateWarehouse(businessId, warehouseId, payload);
+        
+        if (isTrading && formData.locations) {
+          const locRes = await warehousesAPI.getLocations(businessId, warehouseId);
+          const existingLocs = locRes.success ? (locRes.locations || locRes.data || []) : [];
+          
+          const existingIds = existingLocs.map((l: any) => l.id);
+          const currentIds = formData.locations.map(l => l.id).filter(Boolean);
+          
+          const toDelete = existingLocs.filter((l: any) => !currentIds.includes(l.id) && !l.isDefault);
+          for (const l of toDelete) {
+            await warehousesAPI.deleteLocation(businessId, l.id);
+          }
+          
+          for (const loc of formData.locations) {
+            if (loc.id) {
+              const existing = existingLocs.find((l: any) => l.id === loc.id);
+              if (existing && (existing.name !== loc.name || existing.code !== loc.code)) {
+                await warehousesAPI.updateLocation(businessId, loc.id, { name: loc.name || '', code: loc.code });
+              }
+            } else if (loc.code) {
+              await warehousesAPI.createLocation(businessId, warehouseId, { name: loc.name || '', code: loc.code });
+            }
+          }
+        }
+
         toast({
           title: 'Success',
           description: 'Warehouse updated successfully.',
         });
       } else {
-        await warehousesAPI.createWarehouse(businessId, formData);
+        const res = await warehousesAPI.createWarehouse(businessId, payload);
+        const newWarehouseId = res.warehouse.id;
+
+        if (isTrading && formData.locations) {
+          for (const loc of formData.locations) {
+            if (loc.code) {
+              await warehousesAPI.createLocation(businessId, newWarehouseId, { name: loc.name || '', code: loc.code });
+            }
+          }
+        }
+
         toast({
           title: 'Success',
           description: 'Warehouse created successfully.',
@@ -198,6 +250,75 @@ export default function WarehouseForm({ warehouseId }: WarehouseFormProps) {
               </div>
             </CardContent>
           </Card>
+
+          {isTrading && (
+            <Card className="lg:col-span-2">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Locations (Bins)</CardTitle>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setFormData({ ...formData, locations: [...(formData.locations || []), { name: '', code: '' }] })}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Location
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(formData.locations || []).map((loc, index) => (
+                  <div key={index} className="flex gap-4 items-end">
+                    <div className="flex-1 space-y-2">
+                      <label className="text-sm font-medium">Location Code</label>
+                      <Input
+                        placeholder="e.g. A1-01"
+                        value={loc.code}
+                        onChange={(e) => {
+                          const newLocations = [...(formData.locations || [])];
+                          newLocations[index].code = e.target.value.toUpperCase();
+                          setFormData({ ...formData, locations: newLocations });
+                        }}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">Used for quick scanning/reference. Will be converted to uppercase.</p>
+                    </div>
+                    <div className="flex-1 space-y-2 pb-[26px]">
+                      <label className="text-sm font-medium">Location Name (Optional)</label>
+                      <Input
+                        placeholder="e.g. Aisle 1, Shelf 1"
+                        value={loc.name}
+                        onChange={(e) => {
+                          const newLocations = [...(formData.locations || [])];
+                          newLocations[index].name = e.target.value;
+                          setFormData({ ...formData, locations: newLocations });
+                        }}
+                      />
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon"
+                      disabled={loc.isDefault}
+                      onClick={() => {
+                        const newLocations = formData.locations?.filter((_, i) => i !== index);
+                        setFormData({ ...formData, locations: newLocations });
+                      }}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:pointer-events-none"
+                      title={loc.isDefault ? "Default location cannot be deleted" : "Delete"}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {(!formData.locations || formData.locations.length === 0) && (
+                  <p className="text-sm text-muted-foreground text-center py-4 border-2 border-dashed rounded-lg">
+                    No locations added yet. Click &quot;Add Location&quot; to create one.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 mt-6">

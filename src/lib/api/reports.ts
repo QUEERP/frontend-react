@@ -48,111 +48,9 @@ export async function getProfitLossReport(
   }
 }
 
-export interface CrmAnalyticsReport {
-  success: boolean
-  kpis: {
-    totalLeads: number
-    totalAccounts: number
-    totalDeals: number
-    leadConversionRate: number
-    dealWinRate: number
-    totalPipelineValue: number
-    revenueWon: number
-    expectedWeightedRevenue: number
-    averageHoursToConvert: number
-    totalActivities: number
-  }
-  leadsBreakdown: {
-    sources: Record<string, number>
-    convertedCount: number
-  }
-  dealsBreakdown: {
-    stages: Record<string, { count: number; totalAmount: number }>
-    monthlyForecast: Record<string, number>
-    wonCount: number
-    lostCount: number
-    revenueLost: number
-  }
-  activitiesBreakdown: {
-    types: Record<string, number>
-    statuses: Record<string, number>
-  }
-  accountsBreakdown: {
-    industries: Record<string, number>
-    types: Record<string, number>
-    topAccounts: Array<{ id: string; company: string; annualRevenue: number | null; industry: string | null }>
-  }
-}
 
-export async function getCrmAnalyticsReport(
-  token: string,
-  businessId: string
-): Promise<CrmAnalyticsReport> {
-  const response = await fetch(`${API_ROOT}/reports/crm`, {
-    headers: buildHeaders(token, businessId),
-  })
 
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    throw new Error(payload?.message || `Failed to fetch CRM report: ${response.status}`)
-  }
 
-  return payload
-}
-
-export interface SalesDashboardData {
-  billingSummary: Array<{
-    status: string
-    _sum: { grandTotal: number | null; subtotal: number | null }
-    _count: { id: number }
-  }>
-  overdueInvoices: Array<{
-    id: string
-    invoiceNumber: string
-    grandTotal: number
-    balanceDue: number
-    dueDate: string
-    customer?: { id: string; company: string; phone?: string | null }
-  }>
-  quoteFunnel: Array<{
-    status: string
-    _sum: { totalAmount: number | null }
-    _count: { id: number }
-  }>
-  salesOrderTracking: Array<{
-    status: string
-    _sum: { totalAmount: number | null }
-    _count: { id: number }
-  }>
-  topCustomers: Array<{
-    customerId: string
-    name: string
-    company: string | null
-    totalSales: number
-  }>
-  topProducts: Array<{
-    productId: string | null
-    description: string
-    _sum: { total: number | null; quantity: number | null }
-    _count: { id: number }
-  }>
-}
-
-export async function getSalesDashboardReport(
-  token: string,
-  businessId: string
-): Promise<SalesDashboardData> {
-  const response = await fetch(`${API_ROOT}/sales-reports/dashboard`, {
-    headers: buildHeaders(token, businessId),
-  })
-
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    throw new Error(payload?.message || `Failed to fetch Sales report: ${response.status}`)
-  }
-
-  return payload.data
-}
 
 export interface BasicSalesReportData {
   totalCustomers: number;
@@ -161,8 +59,11 @@ export interface BasicSalesReportData {
   paymentsRemaining: number;
   totalCreditNotes: number;
   customersList: any[];
+  customersTotalCount: number;
   paymentsList: any[];
+  paymentsTotalCount: number;
   creditNotesList: any[];
+  creditNotesTotalCount: number;
 }
 
 export async function getBasicSalesReport(
@@ -179,4 +80,203 @@ export async function getBasicSalesReport(
   }
 
   return payload.data
+}
+
+export interface TradingSalesReportData extends BasicSalesReportData {
+  quotationsList: any[];
+  quotationsTotalCount: number;
+  salesOrdersList: any[];
+  salesOrdersTotalCount: number;
+  invoicesList: any[];
+  invoicesTotalCount: number;
+  returnsList: any[];
+  returnsTotalCount: number;
+  recurringList: any[];
+  recurringTotalCount: number;
+}
+
+export async function getTradingSalesReport(token: string, businessId: string, dateRange: string = 'this_month', tab?: string, page: number = 1, pageSize: number = 25): Promise<TradingSalesReportData> {
+  const queryParams = new URLSearchParams();
+  if (dateRange && dateRange !== 'all_time') queryParams.append('dateRange', dateRange);
+  if (tab) queryParams.append('tab', tab);
+  queryParams.append('page', page.toString());
+  queryParams.append('pageSize', pageSize.toString());
+
+  const response = await fetch(`${API_ROOT}/sales-reports/trading?${queryParams.toString()}`, {
+    method: 'GET',
+    headers: buildHeaders(token, businessId),
+  })
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(payload?.message || `Failed to fetch trading sales report: ${response.status}`)
+  }
+
+  return payload.data
+}
+
+export interface BalanceSheetReport {
+  assets: { id: string; name: string; balance: number }[]
+  liabilities: { id: string; name: string; balance: number }[]
+  equities: { id: string; name: string; balance: number }[]
+  totalAssets: number
+  totalLiabilities: number
+  totalEquity: number
+  balances: boolean
+}
+
+export async function getBalanceSheetReport(
+  token: string,
+  businessId: string,
+  asOfDate?: string
+): Promise<BalanceSheetReport> {
+  const searchParams = new URLSearchParams()
+  if (asOfDate) searchParams.set('asOfDate', asOfDate)
+  
+  const query = searchParams.toString()
+  const response = await fetch(`${API_ROOT}/reports/balance-sheet${query ? `?${query}` : ''}`, {
+    headers: buildHeaders(token, businessId),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload?.message || `Failed to fetch report: ${response.status}`)
+  return payload
+}
+
+export interface CashFlowReport {
+  operatingActivities: { name: string; amount: number }[]
+  investingActivities: { name: string; amount: number }[]
+  financingActivities: { name: string; amount: number }[]
+  netCashFlow: number
+  openingBalance: number
+  closingBalance: number
+}
+
+export async function getCashFlowReport(
+  token: string,
+  businessId: string,
+  filters?: { fromDate?: string; toDate?: string }
+): Promise<CashFlowReport> {
+  const searchParams = new URLSearchParams()
+  if (filters?.fromDate) searchParams.set('fromDate', filters.fromDate)
+  if (filters?.toDate) searchParams.set('toDate', filters.toDate)
+  
+  const query = searchParams.toString()
+  const response = await fetch(`${API_ROOT}/reports/cash-flow${query ? `?${query}` : ''}`, {
+    headers: buildHeaders(token, businessId),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload?.message || `Failed to fetch report: ${response.status}`)
+  return payload
+}
+
+export interface TrialBalanceReport {
+  accounts: { id: string; name: string; code: string; type: string; netDebit: number; netCredit: number }[]
+  totalDebit: number
+  totalCredit: number
+  balances: boolean
+}
+
+export async function getTrialBalanceReport(
+  token: string,
+  businessId: string
+): Promise<TrialBalanceReport> {
+  const response = await fetch(`${API_ROOT}/reports/trial-balance`, {
+    headers: buildHeaders(token, businessId),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload?.message || `Failed to fetch report: ${response.status}`)
+  return payload
+}
+
+export interface GeneralLedgerReport {
+  entries: { id: string; date: string; account: { name: string; code: string; type: string }; description: string; debit: number; credit: number; runningBalance: number }[]
+  pagination: { total: number; page: number; limit: number; totalPages: number }
+}
+
+export async function getGeneralLedgerReport(
+  token: string,
+  businessId: string,
+  page: number = 1,
+  limit: number = 25,
+  accountId?: string
+): Promise<GeneralLedgerReport> {
+  const searchParams = new URLSearchParams()
+  searchParams.set('page', page.toString())
+  searchParams.set('limit', limit.toString())
+  if (accountId) searchParams.set('accountId', accountId)
+  
+  const query = searchParams.toString()
+  const response = await fetch(`${API_ROOT}/reports/general-ledger${query ? `?${query}` : ''}`, {
+    headers: buildHeaders(token, businessId),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload?.message || `Failed to fetch report: ${response.status}`)
+  return payload
+}
+
+export interface AccountsReceivableReport {
+  invoices: { id: string; customerName: string; invoiceNumber: string; invoiceDate: string; dueDate: string; amount: number; balanceDue: number; daysOverdue: number; status: string }[]
+  buckets: {
+    current: { count: number; total: number }
+    thirty: { count: number; total: number }
+    sixty: { count: number; total: number }
+    ninety: { count: number; total: number }
+    older: { count: number; total: number }
+  }
+  pagination: { total: number; page: number; limit: number; totalPages: number }
+}
+
+export async function getAccountsReceivableReport(
+  token: string,
+  businessId: string,
+  page: number = 1,
+  limit: number = 25
+): Promise<AccountsReceivableReport> {
+  const searchParams = new URLSearchParams()
+  searchParams.set('page', page.toString())
+  searchParams.set('limit', limit.toString())
+  
+  const query = searchParams.toString()
+  const response = await fetch(`${API_ROOT}/reports/accounts-receivable${query ? `?${query}` : ''}`, {
+    headers: buildHeaders(token, businessId),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload?.message || `Failed to fetch report: ${response.status}`)
+  return payload
+}
+
+export interface AccountsPayableReport {
+  bills: { id: string; vendorName: string; billNumber: string; billDate: string; dueDate: string; amount: number; balanceDue: number; daysOverdue: number; status: string }[]
+  buckets: {
+    current: { count: number; total: number }
+    thirty: { count: number; total: number }
+    sixty: { count: number; total: number }
+    ninety: { count: number; total: number }
+    older: { count: number; total: number }
+  }
+  pagination: { total: number; page: number; limit: number; totalPages: number }
+}
+
+export async function getAccountsPayableReport(
+  token: string,
+  businessId: string,
+  page: number = 1,
+  limit: number = 25
+): Promise<AccountsPayableReport> {
+  const searchParams = new URLSearchParams()
+  searchParams.set('page', page.toString())
+  searchParams.set('limit', limit.toString())
+  
+  const query = searchParams.toString()
+  const response = await fetch(`${API_ROOT}/reports/accounts-payable${query ? `?${query}` : ''}`, {
+    headers: buildHeaders(token, businessId),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload?.message || `Failed to fetch report: ${response.status}`)
+  return payload
 }
