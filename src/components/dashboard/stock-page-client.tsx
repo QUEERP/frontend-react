@@ -25,7 +25,8 @@ import { toast } from 'sonner'
 import {  useLocation, useNavigate  } from 'react-router-dom';
 
 export default function StockPageClient() {
-  const { currency = 'AED' } = useBusinessData()
+  const { currency = 'AED', business } = useBusinessData()
+  const isTrading = business?.businessType?.toLowerCase() === 'trading'
   const pathname = useLocation().pathname
   const navigate = useNavigate()
   const businessId = pathname.match(/\/dashboard\/([^/]+)/)?.[1] || ''
@@ -85,13 +86,14 @@ export default function StockPageClient() {
       return
     }
 
-    const headers = ['Product', 'SKU', 'Warehouse', 'Physical', 'Reserved', 'Available', 'Valuation', 'Unit']
+    const headers = ['Product', 'SKU', 'Warehouse', ...(isTrading ? ['Location'] : []), 'Physical', 'Reserved', 'Available', 'Valuation', 'Unit']
     const csvContent = [
       headers.join(','),
       ...filteredStock.map(s => [
         `"${s.product?.name || ''}"`,
         `"${s.product?.sku || ''}"`,
         `"${s.warehouse?.name || ''}"`,
+        ...(isTrading ? [`"${s.location?.name ? `${s.location.code} - ${s.location.name}` : (s.location?.code || '')}"`] : []),
         s.quantity,
         s.reservedQty,
         s.quantity - s.reservedQty,
@@ -222,6 +224,7 @@ export default function StockPageClient() {
                 <tr className="bg-muted/50 border-b">
                   <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-wider text-muted-foreground">Product & SKU</th>
                   <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-wider text-muted-foreground">Warehouse</th>
+                  {isTrading && <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-wider text-muted-foreground">Location</th>}
                   <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-wider text-muted-foreground">Physical</th>
                   <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-wider text-muted-foreground">Reserved</th>
                   <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-wider text-muted-foreground">Available</th>
@@ -250,6 +253,13 @@ export default function StockPageClient() {
                           <span className="text-xs font-medium">{item.warehouse?.name}</span>
                         </div>
                       </td>
+                      {isTrading && (
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {item.location ? (item.location.name ? `${item.location.code} - ${item.location.name}` : item.location.code) : '-'}
+                          </span>
+                        </td>
+                      )}
                       <td className="px-6 py-4 text-center">
                         <span className="text-sm font-bold">{item.quantity}</span>
                         <span className="text-[10px] text-muted-foreground ml-1">

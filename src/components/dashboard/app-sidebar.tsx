@@ -40,7 +40,8 @@ const MENU_CONFIG: Record<string, any> = {
     moduleVisibility: {
       Sales: {
         "CRM & Customers": ["Customers"],
-        "Sales Operations": ["Quotations", "Invoices", "Payments", "Credit Notes", "Returns", "Recurring Invoices", "Sales Report"],
+        "Sales Operations": ["Quotations", "Invoices", "Payments", "Credit Notes", "Returns", "Recurring Invoices"],
+        allowedItems: ["Sales Report"],
       },
       Procurement: {
         allowedItems: ["Vendors", "Vendor"]
@@ -234,18 +235,17 @@ export function AppSidebar() {
 
   React.useEffect(() => {
     const isCrmPath = pathname.includes('/leads') || pathname.includes('/deals') || pathname.includes('/customers') || pathname.includes('/contacts')
-    const isOpsPath = pathname.includes('/quotations') || pathname.includes('/sales-orders') || pathname.includes('/invoices') || pathname.includes('/payments') || pathname.includes('/credit-notes') || pathname.includes('/sales-returns') || pathname.includes('/recurring-invoices') || pathname.includes('/sales-report')
+    const isOpsPath = pathname.includes('/quotations') || pathname.includes('/sales-orders') || pathname.includes('/invoices') || pathname.includes('/payments') || pathname.includes('/credit-notes') || pathname.includes('/sales-returns') || pathname.includes('/recurring-invoices')
     const isActivitiesPath = pathname.includes('/activities') || pathname.includes('/meetings') || pathname.includes('/calls') || (pathname.includes('/tasks') && !pathname.includes('/project-operations')) || pathname.includes('/notes')
     const isMarketingPath = pathname.includes('/campaigns') || pathname.includes('/email-logs')
-    const isAnalyticsPath = pathname.includes('/reports') && !pathname.includes('/purchase-reports') && !pathname.includes('/inventory-reports')
+    const isSalesReportPath = pathname.includes('/sales-report')
 
-    if (isCrmPath || isOpsPath || isActivitiesPath || isMarketingPath || isAnalyticsPath) {
+    if (isCrmPath || isOpsPath || isActivitiesPath || isMarketingPath || isSalesReportPath) {
       setIsSalesOpen(true)
       if (isCrmPath) setIsSalesCrmOpen(true)
       if (isOpsPath) setIsSalesOpsOpen(true)
       if (isActivitiesPath) setIsSalesActivitiesOpen(true)
       if (isMarketingPath) setIsSalesMarketingOpen(true)
-      if (isAnalyticsPath) setIsSalesAnalyticsOpen(true)
     }
   }, [pathname])
 
@@ -253,8 +253,9 @@ export function AppSidebar() {
     const isVendorsPath = pathname.includes('/vendors')
     const isPurchasingPath = pathname.includes('/purchase-orders') || pathname.includes('/bills') || pathname.includes('/purchase-requests') || pathname.includes('/grn') || pathname.includes('/vendor-payments') || pathname.includes('/purchase-returns') || pathname.includes('/vendor-bills')
     const isAnalyticsPath = pathname.includes('/purchase-reports')
+    const isProcurementReportPath = pathname.includes('/procurement-report')
 
-    if (isVendorsPath || isPurchasingPath || isAnalyticsPath) {
+    if (isVendorsPath || isPurchasingPath || isAnalyticsPath || isProcurementReportPath) {
       setIsProcurementOpen(true)
       if (isVendorsPath) setIsProcurementVendorsOpen(true)
       if (isPurchasingPath) setIsProcurementPurchasingOpen(true)
@@ -268,8 +269,9 @@ export function AppSidebar() {
     const isTrackingPath = pathname.includes('/batch-tracking') || pathname.includes('/serial-numbers')
     const isMonitoringPath = pathname.includes('/stock-movements') || pathname.includes('/reorder-alerts')
     const isAnalyticsPath = pathname.includes('/inventory-dashboard') || pathname.includes('/inventory-reports')
+    const isInventoryReportPath = pathname.includes('/inventory-report')
 
-    if (isProductPath || isWarehousePath || isTrackingPath || isMonitoringPath || isAnalyticsPath) {
+    if (isProductPath || isWarehousePath || isTrackingPath || isMonitoringPath || isAnalyticsPath || isInventoryReportPath) {
       setIsInventoryOpen(true)
       if (isProductPath) setIsInventoryProductOpen(true)
       if (isWarehousePath) setIsInventoryWarehouseOpen(true)
@@ -295,7 +297,7 @@ export function AppSidebar() {
   }, [pathname])
 
   React.useEffect(() => {
-    if (pathname.includes('/accounts') || pathname.includes('/journal-entries') || pathname.includes('/reports') || pathname.includes('/expenses')) {
+    if (pathname.includes('/accounts') || pathname.includes('/journal-entries') || (pathname.includes('/reports') && !pathname.includes('/project-operations')) || (pathname.includes('/expenses') && !pathname.includes('/project-operations'))) {
       setIsProjectManagementOpen(true)
     }
   }, [pathname])
@@ -983,7 +985,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/contacts`, label: 'Contacts', icon: UserCheckIcon, path: '/contacts' },
                               ].filter(item => isMenuVisible(bType, 'Sales', 'CRM & Customers', item.label)).map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1014,10 +1016,9 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/credit-notes`, label: 'Credit Notes', icon: CreditCardIcon, path: '/credit-notes' },
                                 { href: `${baseDashboardPath}/sales-returns`, label: 'Returns', icon: Undo2, path: '/sales-returns' },
                                 { href: `${baseDashboardPath}/recurring-invoices`, label: 'Recurring Invoices', icon: RefreshCw, path: '/recurring-invoices' },
-                                { href: `${baseDashboardPath}/sales-report`, label: 'Sales Report', icon: FileTextIcon, path: '/sales-report' },
                               ].filter(item => isMenuVisible(bType, 'Sales', 'Sales Operations', item.label)).map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1049,7 +1050,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/activities`, label: 'Activities', icon: ActivityIcon, path: '/activities' },
                               ].filter(item => isMenuVisible(bType, 'Sales', 'Activities', item.label)).map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1078,7 +1079,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/email-logs`, label: 'Email Tracking', icon: MailSearch, path: '/email-logs' },
                               ].filter(item => isMenuVisible(bType, 'Sales', 'Marketing', item.label)).map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1091,32 +1092,18 @@ export function AppSidebar() {
                           </Collapsible>
                           )}
 
-                          {/* GROUP 5: Analytics */}
-                          {isMenuVisible(bType, 'Sales', 'Analytics') && (
-                          <Collapsible open={isSalesAnalyticsOpen} onOpenChange={setIsSalesAnalyticsOpen} className="px-2">
-                            <CollapsibleTrigger asChild>
-                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                                <span>Analytics</span>
-                                <ChevronDownIcon className={`size-3 transition-transform ${isSalesAnalyticsOpen ? 'rotate-180' : ''}`} />
-                              </button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                                {[
-                                { href: `${baseDashboardPath}/reports`, label: 'Sales Analytics', icon: PieChart, path: '/reports' },
-                              ].filter(item => isMenuVisible(bType, 'Sales', 'Analytics', item.label)).map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          </Collapsible>
+
+
+                          {/* Standalone Sales Items */}
+                          {isMenuVisible(bType, 'Sales', 'Sales Report') && (
+                            <div className="px-2 mt-1">
+                                <SidebarMenuButton asChild size="sm" isActive={pathname.includes('/sales-report')}>
+                                  <Link to={`${baseDashboardPath}/sales-report`} className="flex items-center gap-2">
+                                    <FileTextIcon className="size-4" />
+                                    <span>Sales Report</span>
+                                  </Link>
+                                </SidebarMenuButton>
+                            </div>
                           )}
                         </div>
                       </CollapsibleContent>
@@ -1162,7 +1149,7 @@ export function AppSidebar() {
                                 {[{ href: `${baseDashboardPath}/vendors`, label: 'Vendors', icon: StoreIcon, path: '/vendors' },
                               ].filter(item => isMenuVisible(bType, 'Procurement', 'Vendors', item.label)).map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1194,7 +1181,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/purchase-returns`, label: 'Returns', icon: Undo2, path: '/purchase-returns' },
                               ].filter(item => isMenuVisible(bType, 'Procurement', 'Purchasing', item.label)).map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1222,7 +1209,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/purchase-reports`, label: 'Procurement Analytics', icon: BarChart3, path: '/purchase-reports' },
                               ].filter(item => isMenuVisible(bType, 'Procurement', 'Analytics', item.label)).map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1233,6 +1220,18 @@ export function AppSidebar() {
                               </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
+                          )}
+
+                          {/* Standalone Procurement Items */}
+                          {isMenuVisible(bType, 'Procurement', 'Procurement Report') && (
+                            <div className="px-2 mt-1">
+                                <SidebarMenuButton asChild size="sm" isActive={pathname.includes('/procurement-report')}>
+                                  <Link to={`${baseDashboardPath}/procurement-report`} className="flex items-center gap-2">
+                                    <FileTextIcon className="size-4" />
+                                    <span>Procurement Report</span>
+                                  </Link>
+                                </SidebarMenuButton>
+                            </div>
                           )}
                         </div>
                       </CollapsibleContent>
@@ -1278,7 +1277,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/units`, label: 'Units', icon: Ruler, path: '/units' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1306,7 +1305,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/stock-adjustments`, label: 'Adjustments', icon: SlidersHorizontal, path: '/stock-adjustments' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1332,7 +1331,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/serial-numbers`, label: 'Serial Tracking', icon: ScanLine, path: '/serial-numbers' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1359,7 +1358,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/reorder-alerts`, label: 'Reorder Alerts', icon: AlertTriangle, path: '/reorder-alerts' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1385,7 +1384,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/inventory-dashboard`, label: 'Inventory Analytics', icon: BarChart3, path: '/inventory-dashboard' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1396,7 +1395,19 @@ export function AppSidebar() {
                             </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
-                        </div>
+                          </div>
+
+                          {/* Standalone Inventory Items */}
+                          {bType.toLowerCase() === 'trading' && (
+                            <div className="px-2 mt-1">
+                                <SidebarMenuButton asChild size="sm" isActive={pathname.includes('/inventory-report')}>
+                                  <Link to={`${baseDashboardPath}/inventory-report`} className="flex items-center gap-2">
+                                    <FileTextIcon className="size-4" />
+                                    <span>Inventory Report</span>
+                                  </Link>
+                                </SidebarMenuButton>
+                            </div>
+                          )}
                       </CollapsibleContent>
                     </Collapsible>
                   </SidebarMenuItem>
@@ -1525,7 +1536,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/project-operations/negotiations`, label: 'Negotiations', icon: HandCoinsIcon, path: '/negotiations' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1560,7 +1571,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/project-operations/change-requests`, label: 'Change Requests', icon: ArrowLeftRight, path: '/change-requests' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1591,7 +1602,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/project-operations/profitability`, label: 'Profitability', icon: TrendingUpIcon, path: '/profitability' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1621,7 +1632,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/project-operations/tickets`, label: 'Tickets', icon: HeadphonesIcon, path: '/tickets' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1729,7 +1740,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/attendance`, label: 'Attendance', icon: CalendarDaysIcon, path: '/attendance' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1758,7 +1769,7 @@ export function AppSidebar() {
                                 { href: loans?.href || `${baseDashboardPath}/loans`, label: 'Loans & Advances', icon: HandCoinsIcon, path: '/loans' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1786,7 +1797,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/employee-documents`, label: 'Employee Documents', icon: FileTextIcon, path: '/employee-documents' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1809,10 +1820,11 @@ export function AppSidebar() {
                             <CollapsibleContent>
                               <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
                                 {[
-                                { href: `${baseDashboardPath}/hr-analytics`, label: 'HR Analytics', icon: BarChart3, path: '/hr-analytics' },
-                              ].map(({ href, label, icon: Icon, path }) => (
+                                  { href: `${baseDashboardPath}/hr-analytics`, label: 'HR Analytics', icon: BarChart3, path: '/hr-analytics' },
+                                  { href: `${baseDashboardPath}/hr-report`, label: 'HR Report', icon: PieChart, path: '/hr-report' },
+                                ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>
@@ -1897,7 +1909,7 @@ export function AppSidebar() {
                                   { href: `${baseDashboardPath}/statutory/tax-reports/gst-audit`, label: 'GST Audit', icon: CheckSquare, path: '/gst-audit' },
                                 ].map(({ href, label, icon: Icon, path }) => (
                                   <SidebarMenuSubItem key={path}>
-                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                       <Link to={href} className="flex items-center gap-2">
                                         <Icon className="size-4" />
                                         <span>{label}</span>
@@ -1914,7 +1926,7 @@ export function AppSidebar() {
                                   { href: `${baseDashboardPath}/statutory/tax-reports/vat-exception`, label: 'VAT Exception Report', icon: AlertTriangle, path: '/vat-exception' },
                                 ].map(({ href, label, icon: Icon, path }) => (
                                   <SidebarMenuSubItem key={path}>
-                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                       <Link to={href} className="flex items-center gap-2">
                                         <Icon className="size-4" />
                                         <span>{label}</span>
@@ -1940,7 +1952,7 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/statutory/registers/purchase-register`, label: 'Purchase Register', icon: ShoppingCart, path: '/purchase-register' },
                               ].map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes(path)}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>

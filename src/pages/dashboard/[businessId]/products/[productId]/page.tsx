@@ -2,8 +2,8 @@ import ProductForm from '@/components/dashboard/product-form';
 import { useParams } from "react-router-dom";
 
 export const metadata = {
-  title: 'Edit Product - Dashboard',
-  description: 'Edit product details',
+  title: 'Product Details - Dashboard',
+  description: 'View product details',
 };
 
 interface EditProductPageProps {
@@ -13,7 +13,7 @@ interface EditProductPageProps {
   }>;
 }
 
-export default function EditProductPage() {
+export default function ViewProductPage() {
   const { productId } = useParams();
-  return <ProductForm productId={productId} />;
+  return <ProductForm productId={productId} isViewMode={true} />;
 }

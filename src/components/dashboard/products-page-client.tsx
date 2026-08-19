@@ -1,7 +1,6 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import {  useLocation  } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Eye, Search, Filter, MoreVertical, Download } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -47,6 +46,7 @@ interface Product {
 }
 
 export default function ProductsPageClient() {
+  const navigate = useNavigate();
   const pathname = useLocation().pathname;
   const { toast } = useToast();
   const businessId = pathname.match(/\/dashboard\/([^/]+)/)?.[1] || '';
@@ -265,7 +265,11 @@ export default function ProductsPageClient() {
               </TableHeader>
               <TableBody>
                 {filteredProducts.map((product) => (
-                  <TableRow key={product.id}>
+                  <TableRow 
+                    key={product.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate(`/dashboard/${businessId}/products/${product.id}`)}
+                  >
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>{product.sku}</TableCell>
                     <TableCell>
@@ -291,7 +295,7 @@ export default function ProductsPageClient() {
                         {product.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">

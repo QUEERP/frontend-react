@@ -18,6 +18,7 @@ import {
   FileText
 } from 'lucide-react'
 import { stockAPI, StockMovement } from '@/lib/api/inventory'
+import { useBusinessData } from './business-data-provider'
 import { useToast } from '@/components/ui/use-toast'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -46,6 +47,8 @@ export default function StockMovementsPageClient() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { toast } = useToast()
+  const { business } = useBusinessData()
+  const isTrading = business?.businessType?.toLowerCase() === 'trading'
   const businessId = pathname.match(/\/dashboard\/([^/]+)/)?.[1] || ''
   
   const [movements, setMovements] = useState<StockMovement[]>([])
@@ -95,7 +98,7 @@ export default function StockMovementsPageClient() {
       return
     }
 
-    const headers = ['Date', 'Category', 'Type', 'Product', 'SKU', 'Warehouse', 'Quantity', 'Reference', 'Performed By']
+    const headers = ['Date', 'Category', 'Type', 'Product', 'SKU', 'Warehouse', ...(isTrading ? ['Location'] : []), 'Quantity', 'Reference', 'Performed By']
     const csvContent = [
       headers.join(','),
       ...filtered.map(m => {
@@ -107,6 +110,7 @@ export default function StockMovementsPageClient() {
         `"${m.product?.name || ''}"`,
         `"${m.product?.sku || ''}"`,
         `"${m.warehouse?.name || ''}"`,
+        ...(isTrading ? [`"${m.location?.name ? `${m.location.code} - ${m.location.name}` : (m.location?.code || '')}"`] : []),
         m.quantity,
         `"${m.referenceType || ''}"`,
         `"${m.performedBy?.user?.name || 'System'}"`
@@ -242,6 +246,7 @@ export default function StockMovementsPageClient() {
                     <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-wider text-muted-foreground">Category</th>
                     <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-wider text-muted-foreground">Product & SKU</th>
                     <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-wider text-muted-foreground">Warehouse</th>
+                    {isTrading && <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-wider text-muted-foreground">Location</th>}
                     <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-wider text-muted-foreground">Reference</th>
                     <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-wider text-muted-foreground">User</th>
                     <th className="px-6 py-4 text-right text-[11px] font-black uppercase tracking-wider text-muted-foreground pr-8">Quantity</th>
@@ -283,6 +288,13 @@ export default function StockMovementsPageClient() {
                         <td className="px-6 py-4">
                           <span className="text-sm font-medium text-foreground">{m.warehouse?.name}</span>
                         </td>
+                        {isTrading && (
+                          <td className="px-6 py-4">
+                            <span className="text-[12px] font-medium text-muted-foreground">
+                              {m.location ? (m.location.name ? `${m.location.code} - ${m.location.name}` : m.location.code) : '—'}
+                            </span>
+                          </td>
+                        )}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary/70 bg-primary/5 px-2 py-1 rounded-md border border-primary/10 w-fit">
                             <FileText className="size-3" />

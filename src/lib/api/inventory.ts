@@ -1,5 +1,6 @@
 import { getCookie } from '@/lib/utils'
 import { API_ROOT } from "@/config/api";
+import { WarehouseLocation } from './warehouses'
 
 
 function authHeaders(businessId: string) {
@@ -36,6 +37,7 @@ export interface Product {
   taxPercent?: number
   initialQty?: number
   warehouseId?: string
+  locationId?: string
   hsnCode?: string
   openingStock?: number
   openingWarehouseId?: string
@@ -54,24 +56,31 @@ export interface StockLevel {
   quantity: number; reservedQty: number; damagedQty: number; incomingQty: number
   updatedAt: string
   product?: Product; warehouse?: Warehouse
+  locationId?: string; location?: WarehouseLocation
 }
 
 export interface StockMovement {
   id: string; type: string; quantity: number; referenceId?: string; referenceType?: string
   notes?: string; performedById?: string; productId: string; warehouseId: string; batchId?: string
+  locationId?: string
   createdAt: string
   product?: { id: string; name: string; sku: string }
   warehouse?: { id: string; name: string }
+  location?: WarehouseLocation
   performedBy?: { id: string; user?: { name: string } }
 }
 
 export interface StockAdjustment {
   id: string; reason: string; notes?: string; status: string; createdAt: string
-  items: { productId: string; warehouseId: string; adjustmentType: string; quantity: number; notes?: string }[]
+  adjustmentNumber?: string; warehouseId?: string; locationId?: string
+  warehouse?: Warehouse; location?: WarehouseLocation
+  items: { productId: string; warehouseId?: string; locationId?: string; adjustmentType: string; quantity: number; notes?: string }[]
 }
 
 export interface StockTransfer {
   id: string; transferNumber: string; status: string; fromWarehouseId: string; toWarehouseId: string
+  fromLocationId?: string; toLocationId?: string
+  fromLocation?: WarehouseLocation; toLocation?: WarehouseLocation
   notes?: string; createdAt: string
   fromWarehouse?: Warehouse; toWarehouse?: Warehouse
   items: { productId: string; quantity: number; product?: Product }[]
@@ -175,6 +184,62 @@ export const inventoryReportsAPI = {
   },
   getExpiringBatches: (bId: string, params?: Record<string, string>) => {
     const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; batches: Batch[] }>(`${API_ROOT}/reports/expiring-batches${q}`, bId)
+    return apiFetch<{ success: boolean; batches: InventoryReport['expiringBatches'] }>(`${API_ROOT}/reports/expiring-batches${q}`, bId)
   },
+  getTradingInventoryReport: (
+    bId: string, 
+    dateRange: string = 'this_month',
+    tab: string = 'products',
+    page: number = 1,
+    pageSize: number = 25
+  ) => {
+    let url = `${API_ROOT}/inventory-reports/trading?tab=${tab}&page=${page}&pageSize=${pageSize}`;
+    
+    if (dateRange && typeof dateRange === 'string') {
+        url += `&dateRange=${dateRange}`;
+    } else if (dateRange && typeof dateRange === 'object') {
+        const dr = dateRange as any;
+        if (dr.startDate && dr.endDate) {
+           url += `&startDate=${dr.startDate}&endDate=${dr.endDate}`;
+        }
+    }
+    
+    return apiFetch<{ success: boolean; data: TradingInventoryReportData }>(url, bId)
+  }
+}
+
+export interface TradingInventoryReportData {
+  kpis: {
+    totalProducts: number;
+    totalStockValue: number;
+    lowStockCount: number;
+    activeWarehouses: number;
+    stockMovementsCount: number;
+  };
+  funnel: {
+    receipts: { count: number; quantity: number };
+    transfers: { count: number; quantity: number };
+    adjustments: { count: number; quantity: number };
+    stockOut: { count: number; quantity: number };
+  };
+  productsList: any[];
+  productsTotalCount: number;
+  categoriesList: any[];
+  categoriesTotalCount: number;
+  brandsList: any[];
+  brandsTotalCount: number;
+  unitsList: any[];
+  unitsTotalCount: number;
+  warehousesList: any[];
+  warehousesTotalCount: number;
+  stockOverviewList: any[];
+  stockOverviewTotalCount: number;
+  transfersList: any[];
+  transfersTotalCount: number;
+  adjustmentsList: any[];
+  adjustmentsTotalCount: number;
+  movementHistoryList: any[];
+  movementsTotalCount: number;
+  reorderAlertsList: any[];
+  alertsTotalCount: number;
 }

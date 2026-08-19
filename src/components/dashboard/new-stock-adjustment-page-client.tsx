@@ -4,6 +4,8 @@ import {  useNavigate, useParams  } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { SlidersHorizontal, ArrowLeft, Plus, Trash2, Loader2 } from 'lucide-react'
 import { stockAPI, warehousesAPI, productsAPI, Warehouse, Product } from '@/lib/api/inventory'
+import { warehousesAPI as locationsAPI, WarehouseLocation } from '@/lib/api/warehouses'
+import { useBusinessData } from './business-data-provider'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +22,9 @@ export default function NewStockAdjustmentPageClient() {
   const params = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { business } = useBusinessData()
+  const isTrading = business?.businessType?.toLowerCase() === 'trading'
+
   
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
@@ -28,6 +33,8 @@ export default function NewStockAdjustmentPageClient() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [warehouseId, setWarehouseId] = useState('')
+  const [locations, setLocations] = useState<WarehouseLocation[]>([])
+  const [locationId, setLocationId] = useState('')
   const [productId, setProductId] = useState('')
   const [adjustmentType, setAdjustmentType] = useState<'ADD' | 'REMOVE'>('ADD')
   const [quantity, setQuantity] = useState(1)
@@ -51,6 +58,34 @@ export default function NewStockAdjustmentPageClient() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  useEffect(() => {
+    const fetchLocs = async () => {
+      if (!isTrading || !warehouseId) {
+        setLocations([])
+        return
+      }
+      try {
+        const res = await locationsAPI.getLocations(businessId, warehouseId)
+        if (res.success) {
+          const locs = res.locations || res.data || []
+          setLocations(locs)
+          const validIds = locs.map(l => l.id)
+          if (locs.length > 0 && (!locationId || !validIds.includes(locationId))) {
+            const defaultLoc = locs.find(l => l.isDefault)
+            if (defaultLoc) {
+              setLocationId(defaultLoc.id)
+            } else {
+              setLocationId(locs[0].id)
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch locations", error)
+      }
+    }
+    fetchLocs()
+  }, [warehouseId, businessId, isTrading, locationId])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!warehouseId || !productId) {
@@ -58,7 +93,11 @@ export default function NewStockAdjustmentPageClient() {
     }
     try {
       setIsSubmitting(true)
-      await stockAPI.createAdjustment(businessId, { warehouseId, productId, adjustmentType, quantity, reason, notes } as any)
+      const payload: any = { warehouseId, productId, adjustmentType, quantity, reason, notes }
+      if (isTrading && locationId) {
+        payload.locationId = locationId
+      }
+      await stockAPI.createAdjustment(businessId, payload)
       toast({ title: 'Stock adjustment created successfully' })
       navigate(`/dashboard/${businessId}/stock-adjustments`)
     } catch (err: any) {
@@ -82,12 +121,25 @@ export default function NewStockAdjustmentPageClient() {
           <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" />Adjustment Details</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Warehouse *</Label>
-                <Select value={warehouseId} onValueChange={setWarehouseId} disabled={isLoading}>
-                  <SelectTrigger><SelectValue placeholder="Select warehouse" /></SelectTrigger>
-                  <SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
-                </Select>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Warehouse *</Label>
+                  <Select value={warehouseId} onValueChange={(val) => { setWarehouseId(val); setLocationId(''); }} disabled={isLoading}>
+                    <SelectTrigger><SelectValue placeholder="Select warehouse" /></SelectTrigger>
+                    <SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                {isTrading && (
+                  <div className="space-y-2">
+                    <Label>Location</Label>
+                    <Select value={locationId} onValueChange={setLocationId} disabled={!warehouseId || locations.length === 0}>
+                      <SelectTrigger><SelectValue placeholder={locations.length > 0 ? "Select Location" : "No Locations"} /></SelectTrigger>
+                      <SelectContent>
+                        {locations.map(l => <SelectItem key={l.id} value={l.id}>{l.name ? `${l.code} - ${l.name}` : l.code}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Product *</Label>

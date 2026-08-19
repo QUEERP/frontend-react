@@ -13,12 +13,23 @@ export interface Warehouse {
   updatedAt: string;
 }
 
+export interface WarehouseLocation {
+  id: string;
+  warehouseId: string;
+  name: string;
+  code: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CreateWarehouseData {
   name: string;
   address?: string;
   city?: string;
   country?: string;
   isActive?: boolean;
+  locations?: { id?: string; name?: string; code: string; isDefault?: boolean }[];
 }
 
 class WarehousesAPI {
@@ -125,6 +136,45 @@ class WarehousesAPI {
     warehouseId: string
   ): Promise<{ success: boolean; message: string }> {
     return this.request(`/warehouses/${warehouseId}`, {
+      method: 'DELETE',
+    }, businessId);
+  }
+
+  // Locations
+  async getLocations(
+    businessId: string,
+    warehouseId: string
+  ): Promise<{ success: boolean; locations: WarehouseLocation[]; data?: WarehouseLocation[] }> {
+    return this.request(`/warehouses/${warehouseId}/locations`, {}, businessId);
+  }
+
+  async createLocation(
+    businessId: string,
+    warehouseId: string,
+    data: { name: string; code: string; isDefault?: boolean }
+  ): Promise<{ success: boolean; data: WarehouseLocation }> {
+    return this.request(`/warehouses/${warehouseId}/locations`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }, businessId);
+  }
+
+  async updateLocation(
+    businessId: string,
+    locationId: string,
+    data: { name?: string; code?: string; isDefault?: boolean }
+  ): Promise<{ success: boolean; data: WarehouseLocation }> {
+    return this.request(`/warehouses/locations/${locationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }, businessId);
+  }
+
+  async deleteLocation(
+    businessId: string,
+    locationId: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request(`/warehouses/locations/${locationId}`, {
       method: 'DELETE',
     }, businessId);
   }

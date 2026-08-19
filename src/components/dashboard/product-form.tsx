@@ -35,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useBusinessData } from './business-data-provider'
 import { Warehouse as WarehouseIcon, Package, Tag, Calculator, ShieldCheck, Image as ImageIcon, Barcode, Upload, Link as LinkIcon } from 'lucide-react'
 import { productsAPI, warehousesAPI, categoriesAPI, brandsAPI, Warehouse, Product } from '@/lib/api/inventory'
+import { warehousesAPI as locationsAPI, WarehouseLocation } from '@/lib/api/warehouses'
 import { toast } from 'sonner'
 
 interface ProductFormData {
@@ -54,15 +55,17 @@ interface ProductFormData {
   isActive: boolean
   openingStock: number
   openingWarehouseId: string
+  openingLocationId: string
   image: string
   availableStock: number
 }
 
 interface ProductFormProps {
   productId?: string
+  isViewMode?: boolean
 }
 
-export default function ProductForm({ productId }: ProductFormProps) {
+export default function ProductForm({ productId, isViewMode }: ProductFormProps) {
   const navigate = useNavigate()
   const pathname = useLocation().pathname
   const { currency = 'AED' } = useBusinessData()
@@ -94,9 +97,12 @@ export default function ProductForm({ productId }: ProductFormProps) {
     isActive: true,
     openingStock: 0,
     openingWarehouseId: '',
+    openingLocationId: '',
     image: '',
     availableStock: 0,
   })
+  
+  const [locations, setLocations] = React.useState<WarehouseLocation[]>([])
 
   React.useEffect(() => {
     const load = async () => {
@@ -135,8 +141,9 @@ export default function ProductForm({ productId }: ProductFormProps) {
               taxRate: p.taxRate || 0,
               reorderLevel: p.reorderLevel || 0,
               isActive: p.isActive ?? true,
-              openingStock: 0,
-              openingWarehouseId: '',
+              openingStock: (p as any).stock?.[0]?.quantity || 0,
+              openingWarehouseId: (p as any).stock?.[0]?.warehouseId || '',
+              openingLocationId: (p as any).stock?.[0]?.locationId || '',
               image: p.imageUrl || '',
               availableStock: (p as any).stock ? (p as any).stock.reduce((acc: number, curr: any) => acc + ((curr.quantity || 0) - (curr.reservedQty || 0)), 0) : 0,
             })
@@ -183,11 +190,44 @@ export default function ProductForm({ productId }: ProductFormProps) {
       openingStock: type === 'SERVICE' ? 0 : prev.openingStock,
       reorderLevel: type === 'SERVICE' ? 0 : prev.reorderLevel,
       openingWarehouseId: type === 'SERVICE' ? '' : prev.openingWarehouseId,
+      openingLocationId: type === 'SERVICE' ? '' : prev.openingLocationId,
     }));
   };
 
   const isIndia = currency === 'INR';
   const isUae = currency === 'AED';
+
+  React.useEffect(() => {
+    if (formData.openingWarehouseId && formData.type === 'GOODS') {
+      const fetchLocs = async () => {
+        try {
+          const res = await locationsAPI.getLocations(businessId, formData.openingWarehouseId)
+          if (res.success) {
+            const locs = res.locations || res.data || []
+            setLocations(locs)
+            
+            const validIds = locs.map((l: any) => l.id)
+            if (locs.length > 0 && (!formData.openingLocationId || !validIds.includes(formData.openingLocationId))) {
+              const defaultLoc = locs.find((l: any) => l.isDefault)
+              if (defaultLoc) {
+                setFormData(prev => ({ ...prev, openingLocationId: defaultLoc.id }))
+              } else {
+                setFormData(prev => ({ ...prev, openingLocationId: locs[0].id }))
+              }
+            } else if (locs.length === 0) {
+              setFormData(prev => ({ ...prev, openingLocationId: '' }))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch locations", error)
+        }
+      }
+      fetchLocs()
+    } else {
+      setLocations([])
+      setFormData(prev => ({ ...prev, openingLocationId: '' }))
+    }
+  }, [formData.openingWarehouseId, businessId, formData.type])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -216,6 +256,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         hsnCode: formData.taxCode,
         initialQty: formData.type === 'GOODS' ? formData.openingStock : undefined,
         warehouseId: formData.type === 'GOODS' ? formData.openingWarehouseId : undefined,
+        locationId: (formData.type === 'GOODS' && formData.openingLocationId) ? formData.openingLocationId : undefined,
         reorderLevel: formData.type === 'GOODS' ? formData.reorderLevel : undefined,
         imageUrl: formData.image,
       }
@@ -250,10 +291,12 @@ export default function ProductForm({ productId }: ProductFormProps) {
           <div>
             <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-2">
               <Package className="size-6 text-primary" />
-              {productId ? (formData.type === 'SERVICE' ? 'Edit Service' : 'Edit Product') : (formData.type === 'SERVICE' ? 'Add New Service' : 'Add New Product')}
+              {isViewMode ? (formData.type === 'SERVICE' ? 'Service Details' : 'Product Details') : productId ? (formData.type === 'SERVICE' ? 'Edit Service' : 'Edit Product') : (formData.type === 'SERVICE' ? 'Add New Service' : 'Add New Product')}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              {productId 
+              {isViewMode 
+                ? (formData.type === 'SERVICE' ? 'View service information, pricing and tax configuration.' : 'View product specifications and pricing.')
+                : productId 
                 ? (formData.type === 'SERVICE' ? 'Update service information, pricing and tax configuration.' : 'Update product specifications and pricing.')
                 : (formData.type === 'SERVICE' ? 'Create a new service with pricing and tax configuration' : 'Create a new inventory item with pricing and stock')}
             </p>
@@ -287,28 +330,30 @@ export default function ProductForm({ productId }: ProductFormProps) {
             <TabsContent value="general" className="space-y-8 animate-in fade-in-50 duration-300">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-xs font-bold uppercase text-muted-foreground">Product Name *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g. MacBook Pro M3"
-                      className="h-11 border-muted-foreground/20 focus:border-primary"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="sku" className="text-xs font-bold uppercase text-muted-foreground">SKU / Model *</Label>
+                      <Label htmlFor="name" className="text-xs font-bold uppercase text-muted-foreground">Product Name *</Label>
                       <Input
-                        id="sku"
-                        value={formData.sku}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, sku: e.target.value }))}
-                        placeholder="MBP-M3-001"
-                        className="h-11 font-mono text-sm border-muted-foreground/20"
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g. MacBook Pro M3"
+                        className="h-11 border-muted-foreground/20 focus:border-primary"
+                        disabled={isViewMode}
                       />
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="sku" className="text-xs font-bold uppercase text-muted-foreground">SKU / Model *</Label>
+                        <Input
+                          id="sku"
+                          value={formData.sku}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, sku: e.target.value }))}
+                          placeholder="MBP-M3-001"
+                          className="h-11 font-mono text-sm border-muted-foreground/20"
+                          disabled={isViewMode}
+                        />
+                      </div>
                     <div className="space-y-2">
                       <Label htmlFor="barcode" className="text-xs font-bold uppercase text-muted-foreground">Barcode / UPC</Label>
                       <div className="relative">
@@ -319,6 +364,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                           onChange={(e) => setFormData((prev) => ({ ...prev, barcode: e.target.value }))}
                           placeholder="0123456789"
                           className="h-11 pl-10 border-muted-foreground/20"
+                          disabled={isViewMode}
                         />
                       </div>
                     </div>
@@ -333,6 +379,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                       onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                       placeholder="Product technical specifications, features..."
                       className="resize-none border-muted-foreground/20"
+                      disabled={isViewMode}
                     />
                   </div>
                 </div>
@@ -340,34 +387,36 @@ export default function ProductForm({ productId }: ProductFormProps) {
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <div className="p-6 bg-muted/30 rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-center space-y-3 min-h-[200px] group hover:bg-muted/50 transition-colors cursor-pointer overflow-hidden relative">
+                      <DropdownMenuTrigger asChild disabled={isViewMode}>
+                        <div className={`p-6 bg-muted/30 rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-center space-y-3 min-h-[200px] group ${!isViewMode && 'hover:bg-muted/50 cursor-pointer'} transition-colors overflow-hidden relative`}>
                           {formData.image ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={formData.image} alt="Product" className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+                            <img src={formData.image} alt="Product" className={`absolute inset-0 w-full h-full object-cover opacity-90 ${!isViewMode && 'group-hover:opacity-100'} transition-opacity`} />
                           ) : (
                             <>
-                              <div className="size-12 rounded-full bg-background border border-border flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <div className={`size-12 rounded-full bg-background border border-border flex items-center justify-center ${!isViewMode && 'group-hover:scale-110'} transition-transform`}>
                                 <ImageIcon className="size-6 text-muted-foreground" />
                               </div>
                               <div>
                                 <p className="text-sm font-semibold">Product Image</p>
-                                <p className="text-xs text-muted-foreground mt-1">Upload JPG, PNG (Max 2MB) or Link</p>
+                                {!isViewMode && <p className="text-xs text-muted-foreground mt-1">Upload JPG, PNG (Max 2MB) or Link</p>}
                               </div>
                             </>
                           )}
                         </div>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="center" className="w-56">
-                        <DropdownMenuItem onClick={() => document.getElementById('image-upload-input')?.click()}>
-                          <Upload className="mr-2 h-4 w-4" />
-                          <span>Browse from Device</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setLinkDialogOpen(true)}>
-                          <LinkIcon className="mr-2 h-4 w-4" />
-                          <span>Image Link</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
+                      {!isViewMode && (
+                        <DropdownMenuContent align="center" className="w-56">
+                          <DropdownMenuItem onClick={() => document.getElementById('image-upload-input')?.click()}>
+                            <Upload className="mr-2 h-4 w-4" />
+                            <span>Browse from Device</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => setLinkDialogOpen(true)}>
+                            <LinkIcon className="mr-2 h-4 w-4" />
+                            <span>Image Link</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      )}
                     </DropdownMenu>
 
                     <input 
@@ -420,7 +469,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">Product Type *</Label>
-                      <Select value={formData.type} onValueChange={handleTypeChange}>
+                      <Select value={formData.type} onValueChange={handleTypeChange} disabled={isViewMode || !!productId}>
                         <SelectTrigger className="h-11 border-muted-foreground/20">
                           <SelectValue placeholder="Select Type" />
                         </SelectTrigger>
@@ -432,7 +481,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">Category</Label>
-                      <Select value={formData.categoryId} onValueChange={(val) => setFormData(prev => ({ ...prev, categoryId: val }))}>
+                      <Select value={formData.categoryId} onValueChange={(val) => setFormData(prev => ({ ...prev, categoryId: val }))} disabled={isViewMode}>
                         <SelectTrigger className="h-11 border-muted-foreground/20">
                           <SelectValue placeholder="Select Category" />
                         </SelectTrigger>
@@ -446,7 +495,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">Brand</Label>
-                      <Select value={formData.brandId} onValueChange={(val) => setFormData(prev => ({ ...prev, brandId: val }))}>
+                      <Select value={formData.brandId} onValueChange={(val) => setFormData(prev => ({ ...prev, brandId: val }))} disabled={isViewMode}>
                         <SelectTrigger className="h-11 border-muted-foreground/20">
                           <SelectValue placeholder="Select Brand" />
                         </SelectTrigger>
@@ -457,7 +506,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">Unit</Label>
-                      <Select value={formData.unit} onValueChange={(val) => setFormData(prev => ({ ...prev, unit: val }))}>
+                      <Select value={formData.unit} onValueChange={(val) => setFormData(prev => ({ ...prev, unit: val }))} disabled={isViewMode}>
                         <SelectTrigger className="h-11 border-muted-foreground/20">
                           <SelectValue placeholder="Select Unit" />
                         </SelectTrigger>
@@ -499,12 +548,13 @@ export default function ProductForm({ productId }: ProductFormProps) {
                               value={formData.reorderLevel}
                               onChange={(e) => setFormData(prev => ({ ...prev, reorderLevel: Number(e.target.value) }))}
                               className="h-10"
+                              disabled={isViewMode}
                             />
                           </div>
                       </div>
                     </div>
 
-                    {productId && (
+                    {!isViewMode && productId && (
                       <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
                         <p className="text-xs text-blue-700 dark:text-blue-400 font-semibold leading-relaxed">
                           💡 Stock quantity cannot be edited directly. To add stock to this item, please record a Purchase Transaction or an Opening Balance Adjustment in the Inventory module.
@@ -512,36 +562,53 @@ export default function ProductForm({ productId }: ProductFormProps) {
                       </div>
                     )}
 
-                    {!productId && (
-                      <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 space-y-4">
-                        <div className="flex items-center gap-2 text-amber-800">
-                          <WarehouseIcon className="size-5" />
-                          <h3 className="font-bold text-sm uppercase tracking-wider">Opening Stock</h3>
+                    <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 space-y-4">
+                      <div className="flex items-center gap-2 text-amber-800">
+                        <WarehouseIcon className="size-5" />
+                        <h3 className="font-bold text-sm uppercase tracking-wider">{productId ? 'Primary Stock Location' : 'Opening Stock'}</h3>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium text-amber-700">{productId ? 'Current Quantity' : 'Initial Quantity'}</Label>
+                          <Input
+                            type="number"
+                            value={formData.openingStock}
+                            onChange={(e) => setFormData(prev => ({ ...prev, openingStock: Number(e.target.value) }))}
+                            className="h-10 border-amber-200 focus:ring-amber-200"
+                            disabled={!!productId || isViewMode}
+                          />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium text-amber-700">Warehouse</Label>
+                          <Select value={formData.openingWarehouseId} onValueChange={(val) => setFormData(prev => ({ ...prev, openingWarehouseId: val }))} disabled={!!productId || isViewMode}>
+                            <SelectTrigger className="h-10 border-amber-200">
+                              <SelectValue placeholder="Select Warehouse" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {(locations.length > 0 || formData.openingLocationId) && (
                           <div className="space-y-2">
-                            <Label className="text-xs font-medium text-amber-700">Initial Quantity</Label>
-                            <Input
-                              type="number"
-                              value={formData.openingStock}
-                              onChange={(e) => setFormData(prev => ({ ...prev, openingStock: Number(e.target.value) }))}
-                              className="h-10 border-amber-200 focus:ring-amber-200"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-xs font-medium text-amber-700">Warehouse</Label>
-                            <Select value={formData.openingWarehouseId} onValueChange={(val) => setFormData(prev => ({ ...prev, openingWarehouseId: val }))}>
+                            <Label className="text-xs font-medium text-amber-700">Location (Bin)</Label>
+                            <Select value={formData.openingLocationId} onValueChange={(val) => setFormData(prev => ({ ...prev, openingLocationId: val }))} disabled={!!productId || isViewMode}>
                               <SelectTrigger className="h-10 border-amber-200">
-                                <SelectValue placeholder="Select Warehouse" />
+                                <SelectValue placeholder="Select Location" />
                               </SelectTrigger>
                               <SelectContent>
-                                {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                                {locations.map(loc => (
+                                  <SelectItem key={loc.id} value={loc.id}>
+                                    {loc.name} ({loc.code}) {loc.isDefault ? ' (Default)' : ''}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
-                        </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
 
                   <div className="space-y-4">
@@ -576,6 +643,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                             value={formData.sellingPrice}
                             onChange={(e) => setFormData(prev => ({ ...prev, sellingPrice: Number(e.target.value) }))}
                             className="h-11 pl-10 border-muted-foreground/20 font-bold"
+                            disabled={isViewMode}
                           />
                         </div>
                       </div>
@@ -588,6 +656,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                             value={formData.costPrice}
                             onChange={(e) => setFormData(prev => ({ ...prev, costPrice: Number(e.target.value) }))}
                             className="h-11 pl-10 border-muted-foreground/20 font-bold"
+                            disabled={isViewMode}
                           />
                         </div>
                       </div>
@@ -617,6 +686,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                             onChange={(e) => setFormData(prev => ({ ...prev, taxCode: e.target.value }))}
                             placeholder={isIndia ? (formData.type === 'SERVICE' ? "e.g. 9983" : "e.g. 8471") : "e.g. TAX-01"}
                             className="h-11 border-muted-foreground/20"
+                            disabled={isViewMode}
                           />
                         </div>
                       )}
@@ -629,6 +699,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                           onChange={(val) => setFormData(prev => ({ ...prev, taxRate: val }))}
                           options={[0, 5, 12, 15, 18, 28]}
                           size="lg"
+                          disabled={isViewMode}
                         />
                       </div>
                     </div>
@@ -642,11 +713,13 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
           <div className="flex justify-end gap-4">
             <Button variant="ghost" type="button" onClick={() => window.history.back()} className="h-11 px-6">
-              Cancel
+              {isViewMode ? 'Go Back' : 'Cancel'}
             </Button>
-            <Button type="submit" disabled={submitting} className="h-11 px-10 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-              {submitting ? 'Saving...' : submitLabel}
-            </Button>
+            {!isViewMode && (
+              <Button type="submit" disabled={submitting} className="h-11 px-10 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                {submitting ? 'Saving...' : submitLabel}
+              </Button>
+            )}
           </div>
         </form>
       </CardContent>

@@ -20,6 +20,7 @@ interface EditableTaxSelectProps {
   max?: number
   step?: number
   size?: 'sm' | 'default' | 'lg'
+  disabled?: boolean
 }
 
 export function EditableTaxSelect({
@@ -32,6 +33,7 @@ export function EditableTaxSelect({
   max = 100,
   step = 0.01,
   size = 'default',
+  disabled = false,
 }: EditableTaxSelectProps) {
   // Local state to manage input string value
   const [inputValue, setInputValue] = React.useState(String(value ?? 0))
@@ -70,13 +72,14 @@ export function EditableTaxSelect({
         placeholder={placeholder}
         value={inputValue}
         onChange={(e) => handleInputChange(e.target.value)}
+        disabled={disabled}
         className={cn(
           'w-full text-right pr-6 border-border dark:border-[#23272c] bg-card dark:bg-[#181a20] focus-visible:ring-blue-500 rounded-xl',
           heightClass
         )}
       />
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger asChild disabled={disabled}>
           <Button
             type="button"
             variant="ghost"
