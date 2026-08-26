@@ -70,12 +70,12 @@ function isMenuVisible(businessType: string | undefined | null, moduleName: stri
   const moduleConfig = config.moduleVisibility?.[moduleName];
   if (!moduleConfig) return true;
 
-  if (sectionName && !subItemName && moduleConfig.allowedItems) {
-    return moduleConfig.allowedItems.some((allowed: string) => allowed.toLowerCase() === sectionName.toLowerCase());
-  }
-
   if (sectionName && !subItemName) {
-    return Object.keys(moduleConfig).includes(sectionName);
+    let isVisible = Object.keys(moduleConfig).includes(sectionName);
+    if (!isVisible && moduleConfig.allowedItems) {
+      isVisible = moduleConfig.allowedItems.some((allowed: string) => allowed.toLowerCase() === sectionName.toLowerCase());
+    }
+    return isVisible;
   }
 
   if (sectionName && subItemName) {
@@ -145,6 +145,7 @@ export function AppSidebar() {
   const [isStatutoryOpen, setIsStatutoryOpen] = React.useState(false)
   const [isStatutoryTaxOpen, setIsStatutoryTaxOpen] = React.useState(false)
   const [isStatutoryRegistersOpen, setIsStatutoryRegistersOpen] = React.useState(false)
+  const [statutoryReportsList, setStatutoryReportsList] = React.useState<any[]>([])
 
   const { permissions, business, loading: isBusinessDataLoading } = useBusinessData()
   const isBusinessLoaded = !isBusinessDataLoading && !isLoadingBusinesses
@@ -424,6 +425,26 @@ export function AppSidebar() {
   React.useEffect(() => {
     // Modules are predefined. We don't fetch them.
   }, [])
+
+  React.useEffect(() => {
+    async function fetchStatutoryReports() {
+      if (!currentBusinessId) return;
+      const token = getCookie('token') || getCookie('accessToken');
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_ROOT}/reports/statutory/list?businessId=${currentBusinessId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStatutoryReportsList(data.reports || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch statutory reports for sidebar', err);
+      }
+    }
+    fetchStatutoryReports();
+  }, [currentBusinessId, API_ROOT, getCookie]);
 
   const activeBusiness = React.useMemo(
     () => userBusinesses.find((item) => item.id === selectedBusiness) || null,
@@ -1890,51 +1911,43 @@ export function AppSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
 
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/reports/tax')}>
+                            <Link to={`${baseDashboardPath}/reports/tax`} className="flex items-center gap-2">
+                              <BarChart3 className="size-4" />
+                              <span>Tax Reports</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/reports/currency')}>
+                            <Link to={`${baseDashboardPath}/reports/currency`} className="flex items-center gap-2">
+                              <DollarSign className="size-4" />
+                              <span>Currency Reports</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+
                         <Collapsible open={isStatutoryTaxOpen} onOpenChange={setIsStatutoryTaxOpen} className="px-2">
                           <CollapsibleTrigger asChild>
                             <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                              <span>{isIndia ? 'GST Reports' : 'VAT Reports'}</span>
+                              <span>Statutory Reports</span>
                               <ChevronDownIcon className={`size-3 transition-transform ${isStatutoryTaxOpen ? 'rotate-180' : ''}`} />
                             </button>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
                             <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                              {isIndia ? (
-                                [
-                                  { href: `${baseDashboardPath}/statutory/tax-reports/gstr1`, label: 'GSTR-1', icon: FileTextIcon, path: '/gstr1' },
-                                  { href: `${baseDashboardPath}/statutory/tax-reports/gstr3b`, label: 'GSTR-3B', icon: FileTextIcon, path: '/gstr3b' },
-                                  { href: `${baseDashboardPath}/statutory/tax-reports/gstr9`, label: 'GSTR-9', icon: FileTextIcon, path: '/gstr9' },
-                                  { href: `${baseDashboardPath}/statutory/tax-reports/hsn-summary`, label: 'HSN Summary', icon: PieChart, path: '/hsn-summary' },
-                                  { href: `${baseDashboardPath}/statutory/tax-reports/tds-report`, label: 'TDS Report', icon: FileTextIcon, path: '/tds-report' },
-                                  { href: `${baseDashboardPath}/statutory/tax-reports/gst-audit`, label: 'GST Audit', icon: CheckSquare, path: '/gst-audit' },
-                                ].map(({ href, label, icon: Icon, path }) => (
-                                  <SidebarMenuSubItem key={path}>
-                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                      <Link to={href} className="flex items-center gap-2">
-                                        <Icon className="size-4" />
-                                        <span>{label}</span>
-                                      </Link>
-                                    </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                ))
-                              ) : (
-                                [
-                                  { href: `${baseDashboardPath}/statutory/tax-reports/vat-return`, label: 'VAT Return', icon: FileTextIcon, path: '/vat-return' },
-                                  { href: `${baseDashboardPath}/statutory/tax-reports/vat-summary`, label: 'VAT Summary', icon: PieChart, path: '/vat-summary' },
-                                  { href: `${baseDashboardPath}/statutory/tax-reports/vat-transaction`, label: 'VAT Transaction Report', icon: FileTextIcon, path: '/vat-transaction' },
-                                  { href: `${baseDashboardPath}/statutory/tax-reports/vat-audit`, label: 'VAT Audit', icon: CheckSquare, path: '/vat-audit' },
-                                  { href: `${baseDashboardPath}/statutory/tax-reports/vat-exception`, label: 'VAT Exception Report', icon: AlertTriangle, path: '/vat-exception' },
-                                ].map(({ href, label, icon: Icon, path }) => (
-                                  <SidebarMenuSubItem key={path}>
-                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                      <Link to={href} className="flex items-center gap-2">
-                                        <Icon className="size-4" />
-                                        <span>{label}</span>
-                                      </Link>
-                                    </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                ))
-                              )}
+                              {statutoryReportsList.map((report) => (
+                                <SidebarMenuSubItem key={report.code}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === `${baseDashboardPath}/reports/statutory/${report.code}` || pathname.startsWith(`${baseDashboardPath}/reports/statutory/${report.code}/`)}>
+                                    <Link to={`${baseDashboardPath}/reports/statutory/${report.code}`} className="flex items-center gap-2">
+                                      <FileTextIcon className="size-4" />
+                                      <span>{report.name}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
                             </SidebarMenuSub>
                           </CollapsibleContent>
                         </Collapsible>
