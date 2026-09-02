@@ -21,6 +21,10 @@ export interface QuotationItemInput {
 }
 
 export interface QuotationItem extends QuotationItemInput {
+  igstPercent?: number;
+  sgstPercent?: number;
+  cgstPercent?: number;
+  taxPercent?: number;
   id: string
   total: number
 }

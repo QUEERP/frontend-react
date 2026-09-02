@@ -22,6 +22,10 @@ export interface CreateStockData {
 }
 
 export interface Product {
+  igstPercent?: number;
+  sgstPercent?: number;
+  cgstPercent?: number;
+  taxPercent?: number;
   id: string;
   name: string;
   sku: string;

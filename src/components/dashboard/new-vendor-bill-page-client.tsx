@@ -18,7 +18,10 @@ import { EditableTaxSelect } from '@/components/dashboard/editable-tax-select'
 import { CurrencySelect } from '@/components/ui/currency-select'
 import { getCurrencySymbol } from '@/lib/currencies'
 
-interface BillItem { description: string; quantity: number; unitPrice: number; taxPercent: number }
+interface BillItem {
+  igstPercent?: number;
+  sgstPercent?: number;
+  cgstPercent?: number; description: string; quantity: number; unitPrice: number; taxPercent: number }
 
 export default function NewVendorBillPageClient() {
   const pathname = useLocation().pathname;
@@ -57,7 +60,7 @@ export default function NewVendorBillPageClient() {
   const updateItem = (i: number, f: keyof BillItem, v: string | number) => setItems(p => p.map((item, idx) => idx === i ? { ...item, [f]: v } : item))
 
   const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0)
-  const tax = items.reduce((s, i) => s + (i.quantity * i.unitPrice * i.taxPercent) / 100, 0)
+  const tax = items.reduce((s, i) => s + (i.quantity * i.unitPrice * (i.taxPercent || 0)) / 100, 0)
   const total = subtotal + tax
 
   const handleSubmit = async (e: React.FormEvent) => {

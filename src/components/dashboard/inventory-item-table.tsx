@@ -20,6 +20,9 @@ import { EditableTaxSelect } from '@/components/dashboard/editable-tax-select'
 import { CreateProductModal } from './create-product-modal'
 
 export interface ItemRow {
+  igstPercent?: number;
+  sgstPercent?: number;
+  cgstPercent?: number;
   id: string
   productId: string
   warehouseId: string
