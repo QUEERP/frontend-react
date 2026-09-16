@@ -20,6 +20,7 @@ import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { normalizeInvoiceStatus, type InvoiceStatus } from '@/lib/invoice-status'
 import { getCurrencySymbol, CURRENCIES } from '@/lib/currencies'
 import { creditNotesAPI, CreditNote } from '@/lib/api/credit-notes'
+import { CurrencySelect } from '@/components/ui/currency-select'
 
 export function InvoicePaymentPageClient({
   businessId,
@@ -369,24 +370,12 @@ export function InvoicePaymentPageClient({
                     Amount Received
                   </Label>
                   <div className="flex gap-2">
-                    <Select
-                      value={paymentForm.currency}
-                      onValueChange={(value) => setPaymentForm(prev => ({ ...prev, currency: value }))}
-                    >
-                      <SelectTrigger className="w-[120px] h-10 rounded-xl border-border focus-visible:ring-blue-500">
-                        <SelectValue placeholder="Currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CURRENCIES.map(curr => (
-                          <SelectItem key={curr.code} value={curr.code}>
-                            <div className="flex items-center gap-2">
-                              <span>{curr.flag}</span>
-                              <span>{curr.code}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="w-[140px] md:w-[180px] shrink-0">
+                      <CurrencySelect
+                        value={paymentForm.currency}
+                        onChange={(value) => setPaymentForm(prev => ({ ...prev, currency: value }))}
+                      />
+                    </div>
                     <div className="relative flex-1">
                       {getCurrencySymbol(paymentForm.currency) && (
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground pointer-events-none">
