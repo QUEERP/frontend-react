@@ -85,6 +85,10 @@ interface StatementItem {
 }
 
 interface QuotationItem {
+  igstPercent?: number;
+  sgstPercent?: number;
+  cgstPercent?: number;
+  taxPercent?: number;
   id: string
   quoteNumber: string
   title?: string
@@ -95,6 +99,10 @@ interface QuotationItem {
 }
 
 interface SalesOrderItem {
+  igstPercent?: number;
+  sgstPercent?: number;
+  cgstPercent?: number;
+  taxPercent?: number;
   id: string
   orderNumber: string
   status: string

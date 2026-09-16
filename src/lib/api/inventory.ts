@@ -23,6 +23,9 @@ export interface Brand { id: string; name: string; description?: string; logoUrl
 export interface Unit { id: string; name: string; abbreviation: string; createdAt: string }
 
 export interface Product {
+  igstPercent?: number;
+  sgstPercent?: number;
+  cgstPercent?: number;
   id: string; name: string; sku: string; barcode?: string; description?: string
   categoryId?: string; brandId?: string; unitId?: string
   sellingPrice: number; costPrice?: number; taxRate?: number; taxCode?: string

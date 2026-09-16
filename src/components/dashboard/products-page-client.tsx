@@ -31,6 +31,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Product {
+  igstPercent?: number;
+  sgstPercent?: number;
+  cgstPercent?: number;
   id: string;
   name: string;
   sku: string;

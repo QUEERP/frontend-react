@@ -15,6 +15,9 @@ async function apiFetch<T>(url: string, businessId: string, options?: RequestIni
 }
 
 export interface InvoiceItem {
+  igstPercent?: number;
+  sgstPercent?: number;
+  cgstPercent?: number;
   id: string
   productId?: string
   itemName?: string

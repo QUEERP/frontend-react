@@ -432,12 +432,12 @@ export function AppSidebar() {
       const token = getCookie('token') || getCookie('accessToken');
       if (!token) return;
       try {
-        const res = await fetch(`${API_ROOT}/reports/statutory/list?businessId=${currentBusinessId}`, {
+        const res = await fetch(`${API_ROOT}/statutory/list?businessId=${currentBusinessId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
           const data = await res.json();
-          setStatutoryReportsList(data.reports || []);
+          setStatutoryReportsList(data.availableReports || []);
         }
       } catch (err) {
         console.error('Failed to fetch statutory reports for sidebar', err);

@@ -20,6 +20,10 @@ export interface SalesOrderItemInput {
 }
 
 export interface SalesOrderItem extends SalesOrderItemInput {
+  igstPercent?: number;
+  sgstPercent?: number;
+  cgstPercent?: number;
+  taxPercent?: number;
   id: string
   total: number
 }
