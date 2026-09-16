@@ -95,12 +95,12 @@ export function QuotationForm({
 
   let gridColsClass = ''
   if (isBasic) {
-    gridColsClass = 'lg:grid-cols-[2fr_2fr_1fr_1.5fr_1.5fr_auto]'
+    gridColsClass = 'lg:grid-cols-[2fr_2fr_1fr_1.5fr_1.5fr_auto] [&>*]:min-w-0'
   } else {
     if (isIndia && formData.gstTreatment === 'SAME_STATE') {
-      gridColsClass = 'lg:grid-cols-[1.2fr_1.2fr_0.8fr_0.8fr_0.7fr_1.2fr_0.8fr_0.8fr_1.5fr_auto]'
+      gridColsClass = 'lg:grid-cols-[1.2fr_1.2fr_0.8fr_0.8fr_0.7fr_1.2fr_0.8fr_0.8fr_1.5fr_auto] [&>*]:min-w-0'
     } else {
-      gridColsClass = 'lg:grid-cols-[1.2fr_1.5fr_0.8fr_0.8fr_0.7fr_1.2fr_1fr_1.5fr_auto]'
+      gridColsClass = 'lg:grid-cols-[1.2fr_1.5fr_0.8fr_0.8fr_0.7fr_1.2fr_1fr_1.5fr_auto] [&>*]:min-w-0'
     }
   }
 

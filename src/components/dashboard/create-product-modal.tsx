@@ -335,7 +335,7 @@ export function CreateProductModal({ open, onClose, businessId, onCreated }: Cre
                   <Label className="text-xs font-bold text-muted-foreground dark:text-slate-300 uppercase tracking-wider">
                     Product Type <span className="text-rose-500">*</span>
                   </Label>
-                  <Select value={form.type} onValueChange={handleTypeChange} disabled={isTrading}>
+                  <Select value={form.type} onValueChange={handleTypeChange}>
                     <SelectTrigger className={`h-11 rounded-xl border-border dark:border-slate-700 bg-muted/50 dark:bg-slate-800 ${errors.type ? 'border-rose-400' : ''}`}>
                       <SelectValue />
                     </SelectTrigger>

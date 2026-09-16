@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { normalizeInvoiceStatus, type InvoiceStatus } from '@/lib/invoice-status'
-import { getCurrencySymbol } from '@/lib/currencies'
+import { getCurrencySymbol, CURRENCIES } from '@/lib/currencies'
 import { creditNotesAPI, CreditNote } from '@/lib/api/credit-notes'
 
 export function InvoicePaymentPageClient({
@@ -116,6 +116,7 @@ export function InvoicePaymentPageClient({
     transactionId: '',
     note: '',
     creditNoteId: 'none',
+    currency: '',
   })
 
   useEffect(() => {
@@ -124,8 +125,9 @@ export function InvoicePaymentPageClient({
       ...prev,
       amountReceived: String(invoiceAmount || 0),
       paymentDate: new Date().toISOString().split('T')[0],
+      currency: invoice.currency || business?.baseCurrency?.code || 'AED',
     }))
-  }, [invoice, invoiceAmount])
+  }, [invoice, invoiceAmount, business])
 
   useEffect(() => {
     const loadPaymentSummary = async () => {
@@ -284,6 +286,7 @@ export function InvoicePaymentPageClient({
         },
         body: JSON.stringify({
           amount: normalizedAmount,
+          currency: paymentForm.currency || invoiceCurrency || business?.baseCurrency?.code || 'AED',
           paymentDate: paymentForm.paymentDate,
           paymentMode: paymentForm.paymentMode,
           transactionId: paymentForm.transactionId || null,
@@ -364,28 +367,43 @@ export function InvoicePaymentPageClient({
                 <div className="grid gap-2">
                   <Label htmlFor="amountReceived" className="text-sm font-semibold text-foreground">
                     Amount Received
-                    {invoiceCurrency && (
-                      <span className="ml-2 text-xs font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-lg uppercase tracking-wider">
-                        {invoiceCurrency} {invoiceCurrencySymbol}
-                      </span>
-                    )}
                   </Label>
-                  <div className="relative">
-                    {invoiceCurrencySymbol && (
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground pointer-events-none">
-                        {invoiceCurrencySymbol}
-                      </span>
-                    )}
-                    <Input
-                      id="amountReceived"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={paymentForm.amountReceived}
-                      onChange={(e) => setPaymentForm((prev) => ({ ...prev, amountReceived: e.target.value }))}
-                      disabled={isLoadingPaymentSummary || invoicePaymentStatus === 'PAID'}
-                      className={`h-10 rounded-xl border-border focus-visible:ring-blue-500 ${invoiceCurrencySymbol ? 'pl-8' : ''}`}
-                    />
+                  <div className="flex gap-2">
+                    <Select
+                      value={paymentForm.currency}
+                      onValueChange={(value) => setPaymentForm(prev => ({ ...prev, currency: value }))}
+                    >
+                      <SelectTrigger className="w-[120px] h-10 rounded-xl border-border focus-visible:ring-blue-500">
+                        <SelectValue placeholder="Currency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CURRENCIES.map(curr => (
+                          <SelectItem key={curr.code} value={curr.code}>
+                            <div className="flex items-center gap-2">
+                              <span>{curr.flag}</span>
+                              <span>{curr.code}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="relative flex-1">
+                      {getCurrencySymbol(paymentForm.currency) && (
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground pointer-events-none">
+                          {getCurrencySymbol(paymentForm.currency)}
+                        </span>
+                      )}
+                      <Input
+                        id="amountReceived"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={paymentForm.amountReceived}
+                        onChange={(e) => setPaymentForm((prev) => ({ ...prev, amountReceived: e.target.value }))}
+                        disabled={isLoadingPaymentSummary || invoicePaymentStatus === 'PAID'}
+                        className={`h-10 rounded-xl border-border focus-visible:ring-blue-500 ${getCurrencySymbol(paymentForm.currency) ? 'pl-8' : ''}`}
+                      />
+                    </div>
                   </div>
                   {invoicePaymentStatus === 'PARTIALLY_PAID' ? (
                     <p className="text-xs font-medium text-muted-foreground mt-1">

@@ -223,23 +223,72 @@ export function DealForm({
                 </div>
               </div>
               {business?.businessType === 'Trading' && (
-                <div className="space-y-2">
+                <div className="space-y-2 flex flex-col">
                   <Label htmlFor="currency" className="text-sm font-semibold text-foreground">Currency</Label>
-                  <Select
-                    value={formData.currency || ''}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
-                  >
-                    <SelectTrigger id="currency" className="w-full rounded-xl border-border bg-muted/50 h-11 focus:ring-blue-500 shadow-sm">
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-border shadow-lg max-h-[300px]">
-                      {CURRENCIES.map(curr => (
-                        <SelectItem key={curr.code} value={curr.code} className="cursor-pointer focus:bg-muted font-medium">
-                          {curr.flag} {curr.code} - {curr.name} ({curr.symbol})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between rounded-xl border-border bg-muted/50 h-11 focus:ring-blue-500 shadow-sm font-normal",
+                          !formData.currency && "text-muted-foreground"
+                        )}
+                      >
+                        {formData.currency
+                          ? (() => {
+                              const curr = CURRENCIES.find((c) => c.code === formData.currency)
+                              return curr ? `${curr.flag} ${curr.code} - ${curr.name} (${curr.symbol})` : formData.currency
+                            })()
+                          : "Select currency"}
+                        <div className="flex items-center gap-1">
+                          {formData.currency && (
+                            <div
+                              role="button"
+                              className="px-1 hover:text-foreground text-muted-foreground"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setFormData((prev) => ({ ...prev, currency: '' }))
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </div>
+                          )}
+                          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                        </div>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl border-border shadow-lg pointer-events-auto" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search currency..." />
+                        <CommandList>
+                          <CommandEmpty>No currency found.</CommandEmpty>
+                          <CommandGroup>
+                            {CURRENCIES.map((curr) => (
+                              <CommandItem
+                                key={curr.code}
+                                value={`${curr.code} ${curr.name}`}
+                                onSelect={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    currency: curr.code === prev.currency ? '' : curr.code
+                                  }))
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.currency === curr.code ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {curr.flag} {curr.code} - {curr.name} ({curr.symbol})
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
             </div>

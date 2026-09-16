@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
-import { getCurrencySymbol } from '@/lib/currencies'
+import { getCurrencySymbol, CURRENCIES } from '@/lib/currencies'
 import { quotationsAPI } from '@/lib/api/quotations'
 import { creditNotesAPI, CreditNote } from '@/lib/api/credit-notes'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
@@ -100,6 +100,7 @@ export function QuotationPaymentPageClient({
     transactionId: '',
     note: '',
     creditNoteId: 'none',
+    currency: '',
   })
 
   useEffect(() => {
@@ -139,8 +140,9 @@ export function QuotationPaymentPageClient({
       ...prev,
       amountReceived: quotationAmount ? quotationAmount.toString() : '0',
       paymentDate: quotationDate,
+      currency: quotation?.currency || project?.currency || business?.baseCurrency?.code || 'AED',
     }))
-  }, [quotation, project, quotationAmount, quotationDate])
+  }, [quotation, project, quotationAmount, quotationDate, business])
 
   useEffect(() => {
     const loadPaymentSummary = async () => {
@@ -358,6 +360,7 @@ export function QuotationPaymentPageClient({
         },
         body: JSON.stringify({
           amount: normalizedAmount,
+          currency: paymentForm.currency || quotationCurrency || business?.baseCurrency?.code || 'AED',
           paymentDate: paymentForm.paymentDate,
           paymentMode: paymentForm.paymentMode,
           transactionId: paymentForm.transactionId || null,
@@ -455,28 +458,43 @@ export function QuotationPaymentPageClient({
                 <div className="grid gap-2">
                   <Label htmlFor="amountReceived" className="text-sm font-semibold text-foreground">
                     Amount Received
-                    {quotationCurrency && (
-                      <span className="ml-2 text-xs font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-lg uppercase tracking-wider">
-                        {quotationCurrency} {quotationCurrencySymbol}
-                      </span>
-                    )}
                   </Label>
-                  <div className="relative">
-                    {quotationCurrencySymbol && (
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground pointer-events-none">
-                        {quotationCurrencySymbol}
-                      </span>
-                    )}
-                    <Input
-                      id="amountReceived"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={paymentForm.amountReceived}
-                      onChange={(e) => setPaymentForm((prev) => ({ ...prev, amountReceived: e.target.value }))}
-                      disabled={isLoadingPaymentSummary || quotationPaymentStatus === 'PAID'}
-                      className={`h-10 rounded-xl border-border focus-visible:ring-blue-500 ${quotationCurrencySymbol ? 'pl-8' : ''}`}
-                    />
+                  <div className="flex gap-2">
+                    <Select
+                      value={paymentForm.currency}
+                      onValueChange={(value) => setPaymentForm(prev => ({ ...prev, currency: value }))}
+                    >
+                      <SelectTrigger className="w-[120px] h-10 rounded-xl border-border focus-visible:ring-blue-500">
+                        <SelectValue placeholder="Currency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CURRENCIES.map(curr => (
+                          <SelectItem key={curr.code} value={curr.code}>
+                            <div className="flex items-center gap-2">
+                              <span>{curr.flag}</span>
+                              <span>{curr.code}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="relative flex-1">
+                      {getCurrencySymbol(paymentForm.currency) && (
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground pointer-events-none">
+                          {getCurrencySymbol(paymentForm.currency)}
+                        </span>
+                      )}
+                      <Input
+                        id="amountReceived"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={paymentForm.amountReceived}
+                        onChange={(e) => setPaymentForm((prev) => ({ ...prev, amountReceived: e.target.value }))}
+                        disabled={isLoadingPaymentSummary || quotationPaymentStatus === 'PAID'}
+                        className={`h-10 rounded-xl border-border focus-visible:ring-blue-500 ${getCurrencySymbol(paymentForm.currency) ? 'pl-8' : ''}`}
+                      />
+                    </div>
                   </div>
                   {quotationPaymentStatus === 'PARTIALLY_PAID' ? (
                     <p className="text-xs font-medium text-muted-foreground mt-1">
