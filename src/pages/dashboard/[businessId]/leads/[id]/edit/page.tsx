@@ -93,7 +93,7 @@ export default function EditLeadPage() {
             zipCode: leadData.zipCode || '',
             status: leadData.status,
             source: leadData.source || 'WEBSITE',
-            assignedTo: leadData.assignedTo || '',
+            assignedTo: (typeof leadData.assignedTo === 'object' && leadData.assignedTo !== null) ? leadData.assignedTo.id : (leadData.assignedTo || ''),
             tags: leadData.tags || [],
             leadValue: leadData.leadValue || 0,
             description: leadData.description || '',
