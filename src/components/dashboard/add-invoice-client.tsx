@@ -1037,7 +1037,7 @@ export function AddInvoiceClient({
                               const product = products.find(p => p.id === item.productId)
                               const isService = product?.type === 'SERVICE' || item.itemType === 'SERVICE'
                               
-                              const warehouseStock = (product?.stockDetails || product?.stockLevels)?.find((s: any) => s.warehouseId === item.warehouseId)
+                              const warehouseStock = ((product as any)?.stockDetails || product?.stockLevels)?.find((s: any) => s.warehouseId === item.warehouseId)
                               const qty = Number(warehouseStock?.quantity || 0)
                               const res = Number(warehouseStock?.reservedQty || 0)
                               const available = isService ? Infinity : Math.max(0, qty - res)
