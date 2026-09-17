@@ -23,6 +23,19 @@ import { toast } from 'sonner'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
+import { Warehouse, warehousesAPI } from '@/lib/api/warehouses'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { ShoppingBagIcon } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
 import { CurrencySelect } from '@/components/dashboard/currency-select'
 import { getCurrencySymbol } from '@/lib/currencies'
 
@@ -81,6 +94,7 @@ export function QuotationForm({
 
   const { business } = useBusinessData()
   const [products, setProducts] = React.useState<Product[]>([])
+  const [warehouses, setWarehouses] = React.useState<Warehouse[]>([])
   
   const selectedCustomer = customers.find(c => c.id === formData.customerId)
   const customerCountryName = (selectedCustomer?.country || selectedCustomer?.region || '').trim().toUpperCase()
@@ -90,8 +104,14 @@ export function QuotationForm({
   const hasNoRegion = isCustomerSelected && !customerCountryName
 
   const taxLabel = isIndia ? 'GST %' : isUAE ? 'VAT %' : 'Tax %'
+
   const taxType = isIndia ? 'GST' : isUAE ? 'VAT' : 'TAX'
   const isBasic = business?.businessType === 'Basic'
+
+  const hasGoodsItem = formData.items.some(
+    (item) => item.itemType === 'GOODS' || products.find((p) => p.id === item.productId)?.type === 'GOODS'
+  )
+
 
   let gridColsClass = ''
   if (isBasic) {
@@ -146,11 +166,12 @@ export function QuotationForm({
 
   React.useEffect(() => {
     const load = async () => {
-      const [customerRes, dealRes, userRes, productRes] = await Promise.allSettled([
+      const [customerRes, dealRes, userRes, productRes, warehouseRes] = await Promise.allSettled([
         contactsAPI.getCustomers(businessId),
         dealsAPI.getDeals(businessId),
         usersAPI.getBusinessUsers(businessId),
-        productsAPI.getAll(businessId)
+        productsAPI.getAll(businessId),
+        warehousesAPI.getAll(businessId)
       ])
 
       if (customerRes.status === 'fulfilled') setCustomers(customerRes.value.customers || [])
@@ -159,6 +180,9 @@ export function QuotationForm({
       if (productRes.status === 'fulfilled') {
         const pData = (productRes.value as any).products || (productRes.value as any).data || []
         setProducts(pData)
+      }
+      if (warehouseRes.status === 'fulfilled') {
+        setWarehouses(warehouseRes.value.warehouses || [])
       }
     }
 
@@ -501,257 +525,307 @@ export function QuotationForm({
             ) : null}
           </div>
 
-          {/* Line Items Section */}
-          {true ? (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-border pb-2">
-                <div className="flex items-center gap-2">
-                  <List className="h-4 w-4 text-slate-400" />
-                  <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Line Items <span className="text-rose-500">*</span></h3>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addItem}
-                  className="gap-2 h-8 rounded-lg border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add Line Item
-                </Button>
-              </div>
+{/* Line Items Table */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <ShoppingBagIcon className="h-5 w-5 text-primary" />
+                Line Items *
+              </h3>
+              <Button type="button" variant="outline" size="sm" onClick={addItem} className="gap-2 cursor-pointer border-primary text-primary hover:bg-primary/5">
+                <Plus className="h-4 w-4" />
+                Add Item
+              </Button>
+            </div>
 
-              <div className="space-y-3">
-                <div className={`hidden lg:grid ${gridColsClass} gap-3 px-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider`}>
-                  <div>{isBasic ? 'Item Name' : 'Product / Service'}</div>
-                  <div>Description</div>
-                  {!isBasic && <div>Type</div>}
-                  {!isBasic && <div>{formData.items.length > 0 && formData.items[0].itemType === 'SERVICE' ? 'SAC' : 'HSN'}</div>}
-                  <div>
-                    {formData.items.length > 0 ? (
-                      formData.items[0].itemType === 'SERVICE' ? 'HRS' :
-                      ['kg', 'gram', 'meter', 'litre'].includes((formData.items[0].unit || '').toLowerCase()) ? formData.items[0].unit?.toUpperCase() : 'QTY'
-                    ) : 'QTY'}
-                  </div>
-                  <div>Rate</div>
-                  {!isBasic && (
-                    isIndia && formData.gstTreatment === 'SAME_STATE' ? (
-                      <>
-                        <div>CGST %</div>
-                        <div>SGST %</div>
-                      </>
-                    ) : isIndia ? (
-                      <div>IGST %</div>
-                    ) : (
-                      <div>{taxLabel}</div>
-                    )
-                  )}
-                  <div>Amount</div>
-                  <div className="w-10"></div>
-                </div>
-
-                <div className="space-y-4">
-                  {formData.items.map((item, index) => {
-                    const lineAmount = Number(item.quantity || 0) * Number(item.price || 0)
-                    const lineTax = (lineAmount * Number(item.taxPercent || 0)) / 100
-                    const totalLineAmount = lineAmount + lineTax
-
-                    return (
-                      <div key={index} className={`grid gap-3 rounded-xl border border-border bg-muted/30 p-4 ${gridColsClass} lg:items-start lg:p-2 lg:bg-background lg:border-none`}>
-
-                        <div className="space-y-1">
-                          <Label className="lg:hidden text-xs font-semibold text-muted-foreground">{isBasic ? 'Item Name' : 'Product'}</Label>
-                          {isBasic ? (
-                             <Input 
-                               value={item.itemName || ''} 
-                               placeholder="Item Name"
-                               className="h-10 rounded-lg bg-card border-border text-sm focus:ring-blue-500"
-                               onChange={(e) => updateItem(index, 'itemName', e.target.value)}
-                             />
-                          ) : (
-                            <Select value={item.productId || 'none'} onValueChange={v => handleProductSelect(index, v === 'none' ? '' : v)}>
-                              <SelectTrigger className="h-10 rounded-lg bg-card border-border focus:ring-blue-500 text-sm">
-                                <SelectValue placeholder="Select product" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl border-border shadow-lg">
-                                <SelectItem value="none" className="rounded-lg cursor-pointer italic text-muted-foreground">— Custom Item —</SelectItem>
-                                {products.map(p => <SelectItem key={p.id} value={p.id} className="rounded-lg cursor-pointer">{p.name}</SelectItem>)}
-                                <div className="border-t border-border mt-1 pt-1">
-                                  <button
-                                    type="button"
-                                    onMouseDown={(e) => { e.preventDefault(); setShowCreateProduct({ show: true, index }) }}
-                                    className="flex w-full items-center gap-2 px-2 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 rounded cursor-pointer transition-colors"
-                                  >
-                                    <PackagePlus className="h-4 w-4" />
-                                    + Create Product
-                                  </button>
-                                </div>
-                              </SelectContent>
-                            </Select>
-                          )}
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className="lg:hidden text-xs font-semibold text-muted-foreground">Description</Label>
-                          <Input
-                            value={item.description}
-                            placeholder="Item description"
-                            className="h-10 rounded-lg bg-card border-border focus:bg-card text-sm"
-                            onChange={(e) => updateItem(index, 'description', e.target.value)}
-                          />
-                        </div>
-
-                        {!isBasic && (
+            <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+              <div className="overflow-x-auto custom-scrollbar">
+                <Table className="min-w-[1200px] table-fixed">
+                  <TableHeader className="bg-muted/80 border-b border-border">
+                    <TableRow className="hover:bg-background border-none text-muted-foreground">
+                      <TableHead className="w-[180px] text-[11px] font-bold uppercase">{isBasic ? 'Item Name' : 'Product'}</TableHead>
+                      <TableHead className="w-[200px] text-[11px] font-bold uppercase">Description</TableHead>
+                      {!isBasic && hasGoodsItem && <TableHead className="w-[130px] text-[11px] font-bold uppercase">Warehouse</TableHead>}
+                      {!isBasic && <TableHead className="w-[100px] text-[11px] font-bold uppercase">{items.length > 0 && items[0].itemType === 'SERVICE' ? 'SAC' : 'HSN'}</TableHead>}
+                      {!isBasic && hasGoodsItem && <TableHead className="w-[80px] text-[11px] font-bold uppercase text-center">Stock</TableHead>}
+                      <TableHead className="w-[80px] text-[11px] font-bold uppercase text-center">
+                        {items.length > 0 ? (
+                          items[0].itemType === 'SERVICE' ? 'HRS' :
+                          ['kg', 'gram', 'meter', 'litre'].includes((items[0].unit || '').toLowerCase()) ? items[0].unit?.toUpperCase() : 'QTY'
+                        ) : 'QTY'}
+                      </TableHead>
+                      {!isBasic && <TableHead className="w-[90px] text-[11px] font-bold uppercase">Unit</TableHead>}
+                      <TableHead className="w-[110px] text-[11px] font-bold uppercase text-right">Rate</TableHead>
+                      {(!isIndia && !isUAE) ? (
+                        <TableHead className="w-[80px] text-[11px] font-bold uppercase text-right">{taxLabel}</TableHead>
+                      ) : isIndia ? (
+                        (formData.gstTreatment === 'SAME_STATE') ? (
                           <>
-                            <div className="space-y-1">
-                              <Label className="lg:hidden text-xs font-semibold text-muted-foreground">Type</Label>
-                              <Select
-                                value={item.itemType || 'GOODS'}
-                                onValueChange={(val) => updateItem(index, 'itemType', val)}
-                              >
-                                <SelectTrigger className="h-10 rounded-lg bg-card border-border focus:ring-blue-500 text-sm">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl shadow-lg border-border">
-                                  <SelectItem value="GOODS" className="rounded-lg cursor-pointer">Goods</SelectItem>
-                                  <SelectItem value="SERVICE" className="rounded-lg cursor-pointer">Service</SelectItem>
+                            <TableHead className="w-[80px] text-[11px] font-bold uppercase text-right">CGST%</TableHead>
+                            <TableHead className="w-[80px] text-[11px] font-bold uppercase text-right">SGST%</TableHead>
+                          </>
+                        ) : (
+                          <TableHead className="w-[80px] text-[11px] font-bold uppercase text-right">IGST%</TableHead>
+                        )
+                      ) : (
+                        <TableHead className="w-[80px] text-[11px] font-bold uppercase text-right">VAT%</TableHead>
+                      )}
+                      <TableHead className="w-[120px] text-[11px] font-bold uppercase text-right">Total</TableHead>
+                      <TableHead className="w-[40px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item, index) => {
+                      const product = products.find(p => p.id === item.productId)
+                      const isService = product?.type === 'SERVICE' || item.itemType === 'SERVICE'
+                      const warehouseStock = product?.stockLevels?.find(s => s.warehouseId === item.warehouseId)
+
+                      const qty = Number(warehouseStock?.quantity || 0)
+                      const res = Number(warehouseStock?.reservedQty || 0)
+                      const available = isService ? Infinity : Math.max(0, qty - res)
+
+                      const isLowStock = !isService && available < Number(product?.reorderLevel || 0)
+                      const isOutOfStock = !isService && available <= 0
+
+                      const lineAmount = Number(item.quantity || 0) * Number(item.price || 0)
+                      let lineTax = 0
+                      if (isIndia) {
+                        lineTax = (formData.gstTreatment === 'SAME_STATE')
+                          ? (lineAmount * (Number(item.cgstPercent || 0) + Number(item.sgstPercent || 0)) / 100)
+                          : (lineAmount * Number(item.igstPercent || 0) / 100)
+                      } else {
+                        const vatRate = Number(item.taxPercent || 0)
+                        if (formData.vatType === 'inclusive') {
+                          const lineSub = lineAmount / (1 + vatRate / 100)
+                          lineTax = lineAmount - lineSub
+                        } else {
+                          lineTax = lineAmount * (vatRate / 100)
+                        }
+                      }
+
+                      const totalLineAmount = formData.vatType === 'inclusive' ? lineAmount : (lineAmount + lineTax)
+
+                      return (
+                        <TableRow key={item.id} className="group hover:bg-muted/50 border-b border-border last:border-none">
+                          <TableCell className="py-3 px-2">
+                            {isBasic ? (
+                              <Input 
+                                value={item.itemName || ''} 
+                                placeholder="Item Name"
+                                className="h-8 text-xs bg-background px-2"
+                                onChange={(e) => updateItem(index, 'itemName', e.target.value)}
+                              />
+                            ) : (
+                              <Select value={item.productId || 'none'} onValueChange={v => handleProductSelect(index, v === 'none' ? '' : v)}>
+                                <SelectTrigger className="h-8 w-full bg-background text-xs px-2"><SelectValue placeholder="Product" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">— Custom Item —</SelectItem>
+                                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                  <div className="border-t border-border mt-1 pt-1">
+                                    <button type="button" onMouseDown={(e) => { e.preventDefault(); setShowCreateProduct(true) }} className="flex w-full items-center gap-2 px-2 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 rounded cursor-pointer transition-colors">
+                                      <PackagePlus className="h-4 w-4" />+ Create Product
+                                    </button>
+                                  </div>
                                 </SelectContent>
                               </Select>
-                            </div>
+                            )}
+                          </TableCell>
 
-                            <div className="space-y-1">
-                              <Label className="lg:hidden text-xs font-semibold text-muted-foreground">{item.itemType === 'SERVICE' ? 'SAC' : 'HSN'}</Label>
+                          <TableCell className="py-3 px-2">
+                            <Input
+                              value={item.description}
+                              placeholder="Item name"
+                              className="h-8 text-xs bg-background px-2"
+                              onChange={(e) => updateItem(index, 'description', e.target.value)}
+                            />
+                          </TableCell>
+
+                          {!isBasic && hasGoodsItem && (
+                            <TableCell className="py-3 px-2">
+                              {!isService ? (
+                                <Select
+                                  value={item.warehouseId}
+                                  onValueChange={(val) => updateItem(index, 'warehouseId', val)}
+                                >
+                                  <SelectTrigger className="h-8 w-full bg-background text-xs px-2">
+                                    <SelectValue placeholder="WH" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <div className="h-8 flex items-center justify-center text-muted-foreground">—</div>
+                              )}
+                            </TableCell>
+                          )}
+
+                          {!isBasic && (
+                            <TableCell className="py-3 px-2">
                               <div className="relative">
                                 <Input
                                   value={item.hsnSacCode || ''}
                                   placeholder=""
-                                  className="h-10 rounded-lg bg-card border-border font-mono text-sm uppercase"
+                                  className="h-8 text-xs font-mono bg-background"
                                   onChange={(e) => updateItem(index, 'hsnSacCode', e.target.value)}
                                 />
                               </div>
-                            </div>
-                          </>
-                        )}
+                            </TableCell>
+                          )}
 
-                        <div className="space-y-1">
-                          <Label className="lg:hidden text-xs font-semibold text-muted-foreground">{item.itemType === 'SERVICE' ? 'Hours' : 'Qty'}</Label>
-                          <div className="relative">
+                          {!isBasic && hasGoodsItem && (
+                            <TableCell className="py-3 px-2">
+                              <div className="flex justify-center">
+                                {item.productId && !isService ? (
+                                  <Badge
+                                    variant={isOutOfStock ? "destructive" : (isLowStock ? "secondary" : "default")}
+                                    className={cn(
+                                      "text-[9px] px-1 py-0 h-4 min-w-fit whitespace-nowrap",
+                                      !isOutOfStock && !isLowStock && "bg-emerald-500/10 text-emerald-600 border-emerald-200"
+                                    )}
+                                  >
+                                    {available === Infinity ? '—' : available} {item.unit || 'pcs'}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-[10px]">—</span>
+                                )}
+                              </div>
+                            </TableCell>
+                          )}
+
+                          <TableCell className="py-3 px-2">
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                className={cn(
+                                  "h-8 text-xs bg-background pl-2 transition-colors",
+                                  !isService && item.quantity > available && "border-red-500 focus-visible:ring-red-500 bg-red-50/30"
+                                )}
+                                onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                              />
+                              {item.productId && !isService && item.quantity > available && (
+                                <p className="absolute -bottom-4 left-0 text-[9px] text-red-500 font-bold leading-none animate-pulse whitespace-nowrap">
+                                  Insufficient Stock
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+
+                          {!isBasic && (
+                            <TableCell className="py-3 px-2">
+                              <Select value={item.unit || 'pcs'} onValueChange={v => updateItem(index, 'unit', v)}>
+                                <SelectTrigger className="h-8 w-full bg-background text-xs px-2"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {['pcs', 'kg', 'ltr', 'm', 'box', 'set', 'hr', 'day'].map(u => (
+                                    <SelectItem key={u} value={u}>{u}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                          )}
+
+                          <TableCell className="py-3 px-2 text-right">
                             <Input
                               type="number"
-                              min="1"
-                              value={item.quantity}
-                              className="h-10 rounded-lg bg-card border-border text-sm pl-2"
-                              onChange={(e) => updateItem(index, 'quantity', e.target.value || 1)}
+                              min="0"
+                              step="0.01"
+                              value={item.price}
+                              className="h-8 text-xs text-right bg-background px-2"
+                              onChange={(e) => updateItem(index, 'price', e.target.value)}
                             />
-                          </div>
-                        </div>
+                          </TableCell>
 
-                        <div className="space-y-1">
-                          <Label className="lg:hidden text-xs font-semibold text-muted-foreground">Rate</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.price}
-                            className="h-10 rounded-lg bg-card border-border text-sm"
-                            onChange={(e) => updateItem(index, 'price', e.target.value || 0)}
-                          />
-                        </div>
-
-                        {!isBasic && (
-                          isIndia && formData.gstTreatment === 'SAME_STATE' ? (
-                            <>
-                              <div className="space-y-1">
-                                <Label className="lg:hidden text-xs font-semibold text-muted-foreground">CGST %</Label>
+                          {(!isIndia && !isUAE) ? (
+                            <TableCell className="py-3 px-2 text-right">
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.taxPercent ?? 0}
+                                className="h-8 text-xs text-right bg-background px-2"
+                                onChange={(e) => updateItem(index, 'taxPercent', e.target.value)}
+                              />
+                            </TableCell>
+                          ) : isIndia ? (
+                            (formData.gstTreatment === 'SAME_STATE') ? (
+                              <>
+                                <TableCell className="py-3 px-2 text-right">
+                                  <EditableTaxSelect
+                                    value={item.cgstPercent ?? 0}
+                                    onChange={(val) => {
+                                      updateItem(index, 'cgstPercent', val)
+                                      updateItem(index, 'sgstPercent', val)
+                                      updateItem(index, 'taxPercent', val * 2)
+                                    }}
+                                    options={[0, 2.5, 6, 7.5, 9, 14]}
+                                    size="sm"
+                                  />
+                                </TableCell>
+                                <TableCell className="py-3 px-2 text-right">
+                                  <EditableTaxSelect
+                                    value={item.sgstPercent ?? 0}
+                                    onChange={(val) => {
+                                      updateItem(index, 'sgstPercent', val)
+                                      updateItem(index, 'cgstPercent', val)
+                                      updateItem(index, 'taxPercent', val * 2)
+                                    }}
+                                    options={[0, 2.5, 6, 7.5, 9, 14]}
+                                    size="sm"
+                                  />
+                                </TableCell>
+                              </>
+                            ) : (
+                              <TableCell className="py-3 px-2 text-right">
                                 <EditableTaxSelect
-                                  value={item.cgstPercent ?? 0}
+                                  value={item.igstPercent ?? 0}
                                   onChange={(val) => {
-                                    updateItem(index, 'cgstPercent', val)
-                                    updateItem(index, 'sgstPercent', val)
-                                    updateItem(index, 'taxPercent', val * 2)
-                                  }}
-                                  options={[0, 2.5, 6, 7.5, 9, 14]}
-                                  size="sm"
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="lg:hidden text-xs font-semibold text-muted-foreground">SGST %</Label>
-                                <EditableTaxSelect
-                                  value={item.sgstPercent ?? 0}
-                                  onChange={(val) => {
-                                    updateItem(index, 'sgstPercent', val)
-                                    updateItem(index, 'cgstPercent', val)
-                                    updateItem(index, 'taxPercent', val * 2)
-                                  }}
-                                  options={[0, 2.5, 6, 7.5, 9, 14]}
-                                  size="sm"
-                                />
-                              </div>
-                            </>
-                          ) : (
-                            <div className="space-y-1">
-                              <Label className="lg:hidden text-xs font-semibold text-muted-foreground">{isIndia ? 'IGST %' : taxLabel}</Label>
-                              {isUAE ? (
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  value={item.taxPercent ?? 5}
-                                  className="h-10 rounded-lg bg-card border-border text-sm"
-                                  onChange={(e) => updateItem(index, 'taxPercent', e.target.value)}
-                                />
-                              ) : isIndia ? (
-                                <EditableTaxSelect
-                                  value={item.taxPercent ?? 0}
-                                  onChange={(val) => {
-                                    updateItem(index, 'taxPercent', val)
                                     updateItem(index, 'igstPercent', val)
+                                    updateItem(index, 'taxPercent', val)
                                   }}
                                   options={[0, 5, 12, 18, 28]}
                                   size="sm"
                                 />
-                              ) : (
-                                <EditableTaxSelect
-                                  value={item.taxPercent ?? 0}
-                                  onChange={(val) => {
-                                    updateItem(index, 'taxPercent', val)
-                                  }}
-                                  options={[0, 5, 10, 15, 20]}
-                                  size="sm"
-                                />
-                              )}
+                              </TableCell>
+                            )
+                          ) : (
+                            <TableCell className="py-3 px-2 text-right">
+                              <EditableTaxSelect
+                                value={item.taxPercent ?? 0}
+                                onChange={(val) => updateItem(index, 'taxPercent', val)}
+                                options={[0, 5, 12, 15, 18, 28]}
+                                size="sm"
+                              />
+                            </TableCell>
+                          )}
+
+                          <TableCell className="py-3 px-2 text-right">
+                            <div className="h-8 flex items-center justify-end px-2 rounded-md bg-muted/30 text-xs font-bold">
+                              {totalLineAmount.toFixed(2)}
                             </div>
-                          )
-                        )}
+                          </TableCell>
 
-                        <div className="space-y-1">
-                          <Label className="lg:hidden text-xs font-semibold text-muted-foreground">Amount</Label>
-                          <Input
-                            readOnly
-                            value={`${currencySymbol} ${totalLineAmount.toFixed(2)}`}
-                            className="h-10 rounded-lg bg-muted border-transparent font-bold text-foreground text-sm focus:ring-0 cursor-default"
-                          />
-                        </div>
-
-                        <div className="flex items-end justify-end pb-0.5 lg:pt-0 pt-2 border-t border-border lg:border-none mt-2 lg:mt-0">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                            onClick={() => removeItem(index)}
-                            disabled={formData.items.length === 1}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                          <TableCell className="py-3 px-2 text-center">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive transition-colors"
+                              onClick={() => removeItem(index)}
+                              disabled={items.length === 1}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
               </div>
             </div>
-          ) : null}
+          </div>
 
           {/* Pricing Adjustments Section */}
           <div className="space-y-6">

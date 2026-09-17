@@ -813,7 +813,7 @@ export function AppSidebar() {
   )
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="offcanvas">
       <SidebarHeader className="gap-3 px-3 py-3">
         <Select
           value={selectedBusiness}
