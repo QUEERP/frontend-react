@@ -120,7 +120,7 @@ export function InventoryItemTable({
             updated.unit = typeof product.unit === 'object' ? product.unit?.abbreviation : (product.unit || 'pcs')
             
             // Stock logic
-            const stockLevel = (product.stockDetails || product.stockLevels)?.find((s: any) => s.warehouseId === updated.warehouseId)
+            const stockLevel = ((product as any).stockDetails || product.stockLevels)?.find((s: any) => s.warehouseId === updated.warehouseId)
             updated.availableStock = stockLevel ? (stockLevel.quantity - stockLevel.reservedQty) : 0
             updated.lowStock = updated.availableStock < (product.reorderLevel || 0)
           }
@@ -130,7 +130,7 @@ export function InventoryItemTable({
         if (updates.warehouseId) {
           const product = products.find(p => p.id === updated.productId)
           if (product) {
-            const stockLevel = (product.stockDetails || product.stockLevels)?.find((s: any) => s.warehouseId === updates.warehouseId)
+            const stockLevel = ((product as any).stockDetails || product.stockLevels)?.find((s: any) => s.warehouseId === updates.warehouseId)
             updated.availableStock = stockLevel ? (stockLevel.quantity - stockLevel.reservedQty) : 0
             updated.lowStock = updated.availableStock < (product.reorderLevel || 0)
           }
