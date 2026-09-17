@@ -42,7 +42,9 @@ interface Activity {
 }
 
 export default function ActivitiesPageClient() {
-  const pathname = useLocation().pathname;
+  const location = useLocation();
+  const pathname = location.pathname;
+  const search = location.search;
   const { toast } = useToast();
   const businessId = pathname.match(/\/dashboard\/([^/]+)/)?.[1] || '';
 
@@ -55,7 +57,7 @@ export default function ActivitiesPageClient() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams(search);
       const typeParam = params.get('type');
       if (typeParam === 'Call' || typeParam === 'Meeting') {
         setTypeFilter(typeParam);
@@ -63,7 +65,7 @@ export default function ActivitiesPageClient() {
         setTypeFilter('All');
       }
     }
-  }, [pathname]);
+  }, [pathname, search]);
 
   const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
   const API_ROOT = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`;

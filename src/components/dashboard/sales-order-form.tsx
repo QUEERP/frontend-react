@@ -1067,7 +1067,7 @@ export function SalesOrderForm({
                                         onChange={(val) => {
                                           updateItem(index, 'cgstPercent', val)
                                           updateItem(index, 'sgstPercent', val)
-                                          updateItem(index, 'taxPercent', val * 2)
+                                          updateItem(index, 'taxPercent', Number(val) * 2)
                                         }}
                                         options={[0, 2.5, 6, 7.5, 9, 14]}
                                         size="sm"
@@ -1079,7 +1079,7 @@ export function SalesOrderForm({
                                         onChange={(val) => {
                                           updateItem(index, 'sgstPercent', val)
                                           updateItem(index, 'cgstPercent', val)
-                                          updateItem(index, 'taxPercent', val * 2)
+                                          updateItem(index, 'taxPercent', Number(val) * 2)
                                         }}
                                         options={[0, 2.5, 6, 7.5, 9, 14]}
                                         size="sm"
