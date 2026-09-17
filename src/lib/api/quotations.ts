@@ -6,6 +6,7 @@ export const QUOTATION_STATUS = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED'] as con
 
 export interface QuotationItemInput {
   productId?: string
+  warehouseId?: string
   itemName?: string
   description: string
   itemType?: string

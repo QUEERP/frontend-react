@@ -1015,6 +1015,17 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
                       <span className="font-bold text-foreground text-sm sm:text-base pl-6">{customer.industry || '—'}</span>
                     </div>
 
+                    {/* Currency */}
+                    <div className="bg-muted/50 p-3 sm:p-4 rounded-xl border border-border/60">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <DollarSignIcon className="size-4 text-slate-400" />
+                        <span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Currency</span>
+                      </div>
+                      <span className="font-bold text-foreground text-sm sm:text-base pl-6">
+                        {customer.currency || customer.currencyId ? `${customer.currency || customer.currencyId}` : '—'}
+                      </span>
+                    </div>
+
                     {/* Parent Corporation */}
                     <div className="bg-muted/50 p-3 sm:p-4 rounded-xl border border-border/60 sm:col-span-2">
                       <div className="flex items-center gap-2 mb-1.5">

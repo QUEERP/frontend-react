@@ -285,7 +285,7 @@ export default function NewPurchaseRequestPageClient() {
 
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold text-muted-foreground dark:text-slate-400">Type & Code</Label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-4 sm:gap-6">
                       <Select value={item.itemType || 'GOODS'} onValueChange={v => updateItem(i, 'itemType', v)}>
                         <SelectTrigger className="h-10 w-full sm:w-[100px] rounded-lg border-border dark:border-slate-700 bg-card dark:bg-slate-900 dark:text-slate-100 shadow-sm">
                           <SelectValue />
@@ -404,3 +404,4 @@ export default function NewPurchaseRequestPageClient() {
     </div>
   )
 }
+

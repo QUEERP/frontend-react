@@ -390,7 +390,7 @@ export function InvoicePaymentPageClient({
                         value={paymentForm.amountReceived}
                         onChange={(e) => setPaymentForm((prev) => ({ ...prev, amountReceived: e.target.value }))}
                         disabled={isLoadingPaymentSummary || invoicePaymentStatus === 'PAID'}
-                        className={`h-10 rounded-xl border-border focus-visible:ring-blue-500 ${getCurrencySymbol(paymentForm.currency) ? 'pl-8' : ''}`}
+                        className={`h-10 rounded-xl border-border focus-visible:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${getCurrencySymbol(paymentForm.currency) ? 'pl-8' : ''}`}
                       />
                     </div>
                   </div>
