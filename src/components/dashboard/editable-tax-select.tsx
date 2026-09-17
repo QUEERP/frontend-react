@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 
 interface EditableTaxSelectProps {
   value: number | string
-  onChange: (val: number) => void
+  onChange: (val: number | string) => void
   options?: number[]
   className?: string
   placeholder?: string
@@ -39,11 +39,18 @@ export function EditableTaxSelect({
   const [inputValue, setInputValue] = React.useState(String(value ?? 0))
 
   React.useEffect(() => {
-    setInputValue(String(value ?? 0))
+    if (inputValue === '' && (value === 0 || value === '')) return;
+    if (String(value) !== inputValue) {
+      setInputValue(String(value ?? 0))
+    }
   }, [value])
 
   const handleInputChange = (val: string) => {
     setInputValue(val)
+    if (val === '') {
+      onChange('')
+      return
+    }
     const num = Number(val)
     if (!isNaN(num)) {
       onChange(num)

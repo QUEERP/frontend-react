@@ -469,7 +469,7 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">Product Type *</Label>
-                      <Select value={formData.type} onValueChange={handleTypeChange} disabled={isViewMode || !!productId}>
+                      <Select value={formData.type} onValueChange={handleTypeChange} disabled={isViewMode}>
                         <SelectTrigger className="h-11 border-muted-foreground/20">
                           <SelectValue placeholder="Select Type" />
                         </SelectTrigger>
@@ -696,7 +696,7 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                         </Label>
                         <EditableTaxSelect
                           value={formData.taxRate ?? 0}
-                          onChange={(val) => setFormData(prev => ({ ...prev, taxRate: val }))}
+                          onChange={(val) => setFormData(prev => ({ ...prev, taxRate: val === "" ? 0 : Number(val) }))}
                           options={[0, 5, 12, 15, 18, 28]}
                           size="lg"
                           disabled={isViewMode}

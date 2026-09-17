@@ -353,7 +353,7 @@ export function InventoryItemTable({
                   <td className="px-4 py-4 align-top">
                     <EditableTaxSelect
                       value={item.taxPercent ?? 0}
-                      onChange={(val) => updateItem(index, { taxPercent: val })}
+                      onChange={(val) => updateItem(index, { taxPercent: val === "" ? 0 : Number(val) })}
                       options={[0, 5, 12, 15, 18, 28]}
                       size="sm"
                     />

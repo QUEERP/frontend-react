@@ -81,8 +81,8 @@ export function QuotationForm({
     customerId: initialData?.customerId || '',
     dealId: initialData?.dealId || '',
     assignedToId: initialData?.assignedToId || '',
-    tax: initialData?.tax || 0,
-    discount: initialData?.discount || 0,
+    tax: initialData?.tax !== undefined ? initialData.tax : '',
+    discount: initialData?.discount !== undefined ? initialData.discount : '',
     issueDate: initialData?.issueDate || new Date().toISOString().slice(0, 10),
     expiryDate: initialData?.expiryDate || '',
     notes: initialData?.notes || '',
@@ -227,11 +227,13 @@ export function QuotationForm({
       updateItem(index, 'productId', '')
       return
     }
+    const defaultWarehouseId = product.stockLevels?.find(s => Number(s.quantity) > 0)?.warehouseId || product.stockLevels?.[0]?.warehouseId || ''
     setFormData(prev => ({
       ...prev,
       items: prev.items.map((item, i) => i === index ? {
         ...item,
         productId,
+        warehouseId: defaultWarehouseId,
         description: product.name,
         price: product.price ?? product.sellingPrice ?? 0,
         taxPercent: product.taxPercent ?? product.taxRate ?? 0,
@@ -757,7 +759,7 @@ export function QuotationForm({
                                     onChange={(val) => {
                                       updateItem(index, 'cgstPercent', val)
                                       updateItem(index, 'sgstPercent', val)
-                                      updateItem(index, 'taxPercent', val * 2)
+                                      updateItem(index, 'taxPercent', Number(val) * 2)
                                     }}
                                     options={[0, 2.5, 6, 7.5, 9, 14]}
                                     size="sm"
@@ -769,7 +771,7 @@ export function QuotationForm({
                                     onChange={(val) => {
                                       updateItem(index, 'sgstPercent', val)
                                       updateItem(index, 'cgstPercent', val)
-                                      updateItem(index, 'taxPercent', val * 2)
+                                      updateItem(index, 'taxPercent', Number(val) * 2)
                                     }}
                                     options={[0, 2.5, 6, 7.5, 9, 14]}
                                     size="sm"
@@ -855,7 +857,7 @@ export function QuotationForm({
                     step="0.01"
                     value={formData.discount}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, discount: Number(e.target.value || 0) }))
+                      setFormData((prev) => ({ ...prev, discount: e.target.value === '' ? '' : Number(e.target.value) }))
                     }
                     className="h-11 rounded-xl border-border bg-muted/50 focus:bg-card transition-colors pl-10"
                   />
@@ -887,6 +889,11 @@ export function QuotationForm({
           <div className="flex justify-end pt-4 border-t border-border">
             <Button
               type="submit"
+              onClick={() => {
+                // Ensure empty strings are converted to 0 for submission
+                if (formData.tax === '') setFormData(p => ({ ...p, tax: 0 }))
+                if (formData.discount === '') setFormData(p => ({ ...p, discount: 0 }))
+              }}
               disabled={submitting}
               className="h-12 px-8 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white shadow-md font-semibold text-base transition-all"
             >
