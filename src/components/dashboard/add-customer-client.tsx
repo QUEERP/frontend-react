@@ -184,10 +184,21 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
+    setFormData(prev => {
+      const updates: any = { [field]: value }
+      if (field === 'region') {
+        const currencyMap: Record<string, string> = {
+          INDIA: 'INR', UNITED_ARAB_EMIRATES: 'AED', UAE: 'AED', SAUDI_ARABIA: 'SAR', UNITED_STATES: 'USD', 
+          UNITED_KINGDOM: 'GBP', CANADA: 'CAD', AUSTRALIA: 'AUD', SINGAPORE: 'SGD', OMAN: 'OMR', QATAR: 'QAR', 
+          BAHRAIN: 'BHD', KUWAIT: 'KWD', NEW_ZEALAND: 'NZD', SOUTH_AFRICA: 'ZAR', MALAYSIA: 'MYR', KENYA: 'KES', 
+          NIGERIA: 'NGN', IRELAND: 'EUR', PHILIPPINES: 'PHP'
+        };
+        if (currencyMap[value]) {
+          updates.currency = currencyMap[value];
+        }
+      }
+      return { ...prev, ...updates }
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

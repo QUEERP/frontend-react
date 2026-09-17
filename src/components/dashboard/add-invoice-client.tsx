@@ -1005,6 +1005,7 @@ export function AddInvoiceClient({
                               <TableHead className="w-[200px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Description</TableHead>
                               {!summary.isBasic && hasGoodsItem && <TableHead className="w-[130px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Warehouse</TableHead>}
                               {!summary.isBasic && <TableHead className="w-[110px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{items.length > 0 && items[0].itemType === 'SERVICE' ? 'SAC' : 'HSN'}</TableHead>}
+                              {!summary.isBasic && hasGoodsItem && <TableHead className="w-[80px] h-12 text-[11px] font-bold uppercase tracking-wider text-center text-muted-foreground">Stock</TableHead>}
                               <TableHead className="w-[70px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                                 {items.length > 0 ? (
                                   items[0].itemType === 'SERVICE' ? 'HRS' :
@@ -1035,6 +1036,14 @@ export function AddInvoiceClient({
                             {items.map((item, index) => {
                               const product = products.find(p => p.id === item.productId)
                               const isService = product?.type === 'SERVICE' || item.itemType === 'SERVICE'
+                              
+                              const warehouseStock = (product?.stockDetails || product?.stockLevels)?.find((s: any) => s.warehouseId === item.warehouseId)
+                              const qty = Number(warehouseStock?.quantity || 0)
+                              const res = Number(warehouseStock?.reservedQty || 0)
+                              const available = isService ? Infinity : Math.max(0, qty - res)
+                              const isLowStock = !isService && available < Number(product?.reorderLevel || 0)
+                              const isOutOfStock = !isService && available <= 0
+
                               const lineAmount = Number(item.quantity || 0) * Number(item.price || 0)
                               let lineTax = 0
                               if (summary.isIndia) {
@@ -1117,6 +1126,26 @@ export function AddInvoiceClient({
                                           className="h-9 text-sm font-mono bg-background"
                                           onChange={(e) => updateItem(index, 'hsnSacCode', e.target.value)}
                                         />
+                                      </div>
+                                    </TableCell>
+                                  )}
+
+                                  {!summary.isBasic && hasGoodsItem && (
+                                    <TableCell className="align-top py-4">
+                                      <div className="flex justify-center mt-1.5">
+                                        {item.productId && !isService ? (
+                                          <Badge
+                                            variant={isOutOfStock ? "destructive" : (isLowStock ? "secondary" : "default")}
+                                            className={cn(
+                                              "text-[10px] px-2 py-0.5 min-w-fit whitespace-nowrap",
+                                              !isOutOfStock && !isLowStock && "bg-emerald-500/10 text-emerald-600 border-emerald-200"
+                                            )}
+                                          >
+                                            {available === Infinity ? '—' : available} {item.unit || 'pcs'}
+                                          </Badge>
+                                        ) : (
+                                          <span className="text-muted-foreground text-xs">—</span>
+                                        )}
                                       </div>
                                     </TableCell>
                                   )}
@@ -1340,8 +1369,8 @@ export function AddInvoiceClient({
                           <span className="text-xs font-medium text-slate-400">{formData.currency || currency}</span>
                           <Input
                             type="number"
-                            value={formData.discount}
-                            onChange={(e) => setFormData(p => ({ ...p, discount: Number(e.target.value || 0) }))}
+                            value={formData.discount === 0 ? '' : formData.discount}
+                            onChange={(e) => setFormData(p => ({ ...p, discount: e.target.value === '' ? 0 : Number(e.target.value) }))}
                             className="h-9 w-28 text-right bg-card border-border rounded-lg"
                           />
                         </div>
