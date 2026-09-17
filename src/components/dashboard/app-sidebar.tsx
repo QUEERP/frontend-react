@@ -429,7 +429,10 @@ export function AppSidebar() {
   React.useEffect(() => {
     async function fetchStatutoryReports() {
       if (!currentBusinessId) return;
-      const token = getCookie('token') || getCookie('accessToken');
+      let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token || token === 'null' || token === 'undefined') {
+        token = getCookie('token') || getCookie('accessToken');
+      }
       if (!token) return;
       try {
         const res = await fetch(`${API_ROOT}/statutory/list?businessId=${currentBusinessId}`, {
