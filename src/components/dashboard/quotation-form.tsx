@@ -546,12 +546,12 @@ export function QuotationForm({
                       <TableHead className="w-[180px] text-[11px] font-bold uppercase">{isBasic ? 'Item Name' : 'Product'}</TableHead>
                       <TableHead className="w-[200px] text-[11px] font-bold uppercase">Description</TableHead>
                       {!isBasic && hasGoodsItem && <TableHead className="w-[130px] text-[11px] font-bold uppercase">Warehouse</TableHead>}
-                      {!isBasic && <TableHead className="w-[100px] text-[11px] font-bold uppercase">{items.length > 0 && items[0].itemType === 'SERVICE' ? 'SAC' : 'HSN'}</TableHead>}
+                      {!isBasic && <TableHead className="w-[100px] text-[11px] font-bold uppercase">{formData.items.length > 0 && formData.items[0].itemType === 'SERVICE' ? 'SAC' : 'HSN'}</TableHead>}
                       {!isBasic && hasGoodsItem && <TableHead className="w-[80px] text-[11px] font-bold uppercase text-center">Stock</TableHead>}
                       <TableHead className="w-[80px] text-[11px] font-bold uppercase text-center">
-                        {items.length > 0 ? (
-                          items[0].itemType === 'SERVICE' ? 'HRS' :
-                          ['kg', 'gram', 'meter', 'litre'].includes((items[0].unit || '').toLowerCase()) ? items[0].unit?.toUpperCase() : 'QTY'
+                        {formData.items.length > 0 ? (
+                          formData.items[0].itemType === 'SERVICE' ? 'HRS' :
+                          ['kg', 'gram', 'meter', 'litre'].includes((formData.items[0].unit || '').toLowerCase()) ? formData.items[0].unit?.toUpperCase() : 'QTY'
                         ) : 'QTY'}
                       </TableHead>
                       {!isBasic && <TableHead className="w-[90px] text-[11px] font-bold uppercase">Unit</TableHead>}
@@ -575,7 +575,7 @@ export function QuotationForm({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {items.map((item, index) => {
+                    {formData.items.map((item, index) => {
                       const product = products.find(p => p.id === item.productId)
                       const isService = product?.type === 'SERVICE' || item.itemType === 'SERVICE'
                       const warehouseStock = product?.stockLevels?.find(s => s.warehouseId === item.warehouseId)
@@ -595,7 +595,7 @@ export function QuotationForm({
                           : (lineAmount * Number(item.igstPercent || 0) / 100)
                       } else {
                         const vatRate = Number(item.taxPercent || 0)
-                        if (formData.vatType === 'inclusive') {
+                        if (false) {
                           const lineSub = lineAmount / (1 + vatRate / 100)
                           lineTax = lineAmount - lineSub
                         } else {
@@ -603,10 +603,10 @@ export function QuotationForm({
                         }
                       }
 
-                      const totalLineAmount = formData.vatType === 'inclusive' ? lineAmount : (lineAmount + lineTax)
+                      const totalLineAmount = false ? lineAmount : (lineAmount + lineTax)
 
                       return (
-                        <TableRow key={item.id} className="group hover:bg-muted/50 border-b border-border last:border-none">
+                        <TableRow key={index} className="group hover:bg-muted/50 border-b border-border last:border-none">
                           <TableCell className="py-3 px-2">
                             {isBasic ? (
                               <Input 
@@ -622,7 +622,7 @@ export function QuotationForm({
                                   <SelectItem value="none">— Custom Item —</SelectItem>
                                   {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                                   <div className="border-t border-border mt-1 pt-1">
-                                    <button type="button" onMouseDown={(e) => { e.preventDefault(); setShowCreateProduct(true) }} className="flex w-full items-center gap-2 px-2 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 rounded cursor-pointer transition-colors">
+                                    <button type="button" onMouseDown={(e) => { e.preventDefault(); setShowCreateProduct({ show: true, index }) }} className="flex w-full items-center gap-2 px-2 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 rounded cursor-pointer transition-colors">
                                       <PackagePlus className="h-4 w-4" />+ Create Product
                                     </button>
                                   </div>
@@ -813,7 +813,7 @@ export function QuotationForm({
                               size="icon"
                               className="h-7 w-7 text-muted-foreground hover:text-destructive transition-colors"
                               onClick={() => removeItem(index)}
-                              disabled={items.length === 1}
+                              disabled={formData.items.length === 1}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
