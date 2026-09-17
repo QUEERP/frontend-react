@@ -303,7 +303,7 @@ export function RecurringInvoicesPageClient({ businessId }: Props) {
                   </DialogHeader>
                 </div>
 
-                <div className="overflow-y-auto p-6 custom-scrollbar flex-1 overscroll-contain">
+                <div className="overflow-y-auto p-6 custom-scrollbar flex-1 overscroll-contain min-h-0">
                   <div className="grid gap-6">
                     <div className="space-y-1.5">
                       <Label htmlFor="ri-customer" className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Customer ID <span className="text-rose-500">*</span></Label>

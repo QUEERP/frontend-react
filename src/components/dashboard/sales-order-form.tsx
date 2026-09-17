@@ -1226,8 +1226,8 @@ export function SalesOrderForm({
                       <span className="text-[10px] text-muted-foreground">{formData.currency || currency}</span>
                       <Input
                         type="number"
-                        value={formData.discount}
-                        onChange={(e) => setFormData(p => ({ ...p, discount: Number(e.target.value || 0) }))}
+                        value={formData.discount === 0 ? '' : formData.discount}
+                        onChange={(e) => setFormData(p => ({ ...p, discount: e.target.value === '' ? 0 : Number(e.target.value) }))}
                         className="h-8 w-24 text-right bg-background border-dashed"
                       />
                     </div>

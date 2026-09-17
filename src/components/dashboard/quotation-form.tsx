@@ -227,7 +227,8 @@ export function QuotationForm({
       updateItem(index, 'productId', '')
       return
     }
-    const defaultWarehouseId = product.stockLevels?.find(s => Number(s.quantity) > 0)?.warehouseId || product.stockLevels?.[0]?.warehouseId || ''
+    const stockLevels: any[] = (product as any).stockDetails || product.stockLevels || []
+    const defaultWarehouseId = stockLevels.find(s => Number(s.quantity) > 0)?.warehouseId || stockLevels[0]?.warehouseId || ''
     setFormData(prev => ({
       ...prev,
       items: prev.items.map((item, i) => i === index ? {
@@ -580,7 +581,7 @@ export function QuotationForm({
                     {formData.items.map((item, index) => {
                       const product = products.find(p => p.id === item.productId)
                       const isService = product?.type === 'SERVICE' || item.itemType === 'SERVICE'
-                      const warehouseStock = product?.stockLevels?.find(s => s.warehouseId === item.warehouseId)
+                      const warehouseStock = ((product as any)?.stockDetails || product?.stockLevels)?.find((s: any) => s.warehouseId === item.warehouseId)
 
                       const qty = Number(warehouseStock?.quantity || 0)
                       const res = Number(warehouseStock?.reservedQty || 0)
@@ -842,8 +843,8 @@ export function QuotationForm({
                   Overall {isIndia ? (formData.gstTreatment === 'SAME_STATE' ? 'CGST + SGST' : 'IGST') : taxLabel} (Additional)
                 </Label>
                 <EditableTaxSelect
-                  value={formData.tax ?? 0}
-                  onChange={(val) => setFormData((prev) => ({ ...prev, tax: val }))}
+                  value={formData.tax === 0 ? '' : (formData.tax ?? '')}
+                  onChange={(val) => setFormData((prev) => ({ ...prev, tax: val === '' ? 0 : val }))}
                   options={[0, 5, 12, 15, 18, 28]}
                   size="default"
                 />
@@ -855,9 +856,9 @@ export function QuotationForm({
                     id="discount"
                     type="number"
                     step="0.01"
-                    value={formData.discount}
+                    value={formData.discount === 0 ? '' : formData.discount}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, discount: e.target.value === '' ? '' : Number(e.target.value) }))
+                      setFormData((prev) => ({ ...prev, discount: e.target.value === '' ? 0 : Number(e.target.value) }))
                     }
                     className="h-11 rounded-xl border-border bg-muted/50 focus:bg-card transition-colors pl-10"
                   />

@@ -101,7 +101,21 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
   }, [customer])
 
   const handleChange = (key: string, value: string) => {
-    setForm(prev => ({ ...prev, [key]: value }))
+    setForm(prev => {
+      const updates: any = { [key]: value }
+      if (key === 'region') {
+        const currencyMap: Record<string, string> = {
+          INDIA: 'INR', UNITED_ARAB_EMIRATES: 'AED', UAE: 'AED', SAUDI_ARABIA: 'SAR', UNITED_STATES: 'USD', 
+          UNITED_KINGDOM: 'GBP', CANADA: 'CAD', AUSTRALIA: 'AUD', SINGAPORE: 'SGD', OMAN: 'OMR', QATAR: 'QAR', 
+          BAHRAIN: 'BHD', KUWAIT: 'KWD', NEW_ZEALAND: 'NZD', SOUTH_AFRICA: 'ZAR', MALAYSIA: 'MYR', KENYA: 'KES', 
+          NIGERIA: 'NGN', IRELAND: 'EUR', PHILIPPINES: 'PHP'
+        };
+        if (currencyMap[value]) {
+          updates.currency = currencyMap[value];
+        }
+      }
+      return { ...prev, ...updates }
+    })
   }
 
   const handleSave = async (e: React.FormEvent) => {

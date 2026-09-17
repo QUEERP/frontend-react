@@ -34,7 +34,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useBusinessData } from './business-data-provider'
 import { Warehouse as WarehouseIcon, Package, Tag, Calculator, ShieldCheck, Image as ImageIcon, Barcode, Upload, Link as LinkIcon } from 'lucide-react'
-import { productsAPI, warehousesAPI, categoriesAPI, brandsAPI, Warehouse, Product } from '@/lib/api/inventory'
+import { productsAPI, warehousesAPI, categoriesAPI, brandsAPI, unitsAPI, Warehouse, Product } from '@/lib/api/inventory'
 import { warehousesAPI as locationsAPI, WarehouseLocation } from '@/lib/api/warehouses'
 import { toast } from 'sonner'
 
@@ -76,6 +76,7 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
   const [categories, setCategories] = React.useState<any[]>([])
   const [brands, setBrands] = React.useState<any[]>([])
   const [warehouses, setWarehouses] = React.useState<Warehouse[]>([])
+  const [dbUnits, setDbUnits] = React.useState<any[]>([])
   const [submitting, setSubmitting] = React.useState(false)
   const [loading, setLoading] = React.useState(!!productId)
   const [linkDialogOpen, setLinkDialogOpen] = React.useState(false)
@@ -108,14 +109,16 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
     const load = async () => {
       try {
         setLoading(true)
-        const [catRes, brandRes, whRes] = await Promise.allSettled([
+        const [catRes, brandRes, whRes, unitsRes] = await Promise.allSettled([
           categoriesAPI.getAll(businessId),
           brandsAPI.getAll(businessId),
-          warehousesAPI.getAll(businessId)
+          warehousesAPI.getAll(businessId),
+          unitsAPI.getAll(businessId)
         ])
         
         if (catRes.status === 'fulfilled') setCategories(catRes.value.categories || [])
         if (brandRes.status === 'fulfilled') setBrands(brandRes.value.brands || [])
+        if (unitsRes.status === 'fulfilled') setDbUnits(unitsRes.value.units || [])
         if (whRes.status === 'fulfilled') {
           const whs = whRes.value.warehouses || []
           setWarehouses(whs)
@@ -511,9 +514,17 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                           <SelectValue placeholder="Select Unit" />
                         </SelectTrigger>
                         <SelectContent>
-                          {(formData.type === 'SERVICE' ? SERVICE_UNITS : GOODS_UNITS).map(u => (
-                            <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
-                          ))}
+                          {dbUnits.length > 0 ? (
+                            dbUnits.map(u => (
+                              <SelectItem key={u.id} value={u.abbreviation || u.name}>
+                                {u.name} {u.abbreviation ? `(${u.abbreviation})` : ''}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            (formData.type === 'SERVICE' ? SERVICE_UNITS : GOODS_UNITS).map(u => (
+                              <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
