@@ -359,77 +359,69 @@ export function DashboardPageClient({ businessId }: { businessId: string }) {
 
       try {
 
-        const result = await Promise.allSettled(
+        const invoiceIds = invoices.map((inv: any) => inv.id)
 
-          invoices.map(async (invoice: any) => {
+        const response = await fetch(`${API_BASE}/api/payments/by-invoices`, {
 
-            const response = await fetch(`${API_BASE}/api/payments/invoice/${encodeURIComponent(invoice.id)}`, {
+          method: 'POST',
 
-              method: 'GET',
+          headers: {
 
-              headers: {
+            'Content-Type': 'application/json',
 
-                Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
 
-                'x-business-id': businessId,
+            'x-business-id': businessId,
 
-              },
+          },
 
-            })
+          body: JSON.stringify({ invoiceIds }),
 
-
-
-            if (!response.ok) {
-
-              return [] as PaymentItem[]
-
-            }
+        })
 
 
 
-            const data = await response.json()
+        if (!response.ok) {
 
-            const list = Array.isArray(data?.data) ? data.data : []
+          setPayments([])
 
+          return
 
-
-            return list.map((payment: any) => ({
-
-              id: payment.id,
-
-              invoiceId: invoice.id,
-
-              invoiceNumber: invoice.invoiceNumber || invoice.id,
-
-              amount: Number(payment.amount || 0),
-
-              paymentDate: payment.paymentDate || '',
-
-              createdAt: payment.createdAt || '',
-
-              customerName: invoice.customer?.company || 'Unknown customer',
-
-            }))
-
-          }),
-
-        )
+        }
 
 
 
-        const merged = result
+        const data = await response.json()
 
-          .flatMap((entry) => (entry.status === 'fulfilled' ? entry.value : []))
+        const list = Array.isArray(data?.data) ? data.data : []
 
-          .sort((a, b) => {
 
-            const aDate = new Date(a.paymentDate || a.createdAt || 0).getTime()
 
-            const bDate = new Date(b.paymentDate || b.createdAt || 0).getTime()
+        const merged = list.map((payment: any) => ({
 
-            return bDate - aDate
+          id: payment.id,
 
-          })
+          invoiceId: payment.invoiceId,
+
+          invoiceNumber: payment.invoice?.invoiceNumber || payment.invoiceId,
+
+          amount: Number(payment.amount || 0),
+
+          paymentDate: payment.paymentDate || '',
+
+          createdAt: payment.createdAt || '',
+
+          customerName: payment.invoice?.customer?.company || 'Unknown customer',
+
+        })).sort((a: any, b: any) => {
+
+          const aDate = new Date(a.paymentDate || a.createdAt || 0).getTime()
+
+          const bDate = new Date(b.paymentDate || b.createdAt || 0).getTime()
+
+          return bDate - aDate
+
+        })
 
 
 
