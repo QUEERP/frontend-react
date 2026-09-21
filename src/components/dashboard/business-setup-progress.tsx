@@ -12,6 +12,7 @@ export function BusinessSetupProgress({ businessId }: { businessId: string }) {
   const navigate = useNavigate()
 
   useEffect(() => {
+    let mounted = true
     const fetchSummary = async () => {
       try {
         const getCookie = (name: string) => {
@@ -31,6 +32,7 @@ export function BusinessSetupProgress({ businessId }: { businessId: string }) {
           }
         })
 
+        if (!mounted) return
         if (res.ok) {
           const data = await res.json()
           setSummary(data.data)
@@ -38,12 +40,20 @@ export function BusinessSetupProgress({ businessId }: { businessId: string }) {
       } catch (err) {
         console.error('Failed to load compliance summary', err)
       } finally {
-        setLoading(false)
+        if (mounted) setLoading(false)
       }
     }
 
+    let timer: NodeJS.Timeout
     if (businessId) {
-      fetchSummary()
+      timer = setTimeout(() => {
+        fetchSummary()
+      }, 600)
+    }
+    
+    return () => {
+      mounted = false
+      if (timer) clearTimeout(timer)
     }
   }, [businessId])
 

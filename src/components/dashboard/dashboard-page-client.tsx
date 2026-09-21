@@ -293,6 +293,7 @@ export function DashboardPageClient({ businessId }: { businessId: string }) {
   const [fetchedExpenses, setFetchedExpenses] = React.useState<any[]>([])
 
   React.useEffect(() => {
+    let mounted = true
     const fetchDashboardData = async () => {
       const token = getCookie('token') || getCookie('accessToken')
       if (!token || !businessId) return
@@ -301,6 +302,7 @@ export function DashboardPageClient({ businessId }: { businessId: string }) {
           fetch(`${API_BASE}/api/invoices`, { headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId } }),
           fetch(`${API_BASE}/api/expenses`, { headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId } })
         ])
+        if (!mounted) return
         const invData = await invRes.json()
         const expData = await expRes.json()
         
@@ -310,7 +312,15 @@ export function DashboardPageClient({ businessId }: { businessId: string }) {
         console.error('Failed to fetch dashboard fallback data', e)
       }
     }
-    fetchDashboardData()
+    
+    const timer = setTimeout(() => {
+      fetchDashboardData()
+    }, 300)
+    
+    return () => {
+      mounted = false
+      clearTimeout(timer)
+    }
   }, [API_BASE, businessId])
 
   const invoices = React.useMemo(() => {
