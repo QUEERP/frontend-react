@@ -301,7 +301,7 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
       const payload: Partial<Product> = {
         ...formData,
         openingStock: Number(formData.openingStock) || undefined,
-        reorderLevel: Number(formData.reorderLevel) || undefined,
+
         sellingPrice: Number(formData.sellingPrice) || 0,
         costPrice: Number(formData.costPrice) || 0,
         price: Number(formData.sellingPrice) || 0,

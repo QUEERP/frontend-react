@@ -11,6 +11,7 @@ export interface PurchaseOrderItemInput {
   quantity: number
   price: number
   taxPercent?: number
+  product?: { id: string; name: string; sku: string }
 }
 
 export interface PurchaseOrderItem extends PurchaseOrderItemInput {
@@ -33,8 +34,10 @@ export interface PurchaseOrder {
   notes?: string | null
   createdAt: string
   updatedAt: string
+  currency?: string
   currencyCode?: string
   currencySymbol?: string
+  transactionCurrency?: { code: string; symbol?: string }
   vendor?: {
     id: string
     name: string
