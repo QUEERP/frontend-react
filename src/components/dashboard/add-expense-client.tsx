@@ -105,10 +105,8 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
   const removeItem = (id: string) => {
     const newItems = items.filter(i => i.id !== id)
     setItems(newItems)
-    if (isBasic) {
-      const total = newItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
-      setFormData(prev => ({ ...prev, amount: total.toString() }))
-    }
+    const total = newItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
+    setFormData(prev => ({ ...prev, amount: total.toString() }))
   }
   const updateItem = (id: string, field: keyof ExpenseItem, val: any) => {
     const newItems = items.map(i => i.id === id ? { ...i, [field]: val } : i)
@@ -123,10 +121,8 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
     }
 
     setItems(newItems)
-    if (isBasic) {
-      const total = newItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
-      setFormData(prev => ({ ...prev, amount: total.toString() }))
-    }
+    const total = newItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
+    setFormData(prev => ({ ...prev, amount: total.toString() }))
   }
 
   const [vendors, setVendors] = useState<VendorOption[]>([])
@@ -387,7 +383,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
         currency: formData.currency,
         category: isBasic ? 'Basic' : formData.category,
       }
-      if (isBasic && items.length > 0) {
+      if (items.length > 0) {
         body.items = items;
       }
       if (formData.paymentMethod) body.paymentMethod = formData.paymentMethod
@@ -695,7 +691,7 @@ export function AddExpenseClient({ businessId }: { businessId: string }) {
               />
             </div>
 
-            {isBasic && (
+            {true && (
               <div className="space-y-4 pt-4 border-t border-border">
                 <div className="flex justify-between items-center">
                   <Label className="text-foreground font-semibold">Line Items</Label>

@@ -107,7 +107,7 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
       ...leads.map(l => [
         `"${l.name}"`, `"${l.email || ''}"`, `"${l.phone || ''}"`,
         `"${(l as any).company || ''}"`, `"${l.status}"`,
-        `"${l.stage?.name || 'New'}"`, (l as any).leadValue || 0,
+        `"${getStageConfig(l.status).label}"`, (l as any).leadValue || 0,
         new Date(l.createdAt).toLocaleDateString()
       ].join(','))
     ].join('\n')
@@ -427,7 +427,7 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
                             <Badge className={`${cfg.badge} shadow-none font-medium px-2.5 py-0.5`}>{lead.status}</Badge>
                           </TableCell>
                           <TableCell className="py-3">
-                            <Badge variant="outline" className="bg-card border-border text-muted-foreground font-medium px-2.5 py-0.5 shadow-sm">{lead.stage?.name || 'New'}</Badge>
+                            <Badge variant="outline" className="bg-card border-border text-muted-foreground font-medium px-2.5 py-0.5 shadow-sm">{cfg.label}</Badge>
                           </TableCell>
                           <TableCell className="font-medium text-emerald-700 py-3">
                             {(lead as any).leadValue > 0

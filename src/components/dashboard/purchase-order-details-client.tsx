@@ -73,7 +73,7 @@ export function PurchaseOrderDetailsClient({ businessId, orderId }: PurchaseOrde
             Expected Delivery: {order.expectedDeliveryDate ? new Date(order.expectedDeliveryDate).toLocaleDateString() : '—'}
           </div>
           <div>
-            Total: {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(order.totalAmount)}
+            Total: {new Intl.NumberFormat('en-IN', { style: 'currency', currency: order.transactionCurrency?.code || order.currency || order.currencyCode || 'INR' }).format(order.totalAmount)}
           </div>
           <div>Notes: {order.notes || '—'}</div>
           <div className="rounded-md border">
@@ -89,10 +89,10 @@ export function PurchaseOrderDetailsClient({ businessId, orderId }: PurchaseOrde
               <tbody>
                 {order.items.map((item) => (
                   <tr key={item.id} className="border-b last:border-0">
-                    <td className="p-2">{(item as any).name}</td>
+                    <td className="p-2">{item.product?.name || item.description || '—'}</td>
                     <td className="p-2">{item.quantity}</td>
                     <td className="p-2">{item.price}</td>
-                    <td className="p-2">{item.total}</td>
+                    <td className="p-2">{item.total || (item.quantity * item.price)}</td>
                   </tr>
                 ))}
               </tbody>

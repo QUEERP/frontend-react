@@ -1356,8 +1356,13 @@ export function AddInvoiceClient({
                           <span className="text-xs font-medium text-slate-400">{formData.currency || currency}</span>
                           <Input
                             type="number"
-                            value={formData.shippingCharges}
-                            onChange={(e) => setFormData(p => ({ ...p, shippingCharges: Number(e.target.value || 0) }))}
+                            value={formData.shippingCharges === 0 ? '' : formData.shippingCharges}
+                            onChange={(e) => setFormData(p => ({ ...p, shippingCharges: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                            onKeyDown={(e) => {
+                              if (['e', 'E', '+', '-'].includes(e.key)) {
+                                e.preventDefault();
+                              }
+                            }}
                             className="h-9 w-28 text-right bg-card border-border rounded-lg"
                           />
                         </div>
@@ -1371,6 +1376,11 @@ export function AddInvoiceClient({
                             type="number"
                             value={formData.discount === 0 ? '' : formData.discount}
                             onChange={(e) => setFormData(p => ({ ...p, discount: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                            onKeyDown={(e) => {
+                              if (['e', 'E', '+', '-'].includes(e.key)) {
+                                e.preventDefault();
+                              }
+                            }}
                             className="h-9 w-28 text-right bg-card border-border rounded-lg"
                           />
                         </div>

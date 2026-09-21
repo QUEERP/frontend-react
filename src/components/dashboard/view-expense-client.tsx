@@ -110,10 +110,8 @@ export function ViewExpenseClient({ businessId, expenseId }: { businessId: strin
     }
 
     setItems(newItems)
-    if (isBasic) {
-      const total = newItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
-      setFormData(prev => ({ ...prev, amount: total.toString() }))
-    }
+    const total = newItems.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
+    setFormData(prev => ({ ...prev, amount: total.toString() }))
   }
 
   const [vendors, setVendors] = useState<VendorOption[]>([])
@@ -619,7 +617,7 @@ export function ViewExpenseClient({ businessId, expenseId }: { businessId: strin
               />
             </div>
 
-            {isBasic && (
+            {true && (
               <div className="space-y-4 pt-4 border-t border-border">
                 <div className="flex justify-between items-center">
                   <Label className="text-foreground font-semibold">Line Items</Label>

@@ -25,9 +25,10 @@ interface ContactDetailsProps {
   contact: Contact | null;
   isOpen: boolean;
   onClose: () => void;
+  customerName?: string;
 }
 
-export function ContactDetails({ contact, isOpen, onClose }: ContactDetailsProps) {
+export function ContactDetails({ contact, isOpen, onClose, customerName }: ContactDetailsProps) {
   if (!contact) return null
 
   const formatDate = (dateString: string) => {
@@ -51,9 +52,6 @@ export function ContactDetails({ contact, isOpen, onClose }: ContactDetailsProps
               </div>
               <span className="text-xl font-bold text-slate-800">Contact Details</span>
             </div>
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0 rounded-full hover:bg-slate-100 text-slate-500">
-              <X className="h-4 w-4" />
-            </Button>
           </DialogTitle>
           <DialogDescription className="text-sm font-medium text-slate-500 mt-2">
             View detailed information about this contact profile.
@@ -137,10 +135,10 @@ export function ContactDetails({ contact, isOpen, onClose }: ContactDetailsProps
                   <Building className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Customer ID</p>
-                  <code className="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-md font-bold">
-                    {contact.customerId}
-                  </code>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Customer</p>
+                  <span className="text-sm font-bold text-slate-900">
+                    {customerName || contact.customerId}
+                  </span>
                 </div>
               </div>
             </CardContent>

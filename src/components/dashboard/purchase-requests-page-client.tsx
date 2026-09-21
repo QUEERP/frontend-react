@@ -2,7 +2,7 @@ import { toast } from 'sonner';
 import React, { useCallback, useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom';
 import {  useLocation, useNavigate  } from 'react-router-dom';
-import { ClipboardList, Plus, Search, Clock, CheckCircle, XCircle, ArrowRightCircle, FileText, Filter, ChevronRight, DownloadIcon, Eye, ShoppingCart } from 'lucide-react'
+import { ClipboardList, Plus, Search, Clock, CheckCircle, XCircle, ArrowRightCircle, FileText, Filter, ChevronRight, DownloadIcon, Eye, ShoppingCart, MoreHorizontal, Pencil, Trash } from 'lucide-react'
 import { purchaseRequestsAPI, PurchaseRequest, PR_STATUS } from '@/lib/api/purchase'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   DRAFT: { label: 'Draft', color: 'bg-muted text-foreground dark:bg-slate-800 dark:text-slate-300 border-border dark:border-slate-700', icon: FileText },
@@ -283,11 +284,57 @@ export default function PurchaseRequestsPageClient() {
                               Converted
                             </span>
                           )}
-                          <Link to={`/dashboard/${businessId}/purchase-requests/${r.id}`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-500/10 rounded-lg">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 rounded-xl">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/purchase-requests/${r.id}`)}>
+                                <Eye className="h-4 w-4 mr-2" /> View Request
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/purchase-requests/${r.id}/edit`)}>
+                                <Pencil className="h-4 w-4 mr-2" /> Edit Request
+                              </DropdownMenuItem>
+                              {r.status !== 'APPROVED' && r.status !== 'CONVERTED' && (
+                                <DropdownMenuItem onClick={async () => {
+                                  try {
+                                    await purchaseRequestsAPI.update(businessId as string, r.id, { status: 'APPROVED' });
+                                    toast('Approved');
+                                    fetchData();
+                                  } catch (err) {}
+                                }}>
+                                  <CheckCircle className="h-4 w-4 mr-2 text-emerald-600" /> Mark as Approved
+                                </DropdownMenuItem>
+                              )}
+                              {r.status !== 'REJECTED' && r.status !== 'CONVERTED' && (
+                                <DropdownMenuItem onClick={async () => {
+                                  try {
+                                    await purchaseRequestsAPI.update(businessId as string, r.id, { status: 'REJECTED' });
+                                    toast('Rejected');
+                                    fetchData();
+                                  } catch (err) {}
+                                }}>
+                                  <XCircle className="h-4 w-4 mr-2 text-red-600" /> Mark as Rejected
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={async () => {
+                                if (window.confirm('Delete this request?')) {
+                                  try {
+                                    await purchaseRequestsAPI.delete(businessId as string, r.id);
+                                    toast('Deleted');
+                                    fetchData();
+                                  } catch (err) {}
+                                }
+                              }}>
+                                <Trash className="h-4 w-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>

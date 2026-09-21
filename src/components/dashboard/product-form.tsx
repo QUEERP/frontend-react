@@ -47,13 +47,13 @@ interface ProductFormData {
   categoryId: string
   brandId: string
   unit: string
-  sellingPrice: number
-  costPrice: number
+  sellingPrice: number | string
+  costPrice: number | string
   taxCode: string
   taxRate: number
-  reorderLevel: number
+  reorderLevel: number | string
   isActive: boolean
-  openingStock: number
+  openingStock: number | string
   openingWarehouseId: string
   openingLocationId: string
   image: string
@@ -81,6 +81,14 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
   const [loading, setLoading] = React.useState(!!productId)
   const [linkDialogOpen, setLinkDialogOpen] = React.useState(false)
 
+  const [categoryDialogOpen, setCategoryDialogOpen] = React.useState(false)
+  const [newCategoryName, setNewCategoryName] = React.useState('')
+  const [creatingCategory, setCreatingCategory] = React.useState(false)
+
+  const [brandDialogOpen, setBrandDialogOpen] = React.useState(false)
+  const [newBrandName, setNewBrandName] = React.useState('')
+  const [creatingBrand, setCreatingBrand] = React.useState(false)
+
   const [formData, setFormData] = React.useState<ProductFormData>({
     name: '',
     sku: '',
@@ -90,13 +98,13 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
     categoryId: '',
     brandId: '',
     unit: 'pcs',
-    sellingPrice: 0,
-    costPrice: 0,
+    sellingPrice: '',
+    costPrice: '',
     taxCode: '',
     taxRate: 0,
-    reorderLevel: 0,
+    reorderLevel: '',
     isActive: true,
-    openingStock: 0,
+    openingStock: '',
     openingWarehouseId: '',
     openingLocationId: '',
     image: '',
@@ -138,13 +146,13 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
               categoryId: p.categoryId || '',
               brandId: p.brandId || '',
               unit: typeof p.unit === 'object' ? p.unit?.abbreviation || 'pcs' : (p as any).unit || 'pcs',
-              sellingPrice: p.sellingPrice || 0,
-              costPrice: p.costPrice || 0,
+              sellingPrice: p.sellingPrice || '',
+              costPrice: p.costPrice || '',
               taxCode: p.taxCode || '',
               taxRate: p.taxRate || 0,
-              reorderLevel: p.reorderLevel || 0,
+              reorderLevel: p.reorderLevel || '',
               isActive: p.isActive ?? true,
-              openingStock: (p as any).stock?.[0]?.quantity || 0,
+              openingStock: (p as any).stock?.[0]?.quantity || '',
               openingWarehouseId: (p as any).stock?.[0]?.warehouseId || '',
               openingLocationId: (p as any).stock?.[0]?.locationId || '',
               image: p.imageUrl || '',
@@ -232,6 +240,44 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
     }
   }, [formData.openingWarehouseId, businessId, formData.type])
 
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return
+    try {
+      setCreatingCategory(true)
+      const res = await categoriesAPI.create(businessId, { name: newCategoryName, isActive: true })
+      if (res.success && res.category) {
+        setCategories(prev => [...prev, res.category])
+        setFormData(prev => ({ ...prev, categoryId: res.category.id }))
+        setCategoryDialogOpen(false)
+        setNewCategoryName('')
+        toast.success("Category created")
+      }
+    } catch (e) {
+      toast.error("Failed to create category")
+    } finally {
+      setCreatingCategory(false)
+    }
+  }
+
+  const handleCreateBrand = async () => {
+    if (!newBrandName.trim()) return
+    try {
+      setCreatingBrand(true)
+      const res = await brandsAPI.create(businessId, { name: newBrandName, isActive: true })
+      if (res.success && res.brand) {
+        setBrands(prev => [...prev, res.brand])
+        setFormData(prev => ({ ...prev, brandId: res.brand.id }))
+        setBrandDialogOpen(false)
+        setNewBrandName('')
+        toast.success("Brand created")
+      }
+    } catch (e) {
+      toast.error("Failed to create brand")
+    } finally {
+      setCreatingBrand(false)
+    }
+  }
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!formData.name || !formData.sku) {
@@ -240,7 +286,7 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
     }
 
     if (formData.type === 'GOODS') {
-      if (formData.openingStock === undefined || formData.openingStock === null || isNaN(formData.openingStock)) {
+      if (formData.openingStock === undefined || formData.openingStock === null || isNaN(Number(formData.openingStock))) {
         toast.error('Opening Quantity is required for Goods')
         return
       }
@@ -254,13 +300,17 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
     try {
       const payload: Partial<Product> = {
         ...formData,
-        price: formData.sellingPrice,
+        openingStock: Number(formData.openingStock) || undefined,
+        reorderLevel: Number(formData.reorderLevel) || undefined,
+        sellingPrice: Number(formData.sellingPrice) || 0,
+        costPrice: Number(formData.costPrice) || 0,
+        price: Number(formData.sellingPrice) || 0,
         taxPercent: formData.taxRate,
         hsnCode: formData.taxCode,
-        initialQty: formData.type === 'GOODS' ? formData.openingStock : undefined,
+        initialQty: formData.type === 'GOODS' ? Number(formData.openingStock) || 0 : undefined,
         warehouseId: formData.type === 'GOODS' ? formData.openingWarehouseId : undefined,
         locationId: (formData.type === 'GOODS' && formData.openingLocationId) ? formData.openingLocationId : undefined,
-        reorderLevel: formData.type === 'GOODS' ? formData.reorderLevel : undefined,
+        reorderLevel: formData.type === 'GOODS' ? Number(formData.reorderLevel) || 0 : undefined,
         imageUrl: formData.image,
       }
 
@@ -484,28 +534,86 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">Category</Label>
-                      <Select value={formData.categoryId} onValueChange={(val) => setFormData(prev => ({ ...prev, categoryId: val }))} disabled={isViewMode}>
+                      <Select value={formData.categoryId} onValueChange={(val) => {
+                        if (val === 'add_new') { setCategoryDialogOpen(true); return; }
+                        setFormData(prev => ({ ...prev, categoryId: val }))
+                      }} disabled={isViewMode}>
                         <SelectTrigger className="h-11 border-muted-foreground/20">
                           <SelectValue placeholder="Select Category" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="add_new" className="font-bold text-primary">+ Add New Category</SelectItem>
                           {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                      
+                      <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Add New Category</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 mt-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="catName">Category Name</Label>
+                              <Input
+                                id="catName"
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                placeholder="e.g. Electronics"
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" type="button" onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
+                              <Button type="button" onClick={handleCreateCategory} disabled={!newCategoryName.trim() || creatingCategory}>
+                                {creatingCategory ? 'Saving...' : 'Create'}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">Brand</Label>
-                      <Select value={formData.brandId} onValueChange={(val) => setFormData(prev => ({ ...prev, brandId: val }))} disabled={isViewMode}>
+                      <Select value={formData.brandId} onValueChange={(val) => {
+                        if (val === 'add_new') { setBrandDialogOpen(true); return; }
+                        setFormData(prev => ({ ...prev, brandId: val }))
+                      }} disabled={isViewMode}>
                         <SelectTrigger className="h-11 border-muted-foreground/20">
                           <SelectValue placeholder="Select Brand" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="add_new" className="font-bold text-primary">+ Add New Brand</SelectItem>
                           {brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                      
+                      <Dialog open={brandDialogOpen} onOpenChange={setBrandDialogOpen}>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Add New Brand</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 mt-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="brandName">Brand Name</Label>
+                              <Input
+                                id="brandName"
+                                value={newBrandName}
+                                onChange={(e) => setNewBrandName(e.target.value)}
+                                placeholder="e.g. Apple"
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" type="button" onClick={() => setBrandDialogOpen(false)}>Cancel</Button>
+                              <Button type="button" onClick={handleCreateBrand} disabled={!newBrandName.trim() || creatingBrand}>
+                                {creatingBrand ? 'Saving...' : 'Create'}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">Unit</Label>
@@ -557,7 +665,8 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                             <Input
                               type="number"
                               value={formData.reorderLevel}
-                              onChange={(e) => setFormData(prev => ({ ...prev, reorderLevel: Number(e.target.value) }))}
+                              onChange={(e) => setFormData(prev => ({ ...prev, reorderLevel: e.target.value === '' ? '' : Number(e.target.value) }))}
+                              onKeyDown={(e) => { if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') e.preventDefault() }}
                               className="h-10"
                               disabled={isViewMode}
                             />
@@ -584,7 +693,8 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                           <Input
                             type="number"
                             value={formData.openingStock}
-                            onChange={(e) => setFormData(prev => ({ ...prev, openingStock: Number(e.target.value) }))}
+                            onChange={(e) => setFormData(prev => ({ ...prev, openingStock: e.target.value === '' ? '' : Number(e.target.value) }))}
+                            onKeyDown={(e) => { if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') e.preventDefault() }}
                             className="h-10 border-amber-200 focus:ring-amber-200"
                             disabled={!!productId || isViewMode}
                           />
@@ -627,11 +737,11 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                     <div className="grid grid-cols-2 gap-4">
                       <Card className="p-4 bg-muted/20 border-none shadow-none">
                         <p className="text-xs text-muted-foreground font-medium">Available Stock</p>
-                        <p className="text-2xl font-black mt-1">{productId ? formData.availableStock : (formData.openingStock || 0)} {formData.unit}</p>
+                        <p className="text-2xl font-black mt-1">{productId ? formData.availableStock : (Number(formData.openingStock) || 0)} {formData.unit}</p>
                       </Card>
                       <Card className="p-4 bg-muted/20 border-none shadow-none">
                         <p className="text-xs text-muted-foreground font-medium">Valuation</p>
-                        <p className="text-2xl font-black mt-1">{currency} {((productId ? formData.availableStock : formData.openingStock) * formData.costPrice).toLocaleString()}</p>
+                        <p className="text-2xl font-black mt-1">{currency} {((productId ? formData.availableStock : (Number(formData.openingStock) || 0)) * (Number(formData.costPrice) || 0)).toLocaleString()}</p>
                       </Card>
                     </div>
                   </div>
@@ -652,7 +762,8 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                           <Input
                             type="number"
                             value={formData.sellingPrice}
-                            onChange={(e) => setFormData(prev => ({ ...prev, sellingPrice: Number(e.target.value) }))}
+                            onChange={(e) => setFormData(prev => ({ ...prev, sellingPrice: e.target.value === '' ? '' : Number(e.target.value) }))}
+                            onKeyDown={(e) => { if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') e.preventDefault() }}
                             className="h-11 pl-10 border-muted-foreground/20 font-bold"
                             disabled={isViewMode}
                           />
@@ -665,7 +776,8 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                           <Input
                             type="number"
                             value={formData.costPrice}
-                            onChange={(e) => setFormData(prev => ({ ...prev, costPrice: Number(e.target.value) }))}
+                            onChange={(e) => setFormData(prev => ({ ...prev, costPrice: e.target.value === '' ? '' : Number(e.target.value) }))}
+                            onKeyDown={(e) => { if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') e.preventDefault() }}
                             className="h-11 pl-10 border-muted-foreground/20 font-bold"
                             disabled={isViewMode}
                           />
@@ -675,8 +787,8 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                     <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100 flex items-center justify-between">
                       <span className="text-xs text-emerald-800 font-medium uppercase">Expected Margin</span>
                       <span className="text-sm font-black text-emerald-900">
-                        {formData.sellingPrice > 0 
-                          ? (((formData.sellingPrice - formData.costPrice) / formData.sellingPrice) * 100).toFixed(1)
+                        {Number(formData.sellingPrice) > 0 
+                          ? (((Number(formData.sellingPrice) - Number(formData.costPrice)) / Number(formData.sellingPrice)) * 100).toFixed(1)
                           : '0.0'}%
                       </span>
                     </div>

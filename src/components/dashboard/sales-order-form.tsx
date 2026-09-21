@@ -1213,8 +1213,13 @@ export function SalesOrderForm({
                       <span className="text-[10px] text-muted-foreground">{formData.currency || currency}</span>
                       <Input
                         type="number"
-                        value={formData.shippingCharges}
-                        onChange={(e) => setFormData(p => ({ ...p, shippingCharges: Number(e.target.value || 0) }))}
+                        value={formData.shippingCharges === 0 ? '' : formData.shippingCharges}
+                        onChange={(e) => setFormData(p => ({ ...p, shippingCharges: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                        onKeyDown={(e) => {
+                          if (['e', 'E', '+', '-'].includes(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
                         className="h-8 w-24 text-right bg-background border-dashed"
                       />
                     </div>
@@ -1228,6 +1233,11 @@ export function SalesOrderForm({
                         type="number"
                         value={formData.discount === 0 ? '' : formData.discount}
                         onChange={(e) => setFormData(p => ({ ...p, discount: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                        onKeyDown={(e) => {
+                          if (['e', 'E', '+', '-'].includes(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
                         className="h-8 w-24 text-right bg-background border-dashed"
                       />
                     </div>

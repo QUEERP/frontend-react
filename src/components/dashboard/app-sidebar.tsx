@@ -328,6 +328,7 @@ export function AppSidebar() {
   }, [pathname])
 
   React.useEffect(() => {
+    let mounted = true
     const fetchUserBusinesses = async () => {
       try {
         const token = getCookie('token') || getCookie('accessToken')
@@ -343,7 +344,7 @@ export function AppSidebar() {
           return
         }
 
-        setIsLoadingBusinesses(true)
+        if (mounted) setIsLoadingBusinesses(true)
         const candidateUrls = [`${API_ROOT}/business`]
 
         let response: Response | null = null
@@ -367,6 +368,7 @@ export function AppSidebar() {
           }
         }
 
+        if (!mounted) return
         if (!response) {
           throw lastError || new Error('Failed to fetch businesses')
         }
@@ -415,11 +417,18 @@ export function AppSidebar() {
           })
         }
       } finally {
-        setIsLoadingBusinesses(false)
+        if (mounted) setIsLoadingBusinesses(false)
       }
     }
 
-    fetchUserBusinesses()
+    const timer = setTimeout(() => {
+      fetchUserBusinesses()
+    }, 400)
+    
+    return () => {
+      mounted = false
+      clearTimeout(timer)
+    }
   }, [API_ROOT, currentBusinessId, getBusinessLogo, getCookie])
 
   React.useEffect(() => {

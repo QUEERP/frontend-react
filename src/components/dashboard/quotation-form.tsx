@@ -860,6 +860,11 @@ export function QuotationForm({
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, discount: e.target.value === '' ? 0 : Number(e.target.value) }))
                     }
+                    onKeyDown={(e) => {
+                      if (['e', 'E', '+', '-'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                     className="h-11 rounded-xl border-border bg-muted/50 focus:bg-card transition-colors pl-10"
                   />
                   <Tag className="absolute left-3 top-3 h-5 w-5 text-slate-400" />

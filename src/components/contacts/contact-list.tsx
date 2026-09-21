@@ -25,6 +25,7 @@ interface ContactListProps {
   onEdit?: (contact: Contact) => void;
   onView?: (contact: Contact) => void;
   onRefresh?: () => void;
+  customersMap?: Record<string, string>;
 }
 
 export function ContactList({ 
@@ -32,7 +33,8 @@ export function ContactList({
   customerId, 
   onEdit, 
   onView,
-  onRefresh 
+  onRefresh,
+  customersMap = {}
 }: ContactListProps) {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
@@ -88,6 +90,7 @@ export function ContactList({
               <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Email</TableHead>
               <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Phone</TableHead>
               <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Position</TableHead>
+              <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Customer</TableHead>
               <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Status</TableHead>
               <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Created</TableHead>
               <TableHead className="w-[70px] text-right"></TableHead>
@@ -138,6 +141,9 @@ export function ContactList({
                   <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                     {contact.position || 'N/A'}
                   </span>
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-sm font-medium text-slate-700">
+                  {customersMap[contact.customerId] || '-'}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   <Badge 

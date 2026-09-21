@@ -69,10 +69,20 @@ export function ContactForm({
   }
 
   useEffect(() => {
-    if (isOpen && !customerId) {
-      fetchCustomers()
+    if (isOpen) {
+      if (!customerId) {
+        fetchCustomers()
+      }
+      setFormData({
+        customerId: customerId || contact?.customerId || '',
+        fullName: contact?.fullName || '',
+        email: contact?.email || '',
+        phone: contact?.phone || '',
+        position: contact?.position || '',
+        isActive: contact?.isActive ?? true,
+      })
     }
-  }, [isOpen, customerId, businessId])
+  }, [isOpen, customerId, businessId, contact])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

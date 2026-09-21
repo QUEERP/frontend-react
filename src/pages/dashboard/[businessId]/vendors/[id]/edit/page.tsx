@@ -47,7 +47,8 @@ const vendorId = id as string
 
         setVendorData({
           name: data.data.name || '',
-          vendorType: data.data.vendorType || '',
+          vendorType: data.data.vendorType ? (data.data.vendorType.toLowerCase() === 'individual' ? 'Individual' : 'Company') : '',
+          country: data.data.country || '',
           contactPerson: data.data.contactPerson || '',
           email: data.data.email || '',
           countryCode: data.data.countryCode || '+971',

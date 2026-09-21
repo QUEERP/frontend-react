@@ -95,7 +95,7 @@ export function PurchaseOrderForm({
     orderDate: initialData?.orderDate || new Date().toISOString().slice(0, 10),
     expectedDeliveryDate: initialData?.expectedDeliveryDate || '',
     notes: initialData?.notes || '',
-    status: (initialData?.status || 'Draft') as (typeof PURCHASE_ORDER_STATUS)[number],
+    status: (initialData?.status || 'DRAFT') as any,
     currencyCode: (initialData as any)?.currencyCode || businessCurrency || 'AED',
   })
 
@@ -402,8 +402,14 @@ export function PurchaseOrderForm({
                     <Input
                       type="number"
                       step="0.01"
-                      value={formData.discount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, discount: Number(e.target.value || 0) }))}
+                      value={formData.discount === 0 ? '' : formData.discount}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') { setFormData(prev => ({ ...prev, discount: 0 })); return; }
+                        const num = Number(val);
+                        if (!isNaN(num)) setFormData(prev => ({ ...prev, discount: num }));
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') e.preventDefault() }}
                       className="h-9 text-right bg-card dark:bg-[#181a20] border-border dark:border-[#23272c] rounded-lg font-bold text-foreground dark:text-slate-200"
                     />
                   </div>

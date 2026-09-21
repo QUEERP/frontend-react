@@ -253,7 +253,14 @@ export default function NewStockTransferPageClient() {
                 </div>
                 <div className="space-y-1">
                   <Label className="md:hidden text-xs">Quantity</Label>
-                  <Input type="number" min="1" value={item.quantity} onChange={e => updateItem(i, 'quantity', Number(e.target.value) || 1)} className="h-9" />
+                  <Input 
+                    type="number" 
+                    min="1" 
+                    value={item.quantity === 0 ? '' : item.quantity} 
+                    onChange={e => updateItem(i, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))} 
+                    onKeyDown={e => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
+                    className="h-9" 
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="md:hidden text-xs">Notes</Label>

@@ -40,10 +40,10 @@ export default function CategoriesPageClient() {
   const handleSave = async () => {
     try {
       if (form.id) {
-        await categoriesAPI.update(businessId, form.id, { name: form.name, description: form.description, parentId: form.parentId || undefined })
+        await categoriesAPI.update(businessId, form.id, { name: form.name, description: form.description || null, parentId: form.parentId || null })
         toast({ title: 'Category updated' })
       } else {
-        await categoriesAPI.create(businessId, { name: form.name, description: form.description, parentId: form.parentId || undefined })
+        await categoriesAPI.create(businessId, { name: form.name, description: form.description || null, parentId: form.parentId || null })
         toast({ title: 'Category created' })
       }
       setDialogOpen(false); fetchData()

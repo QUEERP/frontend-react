@@ -156,7 +156,7 @@ export function InventoryItemTable({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[200px]">Product</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[200px]">Description</th>
                 {!isService && <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[150px]">Warehouse</th>}
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[120px]">{isService ? 'SAC' : 'HSN'}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[140px]">{isService ? 'SAC' : 'HSN'}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[100px]">
                   {items.length > 0 ? (
                     items[0].itemType === 'SERVICE' ? 'HRS' :
@@ -305,10 +305,11 @@ export function InventoryItemTable({
                       type="number"
                       min="0"
                       step="0.01"
-                      value={item.quantity}
+                      value={item.quantity === 0 ? '' : item.quantity}
                       onChange={(e) => updateItem(index, { quantity: parseFloat(e.target.value) || 0 })}
+                      onKeyDown={(e) => { if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') e.preventDefault() }}
                       className={cn(
-                        "h-10 text-center border-muted-foreground/20",
+                        "h-10 text-center border-muted-foreground/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
                         mode === 'sales' && !isService && item.quantity > (item.availableStock || 0) && "border-red-500 focus-visible:ring-red-500"
                       )}
                     />
@@ -343,9 +344,10 @@ export function InventoryItemTable({
                         type="number"
                         min="0"
                         step="0.01"
-                        value={item.price}
+                        value={item.price === 0 ? '' : item.price}
                         onChange={(e) => updateItem(index, { price: parseFloat(e.target.value) || 0 })}
-                        className="h-10 pl-8 border-muted-foreground/20"
+                        onKeyDown={(e) => { if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') e.preventDefault() }}
+                        className="h-10 pl-8 border-muted-foreground/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </td>
