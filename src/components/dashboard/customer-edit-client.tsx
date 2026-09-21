@@ -13,6 +13,8 @@ import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { SaveIcon, ArrowLeftIcon, TrashIcon, CreditCardIcon } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CurrencySelect } from '@/components/dashboard/currency-select'
+import { CountrySelect } from '@/components/dashboard/country-select'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { ALL_REGIONS, getRegionDisplayLabel } from './regions'
 
 export function CustomerEditClient({ businessId, customerId }: { businessId: string; customerId: string }) {
@@ -59,7 +61,6 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
     employeeCount: '',
     linkedinUrl: '',
     tags: '',
-    parentAccountId: '',
   })
   const [saving, setSaving] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -95,7 +96,6 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
         employeeCount: customer.employeeCount !== undefined && customer.employeeCount !== null ? String(customer.employeeCount) : '',
         linkedinUrl: customer.linkedinUrl || '',
         tags: Array.isArray(customer.tags) ? customer.tags.join(', ') : '',
-        parentAccountId: customer.parentAccountId || '',
       })
     }
   }, [customer])
@@ -139,7 +139,6 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
           annualRevenue: form.annualRevenue ? parseFloat(form.annualRevenue) : null,
           employeeCount: form.employeeCount ? parseInt(form.employeeCount) : null,
           tags: form.tags ? form.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [],
-          parentAccountId: form.parentAccountId || null,
         }),
       })
       const data = await res.json()
@@ -249,7 +248,12 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
             </div>
             <div className="space-y-2">
               <Label>Phone</Label>
-              <Input value={form.phone} onChange={e => handleChange('phone', e.target.value)} />
+              <PhoneInput
+                id="phone"
+                defaultCountry={form.country || 'AE'}
+                value={form.phone}
+                onChange={(val) => handleChange('phone', val)}
+              />
             </div>
             <div className="space-y-2">
               <Label>Website</Label>
@@ -294,21 +298,6 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
               <Input value={form.linkedinUrl} onChange={e => handleChange('linkedinUrl', e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Parent Account</Label>
-              <select 
-                value={form.parentAccountId} 
-                onChange={e => handleChange('parentAccountId', e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-background file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="">No Parent Account (Top-level)</option>
-                {(business?.customers ?? [])
-                  .filter((c: any) => c.id !== customerId)
-                  .map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.company || c.name}</option>
-                  ))}
-              </select>
-            </div>
-            <div className="space-y-2">
               <Label>Tags (comma separated)</Label>
               <Input value={form.tags} onChange={e => handleChange('tags', e.target.value)} />
             </div>
@@ -330,22 +319,10 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
             </div>
             <div className="space-y-2">
               <Label>Country</Label>
-              <Select value={form.country} onValueChange={value => handleChange('country', value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="UAE">United Arab Emirates</SelectItem>
-                  <SelectItem value="Saudi Arabia">Saudi Arabia</SelectItem>
-                  <SelectItem value="Qatar">Qatar</SelectItem>
-                  <SelectItem value="Kuwait">Kuwait</SelectItem>
-                  <SelectItem value="Oman">Oman</SelectItem>
-                  <SelectItem value="Bahrain">Bahrain</SelectItem>
-                  <SelectItem value="India">India</SelectItem>
-                  <SelectItem value="United States">United States</SelectItem>
-                  <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                </SelectContent>
-              </Select>
+              <CountrySelect 
+                value={form.country} 
+                onValueChange={(val) => handleChange('country', val)} 
+              />
             </div>
             <div className="md:col-span-2">
               <div className="grid gap-4 md:grid-cols-2">
@@ -383,41 +360,19 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
                 </div>
                 <div className="space-y-2">
                   <Label>Billing Country</Label>
-                  <Select value={form.billingCountry} onValueChange={value => handleChange('billingCountry', value)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select billing country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="UAE">United Arab Emirates</SelectItem>
-                      <SelectItem value="Saudi Arabia">Saudi Arabia</SelectItem>
-                      <SelectItem value="Qatar">Qatar</SelectItem>
-                      <SelectItem value="Kuwait">Kuwait</SelectItem>
-                      <SelectItem value="Oman">Oman</SelectItem>
-                      <SelectItem value="Bahrain">Bahrain</SelectItem>
-                      <SelectItem value="India">India</SelectItem>
-                      <SelectItem value="United States">United States</SelectItem>
-                      <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <CountrySelect 
+                    value={form.billingCountry} 
+                    onValueChange={(val) => handleChange('billingCountry', val)} 
+                    placeholder="Select billing country"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Shipping Country</Label>
-                  <Select value={form.shippingCountry} onValueChange={value => handleChange('shippingCountry', value)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select shipping country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="UAE">United Arab Emirates</SelectItem>
-                      <SelectItem value="Saudi Arabia">Saudi Arabia</SelectItem>
-                      <SelectItem value="Qatar">Qatar</SelectItem>
-                      <SelectItem value="Kuwait">Kuwait</SelectItem>
-                      <SelectItem value="Oman">Oman</SelectItem>
-                      <SelectItem value="Bahrain">Bahrain</SelectItem>
-                      <SelectItem value="India">India</SelectItem>
-                      <SelectItem value="United States">United States</SelectItem>
-                      <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <CountrySelect 
+                    value={form.shippingCountry} 
+                    onValueChange={(val) => handleChange('shippingCountry', val)} 
+                    placeholder="Select shipping country"
+                  />
                 </div>
               </div>
             </div>

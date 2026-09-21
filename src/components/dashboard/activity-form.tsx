@@ -215,7 +215,7 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Duration <span className="text-slate-400 font-normal normal-case tracking-normal">(minutes)</span></label>
-                    <Input type="number" placeholder="0" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })} className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 font-mono" />
+                    <Input type="number" placeholder="0" value={formData.duration === 0 ? '' : formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value === '' ? 0 : (parseInt(e.target.value) || 0) })} className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 font-mono" />
                   </div>
                 </div>
               </div>

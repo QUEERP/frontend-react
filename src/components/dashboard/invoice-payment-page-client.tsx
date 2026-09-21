@@ -441,19 +441,18 @@ export function InvoicePaymentPageClient({
 
                 <div className="grid gap-2">
                   <Label htmlFor="transactionId" className="text-sm font-semibold text-foreground">Transaction ID</Label>
-                  <Input
-                    id="transactionId"
-                    value={paymentForm.transactionId}
-                    onChange={(e) => setPaymentForm((prev) => ({ ...prev, transactionId: e.target.value }))}
-                    placeholder="Enter transaction reference"
-                    disabled={
-                      isLoadingPaymentSummary || 
-                      invoicePaymentStatus === 'PAID' || 
-                      paymentForm.paymentMode === 'CASH' || 
-                      paymentForm.paymentMode === 'CHEQUE'
-                    }
-                    className="h-10 rounded-xl border-border focus-visible:ring-blue-500 disabled:opacity-50"
-                  />
+                    <Input
+                      id="transactionId"
+                      value={paymentForm.transactionId}
+                      onChange={(e) => setPaymentForm((prev) => ({ ...prev, transactionId: e.target.value }))}
+                      placeholder="e.g. TRN12345"
+                      disabled={
+                        isLoadingPaymentSummary || 
+                        invoicePaymentStatus === 'PAID' || 
+                        paymentForm.paymentMode === 'CASH'
+                      }
+                      className="h-10 rounded-xl border-border focus-visible:ring-blue-500 disabled:opacity-50"
+                    />
                 </div>
 
                 {isBasic && targetInvoiceId && (

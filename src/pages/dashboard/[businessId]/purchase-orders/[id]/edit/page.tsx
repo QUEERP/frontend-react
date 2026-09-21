@@ -34,7 +34,9 @@ const orderId = id as string
             orderDate: order.orderDate ? order.orderDate.split('T')[0] : '',
             expectedDeliveryDate: order.expectedDeliveryDate ? order.expectedDeliveryDate.split('T')[0] : '',
             notes: order.notes || '',
-            status: order.status,
+            status: order.status || 'DRAFT',
+            items: order.items || [],
+            currencyCode: order.transactionCurrency?.code || order.currency || order.currencyCode || '',
           })
         }
       } catch (error) {

@@ -124,7 +124,10 @@ export function InventoryDashboard() {
               <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Total Valuation</p>
               <DollarSign className="size-4 text-emerald-500" />
             </div>
-            <h2 className="text-3xl font-black mt-2">{currency} {(data.valuation / 1000).toFixed(1)}K</h2>
+            <h2 className="text-3xl font-black mt-2">
+              <span className="text-xl text-muted-foreground mr-1">{currency}</span>
+              {(data.valuation / 1000).toFixed(1)}K
+            </h2>
             <div className="mt-4 flex items-center gap-1 text-emerald-600">
               <TrendingUp className="size-3" />
               <p className="text-[10px] font-black uppercase">Live stock value</p>

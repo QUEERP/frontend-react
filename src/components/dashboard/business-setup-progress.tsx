@@ -48,7 +48,7 @@ export function BusinessSetupProgress({ businessId }: { businessId: string }) {
     if (businessId) {
       timer = setTimeout(() => {
         fetchSummary()
-      }, 600)
+      }, 800)
     }
     
     return () => {

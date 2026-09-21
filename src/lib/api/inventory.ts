@@ -18,7 +18,7 @@ async function apiFetch<T>(url: string, businessId: string, options?: RequestIni
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface Category { id: string; name: string; description?: string; parentId?: string | null; parent?: Category | null; children?: Category[]; isActive: boolean; createdAt: string }
+export interface Category { id: string; name: string; description?: string | null; parentId?: string | null; parent?: Category | null; children?: Category[]; isActive: boolean; createdAt: string }
 export interface Brand { id: string; name: string; description?: string; logoUrl?: string; isActive: boolean; createdAt: string }
 export interface Unit { id: string; name: string; abbreviation: string; createdAt: string }
 
@@ -146,48 +146,50 @@ export const productsAPI = {
 
 // ── Warehouse API ─────────────────────────────────────────────────────────────
 export const warehousesAPI = {
-  getAll: (bId: string) => apiFetch<{ success: boolean; warehouses: Warehouse[] }>(`${API_ROOT}/warehouses`, bId),
-  getById: (bId: string, id: string) => apiFetch<{ success: boolean; warehouse: Warehouse }>(`${API_ROOT}/warehouses/${id}`, bId),
-  create: (bId: string, data: Partial<Warehouse>) => apiFetch<{ success: boolean; warehouse: Warehouse }>(`${API_ROOT}/warehouses`, bId, { method: 'POST', body: JSON.stringify(data) }),
-  update: (bId: string, id: string, data: Partial<Warehouse>) => apiFetch<{ success: boolean; warehouse: Warehouse }>(`${API_ROOT}/warehouses/${id}`, bId, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (bId: string, id: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/warehouses/${id}`, bId, { method: 'DELETE' }),
+  getAll: (bId: string) => apiFetch<{ success: boolean; warehouses: Warehouse[] }>(`${API_ROOT}/inventory/warehouses`, bId),
+  getById: (bId: string, id: string) => apiFetch<{ success: boolean; warehouse: Warehouse }>(`${API_ROOT}/inventory/warehouses/${id}`, bId),
+  create: (bId: string, data: Partial<Warehouse>) => apiFetch<{ success: boolean; warehouse: Warehouse }>(`${API_ROOT}/inventory/warehouses`, bId, { method: 'POST', body: JSON.stringify(data) }),
+  update: (bId: string, id: string, data: Partial<Warehouse>) => apiFetch<{ success: boolean; warehouse: Warehouse }>(`${API_ROOT}/inventory/warehouses/${id}`, bId, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (bId: string, id: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/inventory/warehouses/${id}`, bId, { method: 'DELETE' }),
 }
 
 // ── Stock API ─────────────────────────────────────────────────────────────────
 export const stockAPI = {
   getLevels: (bId: string, params?: Record<string, string>) => {
     const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; stock: StockLevel[]; pagination?: { total: number } }>(`${API_ROOT}/stock${q}`, bId)
+    return apiFetch<{ success: boolean; stock: StockLevel[]; pagination?: { total: number } }>(`${API_ROOT}/inventory/stock/levels${q}`, bId)
   },
   getMovements: (bId: string, params?: Record<string, string>) => {
     const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; movements: StockMovement[]; pagination?: { total: number } }>(`${API_ROOT}/stock/movements${q}`, bId)
+    return apiFetch<{ success: boolean; movements: StockMovement[]; pagination?: { total: number } }>(`${API_ROOT}/inventory/stock/movements${q}`, bId)
   },
-  createAdjustment: (bId: string, data: Partial<StockAdjustment>) => apiFetch<{ success: boolean; adjustment: StockAdjustment }>(`${API_ROOT}/stock/adjustments`, bId, { method: 'POST', body: JSON.stringify(data) }),
-  getAdjustments: (bId: string) => apiFetch<{ success: boolean; adjustments: StockAdjustment[] }>(`${API_ROOT}/stock/adjustments`, bId),
-  deleteAdjustment: (bId: string, id: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/stock/adjustments/${id}`, bId, { method: 'DELETE' }),
-  createTransfer: (bId: string, data: Partial<StockTransfer>) => apiFetch<{ success: boolean; transfer: StockTransfer }>(`${API_ROOT}/stock/transfers`, bId, { method: 'POST', body: JSON.stringify(data) }),
-  getTransfers: (bId: string) => apiFetch<{ success: boolean; transfers: StockTransfer[] }>(`${API_ROOT}/stock/transfers`, bId),
-  deleteTransfer: (bId: string, id: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/stock/transfers/${id}`, bId, { method: 'DELETE' }),
-  updateTransferStatus: (bId: string, id: string, status: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/stock/transfers/${id}/status`, bId, { method: 'PATCH', body: JSON.stringify({ status }) }),
-  getBatches: (bId: string) => apiFetch<{ success: boolean; batches: Batch[] }>(`${API_ROOT}/stock/batches`, bId),
-  getSerials: (bId: string) => apiFetch<{ success: boolean; serials: SerialNumber[] }>(`${API_ROOT}/stock/serials`, bId),
+  createAdjustment: (bId: string, data: Partial<StockAdjustment>) => apiFetch<{ success: boolean; adjustment: StockAdjustment }>(`${API_ROOT}/inventory/stock/adjustments`, bId, { method: 'POST', body: JSON.stringify(data) }),
+  getAdjustments: (bId: string) => apiFetch<{ success: boolean; adjustments: StockAdjustment[] }>(`${API_ROOT}/inventory/stock/adjustments`, bId),
+  getAdjustmentById: (bId: string, id: string) => apiFetch<{ success: boolean; adjustment: StockAdjustment }>(`${API_ROOT}/inventory/stock/adjustments/${id}`, bId),
+  deleteAdjustment: (bId: string, id: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/inventory/stock/adjustments/${id}`, bId, { method: 'DELETE' }),
+  createTransfer: (bId: string, data: Partial<StockTransfer>) => apiFetch<{ success: boolean; transfer: StockTransfer }>(`${API_ROOT}/inventory/stock/transfers`, bId, { method: 'POST', body: JSON.stringify(data) }),
+  getTransfers: (bId: string) => apiFetch<{ success: boolean; transfers: StockTransfer[] }>(`${API_ROOT}/inventory/stock/transfers`, bId),
+  getTransferById: (bId: string, id: string) => apiFetch<{ success: boolean; transfer: StockTransfer }>(`${API_ROOT}/inventory/stock/transfers/${id}`, bId),
+  deleteTransfer: (bId: string, id: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/inventory/stock/transfers/${id}`, bId, { method: 'DELETE' }),
+  updateTransferStatus: (bId: string, id: string, status: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/inventory/stock/transfers/${id}/status`, bId, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  getBatches: (bId: string) => apiFetch<{ success: boolean; batches: Batch[] }>(`${API_ROOT}/inventory/stock/batches`, bId),
+  getSerials: (bId: string) => apiFetch<{ success: boolean; serials: SerialNumber[] }>(`${API_ROOT}/inventory/stock/serials`, bId),
 }
 
 // ── Inventory Reports API ─────────────────────────────────────────────────────
 export const inventoryReportsAPI = {
-  getValuation: (bId: string) => apiFetch<{ success: boolean } & InventoryReport>(`${API_ROOT}/reports/stock-valuation`, bId),
+  getValuation: (bId: string) => apiFetch<{ success: boolean } & InventoryReport>(`${API_ROOT}/inventory/reports/stock-valuation`, bId),
   getLowStock: (bId: string, params?: Record<string, string>) => {
     const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; alerts: InventoryReport['lowStockAlerts'] }>(`${API_ROOT}/reports/low-stock-alerts${q}`, bId)
+    return apiFetch<{ success: boolean; alerts: InventoryReport['lowStockAlerts'] }>(`${API_ROOT}/inventory/reports/low-stock-alerts${q}`, bId)
   },
   getMovementSummary: (bId: string, params?: Record<string, string>) => {
     const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; summary: InventoryReport['movementSummary'] }>(`${API_ROOT}/reports/movement-summary${q}`, bId)
+    return apiFetch<{ success: boolean; summary: InventoryReport['movementSummary'] }>(`${API_ROOT}/inventory/reports/movement-summary${q}`, bId)
   },
   getExpiringBatches: (bId: string, params?: Record<string, string>) => {
     const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; batches: InventoryReport['expiringBatches'] }>(`${API_ROOT}/reports/expiring-batches${q}`, bId)
+    return apiFetch<{ success: boolean; batches: InventoryReport['expiringBatches'] }>(`${API_ROOT}/inventory/reports/expiring-batches${q}`, bId)
   },
   getTradingInventoryReport: (
     bId: string, 

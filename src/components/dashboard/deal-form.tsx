@@ -136,11 +136,8 @@ export function DealForm({
     loadContacts()
   }, [businessId, formData.customerId])
 
-  React.useEffect(() => {
-    if (!formData.contactId) return
-    if (contacts.some((contact) => contact.id === formData.contactId)) return
-    setFormData((prev) => ({ ...prev, contactId: '' }))
-  }, [contacts, formData.contactId])
+    // Contact clearing on customer change is handled in the Select onValueChange handler.
+
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -206,16 +203,18 @@ export function DealForm({
                   </div>
                   <Input
                     id="amount"
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={formData.amount || ''}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^\d.]/g, '');
+                      const parts = val.split('.');
+                      const finalVal = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : val;
                       setFormData((prev) => ({
                         ...prev,
-                        amount: Number(e.target.value || 0),
+                        amount: finalVal as unknown as number,
                       }))
-                    }
+                    }}
                     placeholder="25000"
                     className="rounded-xl border-border bg-muted/50 h-11 pl-8 focus-visible:ring-blue-500 shadow-sm"
                     required
@@ -442,16 +441,18 @@ export function DealForm({
                 <Label htmlFor="probability" className="text-sm font-semibold text-foreground">Win Probability (%)</Label>
                 <Input
                   id="probability"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={typeof formData.probability === 'number' ? formData.probability : ''}
-                  onChange={(e) =>
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.probability ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d]/g, '');
+                    let num = val ? Number(val) : undefined;
+                    if (num !== undefined && num > 100) num = 100;
                     setFormData((prev) => ({
                       ...prev,
-                      probability: e.target.value === '' ? undefined : Number(e.target.value),
+                      probability: num,
                     }))
-                  }
+                  }}
                   placeholder="60"
                   className="rounded-xl border-border bg-muted/50 h-11 focus-visible:ring-blue-500 shadow-sm"
                 />

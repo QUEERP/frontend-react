@@ -42,6 +42,8 @@ import { useToast } from '@/components/ui/use-toast'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { UserMenu } from './user-menu'
 import { CurrencySelect } from '@/components/dashboard/currency-select'
+import { CountrySelect } from '@/components/dashboard/country-select'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { ALL_REGIONS, getRegionDisplayLabel } from './regions'
 
 export function AddCustomerClient({ businessId }: { businessId: string }) {
@@ -77,7 +79,6 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
     employeeCount: '',
     linkedinUrl: '',
     tags: '',
-    parentAccountId: '',
 
     // Main Address
     address: '',
@@ -259,7 +260,6 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
         employeeCount: formData.employeeCount ? parseInt(formData.employeeCount) : undefined,
         linkedinUrl: formData.linkedinUrl || undefined,
         tags: formData.tags ? formData.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : undefined,
-        parentAccountId: formData.parentAccountId || undefined,
       }
 
       const res = await fetch(`${API_BASE}/api/customers`, {
@@ -393,12 +393,11 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                     <PhoneIcon className="size-4" />
                     Phone
                   </Label>
-                  <Input
+                  <PhoneInput
                     id="phone"
-                    placeholder="+971 4 123 4567"
+                    defaultCountry={formData.country || 'AE'}
                     value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="rounded-xl border-border bg-muted/50 h-11 shadow-sm focus:ring-blue-500"
+                    onChange={(val) => handleInputChange('phone', val)}
                   />
                 </div>
 
@@ -458,6 +457,14 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="country" className="text-sm font-semibold text-foreground">Country</Label>
+                  <CountrySelect 
+                    value={formData.country} 
+                    onValueChange={(val) => handleInputChange('country', val)} 
+                  />
+                </div>
               </div>
             </div>
 
@@ -491,13 +498,6 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                 <div className="space-y-2">
                   <Label htmlFor="linkedinUrl" className="text-sm font-semibold text-foreground">LinkedIn Profile URL</Label>
                   <Input id="linkedinUrl" placeholder="https://linkedin.com/company/..." value={formData.linkedinUrl} onChange={(e) => handleInputChange('linkedinUrl', e.target.value)} className="rounded-xl border-border bg-muted/50 h-11 shadow-sm focus:ring-blue-500" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="parentAccountId" className="text-sm font-semibold text-foreground">Parent Account</Label>
-                  <select id="parentAccountId" value={formData.parentAccountId} onChange={(e) => handleInputChange('parentAccountId', e.target.value)} className="flex h-11 w-full rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">No Parent Account (Top-level)</option>
-                    {(business?.customers ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.company || c.name}</option>)}
-                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tags" className="text-sm font-semibold text-foreground">Tags (comma separated)</Label>
@@ -583,22 +583,11 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="billingCountry" className="text-sm font-semibold text-foreground">Billing Country</Label>
-                      <Select value={formData.billingCountry} onValueChange={(value) => handleInputChange('billingCountry', value)}>
-                        <SelectTrigger className="w-full rounded-xl border-border bg-muted/50 h-11 shadow-sm focus:ring-blue-500">
-                          <SelectValue placeholder="Select billing country" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-border shadow-lg">
-                          <SelectItem value="UAE" className="cursor-pointer focus:bg-muted">United Arab Emirates</SelectItem>
-                          <SelectItem value="Saudi Arabia" className="cursor-pointer focus:bg-muted">Saudi Arabia</SelectItem>
-                          <SelectItem value="Qatar" className="cursor-pointer focus:bg-muted">Qatar</SelectItem>
-                          <SelectItem value="Kuwait" className="cursor-pointer focus:bg-muted">Kuwait</SelectItem>
-                          <SelectItem value="Oman" className="cursor-pointer focus:bg-muted">Oman</SelectItem>
-                          <SelectItem value="Bahrain" className="cursor-pointer focus:bg-muted">Bahrain</SelectItem>
-                          <SelectItem value="India" className="cursor-pointer focus:bg-muted">India</SelectItem>
-                          <SelectItem value="United States" className="cursor-pointer focus:bg-muted">United States</SelectItem>
-                          <SelectItem value="United Kingdom" className="cursor-pointer focus:bg-muted">United Kingdom</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <CountrySelect 
+                        value={formData.billingCountry} 
+                        onValueChange={(val) => handleInputChange('billingCountry', val)} 
+                        placeholder="Select billing country"
+                      />
                     </div>
                   </div>
                 </div>
@@ -637,22 +626,11 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="shippingCountry" className="text-sm font-semibold text-foreground">Shipping Country</Label>
-                      <Select value={formData.shippingCountry} onValueChange={(value) => handleInputChange('shippingCountry', value)}>
-                        <SelectTrigger className="w-full rounded-xl border-border bg-muted/50 h-11 shadow-sm focus:ring-blue-500">
-                          <SelectValue placeholder="Select shipping country" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-border shadow-lg">
-                          <SelectItem value="UAE" className="cursor-pointer focus:bg-muted">United Arab Emirates</SelectItem>
-                          <SelectItem value="Saudi Arabia" className="cursor-pointer focus:bg-muted">Saudi Arabia</SelectItem>
-                          <SelectItem value="Qatar" className="cursor-pointer focus:bg-muted">Qatar</SelectItem>
-                          <SelectItem value="Kuwait" className="cursor-pointer focus:bg-muted">Kuwait</SelectItem>
-                          <SelectItem value="Oman" className="cursor-pointer focus:bg-muted">Oman</SelectItem>
-                          <SelectItem value="Bahrain" className="cursor-pointer focus:bg-muted">Bahrain</SelectItem>
-                          <SelectItem value="India" className="cursor-pointer focus:bg-muted">India</SelectItem>
-                          <SelectItem value="United States" className="cursor-pointer focus:bg-muted">United States</SelectItem>
-                          <SelectItem value="United Kingdom" className="cursor-pointer focus:bg-muted">United Kingdom</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <CountrySelect 
+                        value={formData.shippingCountry} 
+                        onValueChange={(val) => handleInputChange('shippingCountry', val)} 
+                        placeholder="Select shipping country"
+                      />
                     </div>
                   </div>
                 </div>

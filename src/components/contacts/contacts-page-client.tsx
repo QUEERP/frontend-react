@@ -29,6 +29,7 @@ import { toast } from 'sonner'
 
 export function ContactsPageClient({ businessId }: { businessId: string }) {
   const [contacts, setContacts] = useState<Contact[]>([])
+  const [customersMap, setCustomersMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
@@ -36,22 +37,32 @@ export function ContactsPageClient({ businessId }: { businessId: string }) {
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [viewingContact, setViewingContact] = useState<Contact | null>(null)
 
-  const fetchContacts = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true)
-      const response = await contactsAPI.getContacts(businessId)
-      if (response.success) {
-        setContacts(response.contacts)
+      const [contactsRes, customersRes] = await Promise.all([
+        contactsAPI.getContacts(businessId),
+        contactsAPI.getCustomers(businessId)
+      ])
+      if (contactsRes.success) {
+        setContacts(contactsRes.contacts)
+      }
+      if (customersRes.success) {
+        const map: Record<string, string> = {}
+        customersRes.customers.forEach(c => {
+          map[c.id] = c.company || c.name || c.id
+        })
+        setCustomersMap(map)
       }
     } catch (error) {
-      toast.error('Failed to fetch contacts')
+      toast.error('Failed to fetch data')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchContacts()
+    fetchData()
   }, [businessId])
 
   const filteredContacts = contacts.filter(contact => {
@@ -84,7 +95,7 @@ export function ContactsPageClient({ businessId }: { businessId: string }) {
   }
 
   const handleSuccess = () => {
-    fetchContacts()
+    fetchData()
   }
 
   const stats = {
@@ -267,6 +278,7 @@ export function ContactsPageClient({ businessId }: { businessId: string }) {
             onEdit={handleEdit}
             onView={handleView}
             onRefresh={handleSuccess}
+            customersMap={customersMap}
           />
         </CardContent>
       </Card>
@@ -284,6 +296,7 @@ export function ContactsPageClient({ businessId }: { businessId: string }) {
         contact={viewingContact}
         isOpen={!!viewingContact}
         onClose={() => setViewingContact(null)}
+        customerName={viewingContact ? customersMap[viewingContact.customerId] : undefined}
       />
     </div>
   )

@@ -79,6 +79,11 @@ export function EditableTaxSelect({
         placeholder={placeholder}
         value={inputValue}
         onChange={(e) => handleInputChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (['e', 'E', '+', '-'].includes(e.key)) {
+            e.preventDefault();
+          }
+        }}
         disabled={disabled}
         className={cn(
           'w-full text-right pr-6 border-border dark:border-[#23272c] bg-card dark:bg-[#181a20] focus-visible:ring-blue-500 rounded-xl',

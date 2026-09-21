@@ -403,23 +403,19 @@ export function VendorForm({
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label className="text-foreground font-semibold">Phone Number</Label>
-                  <div className="flex gap-2 max-w-md">
-                    <Input
-                      placeholder="+971"
-                      value={formData.countryCode}
-                      onChange={e => handleChange('countryCode', e.target.value)}
-                      disabled={submitting}
-                      className="w-[100px] h-11 rounded-xl border-border focus-visible:ring-blue-500 shadow-sm bg-muted text-center font-medium"
-                    />
-                    <Input
-                      type="tel"
-                      placeholder="Enter phone number"
-                      value={formData.phone}
-                      onChange={e => handleChange('phone', e.target.value)}
-                      disabled={submitting}
-                      className="flex-1 h-11 rounded-xl border-border focus-visible:ring-blue-500 shadow-sm"
-                    />
-                  </div>
+                  /* <PhoneInput
+                    value={formData.phone}
+                    onChange={(val: any, cc: any) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        phone: val,
+                        countryCode: cc
+                      }));
+                    }}
+                    defaultCountry={(formData.countryCode || '').replace('+', '')}
+                    disabled={submitting}
+                    className="h-11 shadow-sm"
+                  />
                 </div>
               </div>
             </section>

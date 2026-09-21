@@ -162,7 +162,13 @@ export default function NewStockAdjustmentPageClient() {
               </div>
               <div className="space-y-2">
                 <Label>Quantity *</Label>
-                <Input type="number" min="1" value={quantity} onChange={e => setQuantity(Number(e.target.value) || 1)} />
+                <Input 
+                  type="number" 
+                  min="1" 
+                  value={quantity === 0 ? '' : quantity} 
+                  onChange={e => setQuantity(e.target.value === '' ? 0 : Number(e.target.value))} 
+                  onKeyDown={e => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
+                />
               </div>
             </div>
             <div className="space-y-2">

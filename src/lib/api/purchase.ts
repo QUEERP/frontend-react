@@ -53,6 +53,8 @@ export interface PurchaseOrder {
   id: string; poNumber: string; status: typeof PO_STATUS[number]
   vendorId: string; warehouseId?: string; assignedToId?: string
   subtotal: number; tax?: number; discount?: number; totalAmount: number
+  currency?: string
+  transactionCurrency?: string
   orderDate: string; expectedDeliveryDate?: string; notes?: string
   purchaseRequestId?: string; createdAt: string; updatedAt: string
   vendor?: Vendor

@@ -87,10 +87,11 @@ export function UserMenu() {
   }, [])
 
   React.useEffect(() => {
+    let mounted = true
     const fetchMe = async () => {
       const token = getCookie('token') || getCookie('accessToken')
       if (!token) {
-        setLoading(false)
+        if (mounted) setLoading(false)
         return
       }
 
@@ -103,6 +104,7 @@ export function UserMenu() {
           },
         })
 
+        if (!mounted) return
         const data = await res.json()
         const me = parseMeUser(data)
         if (!res.ok || !me) {
@@ -111,13 +113,20 @@ export function UserMenu() {
 
         setUser(me)
       } catch {
-        setUser(null)
+        if (mounted) setUser(null)
       } finally {
-        setLoading(false)
+        if (mounted) setLoading(false)
       }
     }
 
-    fetchMe()
+    const timer = setTimeout(() => {
+      fetchMe()
+    }, 200)
+
+    return () => {
+      mounted = false
+      clearTimeout(timer)
+    }
   }, [API_BASE])
 
   const initial = React.useMemo(() => {

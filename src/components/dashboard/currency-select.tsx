@@ -57,14 +57,15 @@ export function CurrencySelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0" align="start">
-        <Command>
-          <div className="flex items-center border-b px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <CommandInput 
-              placeholder="Search currency code or name..." 
-              className="h-10 border-0 bg-background py-3 text-sm outline-none placeholder:text-muted-foreground w-full"
-            />
-          </div>
+        <Command 
+          filter={(value, search) => {
+            if (value.toLowerCase().includes(search.toLowerCase())) return 1;
+            return 0;
+          }}
+        >
+          <CommandInput 
+            placeholder="Search currency code or name..." 
+          />
           <CommandEmpty>No currency found.</CommandEmpty>
           <CommandList className="max-h-[250px] overflow-y-auto">
             <CommandGroup>

@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { CURRENCIES, getCurrencyByCountry, getCurrencySymbol } from '@/lib/currencies'
@@ -43,7 +44,7 @@ export default function AddLeadPage() {
     source: 'WEBSITE',
     assignedTo: '',
     tags: [],
-    leadValue: 0,
+    leadValue: '' as unknown as number,
     description: '',
     isPublic: true,
     contactedToday: false,
@@ -72,6 +73,7 @@ export default function AddLeadPage() {
     // Convert tags input to array
     const submissionData = {
       ...formData,
+      leadValue: formData.leadValue ? Number(formData.leadValue) : 0,
       tags: tagsInput ? tagsInput.split(',').map((tag: string) => tag.trim()).filter(Boolean) : [],
     }
 
@@ -146,12 +148,12 @@ export default function AddLeadPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone" className="text-slate-700 font-medium">Phone Number</Label>
-                    <Input
+                    <PhoneInput
                       id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="e.g. +1 234 567 8900"
-                      className="border-slate-200 focus-visible:ring-blue-500 shadow-sm h-10 rounded-lg"
+                      value={formData.phone || ''}
+                      onChange={(val) => setFormData(prev => ({ ...prev, phone: val }))}
+                      defaultCountry={formData.country}
+                      className="border-slate-200 focus-visible:ring-blue-500 shadow-sm h-10 rounded-lg flex-1"
                     />
                   </div>
                 </div>
@@ -236,7 +238,7 @@ export default function AddLeadPage() {
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-slate-200 shadow-lg max-h-[300px]">
                         {COUNTRIES.map(country => (
-                          <SelectItem key={country} value={country} className="py-2 focus:bg-blue-50">
+                          <SelectItem key={country} value={country} className="py-2 focus:bg-blue-50" textValue={country}>
                             {country}
                           </SelectItem>
                         ))}
@@ -307,7 +309,7 @@ export default function AddLeadPage() {
                       id="leadValue"
                       type="number"
                       value={formData.leadValue}
-                      onChange={(e) => setFormData(prev => ({ ...prev, leadValue: Number(e.target.value) }))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, leadValue: e.target.value as unknown as number }))}
                       placeholder="e.g. 50000"
                       className="border-slate-200 focus-visible:ring-blue-500 shadow-sm h-10 rounded-lg font-semibold text-emerald-700"
                     />
@@ -325,7 +327,7 @@ export default function AddLeadPage() {
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-200 shadow-lg max-h-[300px]">
                           {CURRENCIES.map(curr => (
-                            <SelectItem key={curr.code} value={curr.code} className="py-2 focus:bg-blue-50">
+                            <SelectItem key={curr.code} value={curr.code} className="py-2 focus:bg-blue-50" textValue={`${curr.code} ${curr.name}`}>
                               {curr.flag} {curr.code} - {curr.name} ({curr.symbol})
                             </SelectItem>
                           ))}

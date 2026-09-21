@@ -77,7 +77,7 @@ export function NotificationBell() {
         if (!mounted) return
         intervalId = setInterval(fetchNotifications, 5 * 60 * 1000)
       })
-    }, 900)
+    }, 1000)
 
     return () => {
       mounted = false
