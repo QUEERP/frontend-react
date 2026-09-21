@@ -303,7 +303,7 @@ export default function PurchaseRequestsPageClient() {
                                 <DropdownMenuItem onClick={async () => {
                                   try {
                                     await purchaseRequestsAPI.update(businessId as string, r.id, { status: 'APPROVED' });
-                                    toast('Approved');
+                                    toast({ title: 'Approved' });
                                     fetchData();
                                   } catch (err) {}
                                 }}>
@@ -314,7 +314,7 @@ export default function PurchaseRequestsPageClient() {
                                 <DropdownMenuItem onClick={async () => {
                                   try {
                                     await purchaseRequestsAPI.update(businessId as string, r.id, { status: 'REJECTED' });
-                                    toast('Rejected');
+                                    toast({ title: 'Rejected' });
                                     fetchData();
                                   } catch (err) {}
                                 }}>
@@ -326,7 +326,7 @@ export default function PurchaseRequestsPageClient() {
                                 if (window.confirm('Delete this request?')) {
                                   try {
                                     await purchaseRequestsAPI.delete(businessId as string, r.id);
-                                    toast('Deleted');
+                                    toast({ title: 'Deleted' });
                                     fetchData();
                                   } catch (err) {}
                                 }

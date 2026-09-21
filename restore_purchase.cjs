@@ -1,17 +1,19 @@
-import { getCookie } from '@/lib/utils'
+const fs = require('fs');
+
+const content = `import { getCookie } from '@/lib/utils'
 import { API_ROOT } from "@/config/api";
 
 
 function authHeaders(businessId: string) {
   const token = getCookie('token') || getCookie('accessToken')
   if (!token) throw new Error('No authentication token found')
-  return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'x-business-id': businessId }
+  return { Authorization: \`Bearer \${token}\`, 'Content-Type': 'application/json', 'x-business-id': businessId }
 }
 
 async function apiFetch<T>(url: string, businessId: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...options, headers: { ...authHeaders(businessId), ...(options?.headers || {}) } })
   const json = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(json.message || `Request failed: ${res.status}`)
+  if (!res.ok) throw new Error(json.message || \`Request failed: \${res.status}\`)
   return json
 }
 
@@ -109,92 +111,92 @@ export interface PurchaseReturn {
 // ── Vendor API ────────────────────────────────────────────────────────────────
 export const vendorsAPI = {
   getAll: (bId: string, params?: Record<string, string>) => {
-    const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; vendors: Vendor[]; pagination?: { total: number } }>(`${API_ROOT}/purchase/vendors${q}`, bId)
+    const q = params ? \`?\${new URLSearchParams(params)}\` : ''
+    return apiFetch<{ success: boolean; vendors: Vendor[]; pagination?: { total: number } }>(\`\${API_ROOT}/purchase/vendors\${q}\`, bId)
   },
-  getById: (bId: string, id: string) => apiFetch<{ success: boolean; vendor: Vendor }>(`${API_ROOT}/purchase/vendors/${id}`, bId),
-  create: (bId: string, data: Partial<Vendor>) => apiFetch<{ success: boolean; vendor: Vendor }>(`${API_ROOT}/purchase/vendors`, bId, { method: 'POST', body: JSON.stringify(data) }),
-  update: (bId: string, id: string, data: Partial<Vendor>) => apiFetch<{ success: boolean; vendor: Vendor }>(`${API_ROOT}/purchase/vendors/${id}`, bId, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (bId: string, id: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/purchase/vendors/${id}`, bId, { method: 'DELETE' }),
+  getById: (bId: string, id: string) => apiFetch<{ success: boolean; vendor: Vendor }>(\`\${API_ROOT}/purchase/vendors/\${id}\`, bId),
+  create: (bId: string, data: Partial<Vendor>) => apiFetch<{ success: boolean; vendor: Vendor }>(\`\${API_ROOT}/purchase/vendors\`, bId, { method: 'POST', body: JSON.stringify(data) }),
+  update: (bId: string, id: string, data: Partial<Vendor>) => apiFetch<{ success: boolean; vendor: Vendor }>(\`\${API_ROOT}/purchase/vendors/\${id}\`, bId, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (bId: string, id: string) => apiFetch<{ success: boolean }>(\`\${API_ROOT}/purchase/vendors/\${id}\`, bId, { method: 'DELETE' }),
 }
 
 // ── Purchase Request API ──────────────────────────────────────────────────────
 export const purchaseRequestsAPI = {
   getAll: (bId: string, params?: Record<string, string>) => {
-    const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; requests: PurchaseRequest[] }>(`${API_ROOT}/purchase/requests${q}`, bId)
+    const q = params ? \`?\${new URLSearchParams(params)}\` : ''
+    return apiFetch<{ success: boolean; requests: PurchaseRequest[] }>(\`\${API_ROOT}/purchase/requests\${q}\`, bId)
   },
-  getById: (bId: string, id: string) => apiFetch<{ success: boolean; request: PurchaseRequest }>(`${API_ROOT}/purchase/requests/${id}`, bId),
-  create: (bId: string, data: Partial<PurchaseRequest>) => apiFetch<{ success: boolean; request: PurchaseRequest }>(`${API_ROOT}/purchase/requests`, bId, { method: 'POST', body: JSON.stringify(data) }),
-  update: (bId: string, id: string, data: Partial<PurchaseRequest>) => apiFetch<{ success: boolean; request: PurchaseRequest }>(`${API_ROOT}/purchase/requests/${id}`, bId, { method: 'PUT', body: JSON.stringify(data) }),
+  getById: (bId: string, id: string) => apiFetch<{ success: boolean; request: PurchaseRequest }>(\`\${API_ROOT}/purchase/requests/\${id}\`, bId),
+  create: (bId: string, data: Partial<PurchaseRequest>) => apiFetch<{ success: boolean; request: PurchaseRequest }>(\`\${API_ROOT}/purchase/requests\`, bId, { method: 'POST', body: JSON.stringify(data) }),
+  update: (bId: string, id: string, data: Partial<PurchaseRequest>) => apiFetch<{ success: boolean; request: PurchaseRequest }>(\`\${API_ROOT}/purchase/requests/\${id}\`, bId, { method: 'PUT', body: JSON.stringify(data) }),
   convertToPO: (bId: string, id: string, data: { vendorId: string; warehouseId?: string }) =>
-    apiFetch<{ success: boolean; order: PurchaseOrder }>(`${API_ROOT}/purchase/requests/${id}/convert-to-po`, bId, { method: 'POST', body: JSON.stringify(data) }),
-  delete: (bId: string, id: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/purchase/requests/${id}`, bId, { method: 'DELETE' }),
+    apiFetch<{ success: boolean; order: PurchaseOrder }>(\`\${API_ROOT}/purchase/requests/\${id}/convert-to-po\`, bId, { method: 'POST', body: JSON.stringify(data) }),
+  delete: (bId: string, id: string) => apiFetch<{ success: boolean }>(\`\${API_ROOT}/purchase/requests/\${id}\`, bId, { method: 'DELETE' }),
 }
 
 // ── Purchase Order API ────────────────────────────────────────────────────────
 export const purchaseOrdersAPI = {
   getAll: (bId: string, params?: Record<string, string>) => {
-    const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; orders: PurchaseOrder[]; pagination?: { total: number } }>(`${API_ROOT}/purchase/orders${q}`, bId)
+    const q = params ? \`?\${new URLSearchParams(params)}\` : ''
+    return apiFetch<{ success: boolean; orders: PurchaseOrder[]; pagination?: { total: number } }>(\`\${API_ROOT}/purchase/orders\${q}\`, bId)
   },
-  getById: (bId: string, id: string) => apiFetch<{ success: boolean; order: PurchaseOrder }>(`${API_ROOT}/purchase/orders/${id}`, bId),
-  create: (bId: string, data: Partial<PurchaseOrder>) => apiFetch<{ success: boolean; order: PurchaseOrder }>(`${API_ROOT}/purchase/orders`, bId, { method: 'POST', body: JSON.stringify(data) }),
-  update: (bId: string, id: string, data: Partial<PurchaseOrder>) => apiFetch<{ success: boolean; order: PurchaseOrder }>(`${API_ROOT}/purchase/orders/${id}`, bId, { method: 'PUT', body: JSON.stringify(data) }),
-  changeStatus: (bId: string, id: string, status: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/purchase/orders/${id}`, bId, { method: 'PATCH', body: JSON.stringify({ status }) }),
-  delete: (bId: string, id: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/purchase/orders/${id}`, bId, { method: 'DELETE' }),
+  getById: (bId: string, id: string) => apiFetch<{ success: boolean; order: PurchaseOrder }>(\`\${API_ROOT}/purchase/orders/\${id}\`, bId),
+  create: (bId: string, data: Partial<PurchaseOrder>) => apiFetch<{ success: boolean; order: PurchaseOrder }>(\`\${API_ROOT}/purchase/orders\`, bId, { method: 'POST', body: JSON.stringify(data) }),
+  update: (bId: string, id: string, data: Partial<PurchaseOrder>) => apiFetch<{ success: boolean; order: PurchaseOrder }>(\`\${API_ROOT}/purchase/orders/\${id}\`, bId, { method: 'PUT', body: JSON.stringify(data) }),
+  changeStatus: (bId: string, id: string, status: string) => apiFetch<{ success: boolean }>(\`\${API_ROOT}/purchase/orders/\${id}\`, bId, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  delete: (bId: string, id: string) => apiFetch<{ success: boolean }>(\`\${API_ROOT}/purchase/orders/\${id}\`, bId, { method: 'DELETE' }),
 }
 
 // ── GRN API ───────────────────────────────────────────────────────────────────
 export const grnAPI = {
   getAll: (bId: string, params?: Record<string, string>) => {
-    const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; grns: GRN[] }>(`${API_ROOT}/purchase/grn${q}`, bId)
+    const q = params ? \`?\${new URLSearchParams(params)}\` : ''
+    return apiFetch<{ success: boolean; grns: GRN[] }>(\`\${API_ROOT}/purchase/grn\${q}\`, bId)
   },
-  getById: (bId: string, id: string) => apiFetch<{ success: boolean; grn: GRN }>(`${API_ROOT}/purchase/grn/${id}`, bId),
-  create: (bId: string, data: Partial<GRN>) => apiFetch<{ success: boolean; grn: GRN }>(`${API_ROOT}/purchase/grn`, bId, { method: 'POST', body: JSON.stringify(data) }),
-  delete: (bId: string, id: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/purchase/grn/${id}`, bId, { method: 'DELETE' }),
+  getById: (bId: string, id: string) => apiFetch<{ success: boolean; grn: GRN }>(\`\${API_ROOT}/purchase/grn/\${id}\`, bId),
+  create: (bId: string, data: Partial<GRN>) => apiFetch<{ success: boolean; grn: GRN }>(\`\${API_ROOT}/purchase/grn\`, bId, { method: 'POST', body: JSON.stringify(data) }),
+  delete: (bId: string, id: string) => apiFetch<{ success: boolean }>(\`\${API_ROOT}/purchase/grn/\${id}\`, bId, { method: 'DELETE' }),
 }
 
 // ── Bill API ──────────────────────────────────────────────────────────────────
 export const vendorBillsAPI = {
   getAll: (bId: string, params?: Record<string, string>) => {
-    const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; bills: Bill[] }>(`${API_ROOT}/purchase/bills${q}`, bId)
+    const q = params ? \`?\${new URLSearchParams(params)}\` : ''
+    return apiFetch<{ success: boolean; bills: Bill[] }>(\`\${API_ROOT}/purchase/bills\${q}\`, bId)
   },
-  getById: (bId: string, id: string) => apiFetch<{ success: boolean; bill: Bill }>(`${API_ROOT}/purchase/bills/${id}`, bId),
-  create: (bId: string, data: Partial<Bill>) => apiFetch<{ success: boolean; bill: Bill }>(`${API_ROOT}/purchase/bills`, bId, { method: 'POST', body: JSON.stringify(data) }),
-  update: (bId: string, id: string, data: Partial<Bill>) => apiFetch<{ success: boolean; bill: Bill }>(`${API_ROOT}/purchase/bills/${id}`, bId, { method: 'PUT', body: JSON.stringify(data) }),
+  getById: (bId: string, id: string) => apiFetch<{ success: boolean; bill: Bill }>(\`\${API_ROOT}/purchase/bills/\${id}\`, bId),
+  create: (bId: string, data: Partial<Bill>) => apiFetch<{ success: boolean; bill: Bill }>(\`\${API_ROOT}/purchase/bills\`, bId, { method: 'POST', body: JSON.stringify(data) }),
+  update: (bId: string, id: string, data: Partial<Bill>) => apiFetch<{ success: boolean; bill: Bill }>(\`\${API_ROOT}/purchase/bills/\${id}\`, bId, { method: 'PUT', body: JSON.stringify(data) }),
 }
 
 export const billsAPI = vendorBillsAPI;
 
 // ── Payment API ───────────────────────────────────────────────────────────────
 export const vendorPaymentsAPI = {
-  getForBill: (bId: string, billId: string) => apiFetch<{ success: boolean; payments: VendorPayment[] }>(`${API_ROOT}/purchase/bills/${billId}/payments`, bId),
-  create: (bId: string, billId: string, data: Partial<VendorPayment>) => apiFetch<{ success: boolean; payment: VendorPayment }>(`${API_ROOT}/purchase/bills/${billId}/payments`, bId, { method: 'POST', body: JSON.stringify(data) }),
+  getForBill: (bId: string, billId: string) => apiFetch<{ success: boolean; payments: VendorPayment[] }>(\`\${API_ROOT}/purchase/bills/\${billId}/payments\`, bId),
+  create: (bId: string, billId: string, data: Partial<VendorPayment>) => apiFetch<{ success: boolean; payment: VendorPayment }>(\`\${API_ROOT}/purchase/bills/\${billId}/payments\`, bId, { method: 'POST', body: JSON.stringify(data) }),
 }
 
 // ── Purchase Return API ───────────────────────────────────────────────────────
 export const purchaseReturnsAPI = {
   getAll: (bId: string, params?: Record<string, string>) => {
-    const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; returns: PurchaseReturn[] }>(`${API_ROOT}/purchase/returns${q}`, bId)
+    const q = params ? \`?\${new URLSearchParams(params)}\` : ''
+    return apiFetch<{ success: boolean; returns: PurchaseReturn[] }>(\`\${API_ROOT}/purchase/returns\${q}\`, bId)
   },
-  create: (bId: string, data: Partial<PurchaseReturn>) => apiFetch<{ success: boolean; return: PurchaseReturn }>(`${API_ROOT}/purchase/returns`, bId, { method: 'POST', body: JSON.stringify(data) }),
+  create: (bId: string, data: Partial<PurchaseReturn>) => apiFetch<{ success: boolean; return: PurchaseReturn }>(\`\${API_ROOT}/purchase/returns\`, bId, { method: 'POST', body: JSON.stringify(data) }),
 }
 
 // ── Purchase Reports API ──────────────────────────────────────────────────────
 export const purchaseReportsAPI = {
   getSummary: (bId: string, params?: Record<string, string>) => {
-    const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; summary: { status: string; count: number; totalAmount: number }[] }>(`${API_ROOT}/purchase/reports/summary${q}`, bId)
+    const q = params ? \`?\${new URLSearchParams(params)}\` : ''
+    return apiFetch<{ success: boolean; summary: { status: string; count: number; totalAmount: number }[] }>(\`\${API_ROOT}/purchase/reports/summary\${q}\`, bId)
   },
   getByVendor: (bId: string, params?: Record<string, string>) => {
-    const q = params ? `?${new URLSearchParams(params)}` : ''
-    return apiFetch<{ success: boolean; data: { vendorId: string; vendorName: string; orderCount: number; totalAmount: number }[] }>(`${API_ROOT}/purchase/reports/by-vendor${q}`, bId)
+    const q = params ? \`?\${new URLSearchParams(params)}\` : ''
+    return apiFetch<{ success: boolean; data: { vendorId: string; vendorName: string; orderCount: number; totalAmount: number }[] }>(\`\${API_ROOT}/purchase/reports/by-vendor\${q}\`, bId)
   },
-  getBillsAging: (bId: string) => apiFetch<{ success: boolean; aging: Record<string, { count: number; totalOutstanding: number }> }>(`${API_ROOT}/purchase/reports/bills-aging`, bId),
+  getBillsAging: (bId: string) => apiFetch<{ success: boolean; aging: Record<string, { count: number; totalOutstanding: number }> }>(\`\${API_ROOT}/purchase/reports/bills-aging\`, bId),
   getTradingProcurementReport: (
     bId: string, 
     dateRange: string = 'this_month',
@@ -202,14 +204,14 @@ export const purchaseReportsAPI = {
     page: number = 1,
     pageSize: number = 25
   ) => {
-    let url = `${API_ROOT}/procurement-reports/trading?tab=${tab}&page=${page}&pageSize=${pageSize}`;
+    let url = \`\${API_ROOT}/procurement-reports/trading?tab=\${tab}&page=\${page}&pageSize=\${pageSize}\`;
     
     if (dateRange && typeof dateRange === 'string') {
-        url += `&dateRange=${dateRange}`;
+        url += \`&dateRange=\${dateRange}\`;
     } else if (dateRange && typeof dateRange === 'object') {
         const dr = dateRange as any;
         if (dr.startDate && dr.endDate) {
-           url += `&startDate=${dr.startDate}&endDate=${dr.endDate}`;
+           url += \`&startDate=\${dr.startDate}&endDate=\${dr.endDate}\`;
         }
     }
     
@@ -252,3 +254,6 @@ export interface TradingProcurementReportData {
   returnsList: any[];
   returnsTotalCount: number;
 }
+`;
+
+fs.writeFileSync('src/lib/api/purchase.ts', content);
