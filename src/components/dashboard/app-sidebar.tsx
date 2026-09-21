@@ -427,6 +427,7 @@ export function AppSidebar() {
   }, [])
 
   React.useEffect(() => {
+    let mounted = true
     async function fetchStatutoryReports() {
       if (!currentBusinessId) return;
       let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -438,6 +439,7 @@ export function AppSidebar() {
         const res = await fetch(`${API_ROOT}/statutory/list?businessId=${currentBusinessId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (!mounted) return;
         if (res.ok) {
           const data = await res.json();
           setStatutoryReportsList(data.availableReports || []);
@@ -446,7 +448,15 @@ export function AppSidebar() {
         console.error('Failed to fetch statutory reports for sidebar', err);
       }
     }
-    fetchStatutoryReports();
+    
+    const timer = setTimeout(() => {
+      fetchStatutoryReports();
+    }, 600)
+    
+    return () => {
+      mounted = false
+      clearTimeout(timer)
+    }
   }, [currentBusinessId, API_ROOT, getCookie]);
 
   const activeBusiness = React.useMemo(

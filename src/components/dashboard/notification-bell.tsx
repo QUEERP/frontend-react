@@ -69,10 +69,21 @@ export function NotificationBell() {
   }
 
   useEffect(() => {
-    fetchNotifications()
-    // Optional: set up interval to check every few minutes
-    const intervalId = setInterval(fetchNotifications, 5 * 60 * 1000) // 5 minutes
-    return () => clearInterval(intervalId)
+    let mounted = true
+    let intervalId: NodeJS.Timeout
+    
+    const delayedFetch = setTimeout(() => {
+      fetchNotifications().then(() => {
+        if (!mounted) return
+        intervalId = setInterval(fetchNotifications, 5 * 60 * 1000)
+      })
+    }, 900)
+
+    return () => {
+      mounted = false
+      clearTimeout(delayedFetch)
+      if (intervalId) clearInterval(intervalId)
+    }
   }, [businessId])
 
   const getIcon = (type: string) => {
