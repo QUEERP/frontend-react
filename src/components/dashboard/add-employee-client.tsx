@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DashboardModeToggle } from '@/components/dashboard/mode-toggle'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -294,10 +295,10 @@ export function AddEmployeeClient({ businessId }: { businessId: string }) {
                   <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5">
                     <Phone className="h-3.5 w-3.5" /> Phone Number
                   </label>
-                  <Input
-                    placeholder="Enter phone number"
+                  <PhoneInput
+                    defaultCountry="IN"
                     value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onChange={(val) => handleInputChange('phone', val || '')}
                     className="rounded-xl transition-all focus:ring-2 focus:ring-blue-500/20 bg-card dark:bg-slate-950 border-border dark:border-slate-800 h-10"
                   />
                 </div>

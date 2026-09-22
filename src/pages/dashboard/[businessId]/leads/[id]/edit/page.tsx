@@ -337,7 +337,7 @@ export default function EditLeadPage() {
                         <SelectItem value="NEW" className="py-2 focus:bg-blue-50">New</SelectItem>
                         <SelectItem value="CONTACTED" className="py-2 focus:bg-blue-50">Contacted</SelectItem>
                         <SelectItem value="QUALIFIED" className="py-2 focus:bg-blue-50">Qualified</SelectItem>
-                        <SelectItem value="PROPOSAL" className="py-2 focus:bg-blue-50">Proposal</SelectItem>
+                        <SelectItem value="PROPOSAL_PENDING" className="py-2 focus:bg-blue-50">Proposal</SelectItem>
                         <SelectItem value="NEGOTIATION" className="py-2 focus:bg-blue-50">Negotiation</SelectItem>
                         <SelectItem value="CONVERTED" className="py-2 focus:bg-emerald-50 text-emerald-700 font-medium">Converted</SelectItem>
                       </SelectContent>

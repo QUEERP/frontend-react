@@ -52,7 +52,7 @@ const PIPELINE_STAGES = [
   { id: '1', key: 'NEW',         label: 'New',          color: 'text-blue-700',   bg: 'bg-blue-50',    border: 'border-blue-200',   dot: 'bg-blue-500'    },
   { id: '2', key: 'CONTACTED',   label: 'Contacted',    color: 'text-indigo-700', bg: 'bg-indigo-50',  border: 'border-indigo-200', dot: 'bg-indigo-500'  },
   { id: '3', key: 'QUALIFIED',   label: 'Qualified',    color: 'text-cyan-700',   bg: 'bg-cyan-50',    border: 'border-cyan-200',   dot: 'bg-cyan-500'    },
-  { id: '4', key: 'PROPOSAL',    label: 'Proposal',     color: 'text-sky-700',    bg: 'bg-sky-50',     border: 'border-sky-200',    dot: 'bg-sky-500'     },
+  { id: '4', key: 'PROPOSAL_PENDING',    label: 'Proposal',     color: 'text-sky-700',    bg: 'bg-sky-50',     border: 'border-sky-200',    dot: 'bg-sky-500'     },
   { id: '5', key: 'NEGOTIATION', label: 'Negotiation',  color: 'text-blue-800',   bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600'    },
   { id: '6', key: 'CONVERTED',   label: 'Converted',    color: 'text-emerald-700',bg: 'bg-emerald-50', border: 'border-emerald-200',dot: 'bg-emerald-500' },
 ]

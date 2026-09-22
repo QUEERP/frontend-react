@@ -233,6 +233,7 @@ export function OvertimePageClient({ businessId }: { businessId: string }) {
     const query = searchTerm.toLowerCase()
     return overtimeList.filter((item) => {
       const base = `${item.employeeName} ${item.designation} ${item.date} ${item.overtimeHours}`.toLowerCase()
+      return base.includes(query)
     })
   }, [overtimeList, searchTerm])
 

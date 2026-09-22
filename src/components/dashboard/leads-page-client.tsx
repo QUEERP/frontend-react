@@ -56,7 +56,7 @@ const PIPELINE_STAGES = [
   { id: '1', key: 'NEW', label: 'New', color: 'bg-blue-500', text: 'text-blue-700', badge: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:text-blue-800' },
   { id: '2', key: 'CONTACTED', label: 'Contacted', color: 'bg-indigo-500', text: 'text-indigo-700', badge: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:text-indigo-800' },
   { id: '3', key: 'QUALIFIED', label: 'Qualified', color: 'bg-cyan-500', text: 'text-cyan-700', badge: 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100 hover:text-cyan-800' },
-  { id: '4', key: 'PROPOSAL', label: 'Proposal', color: 'bg-sky-500', text: 'text-sky-700', badge: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100 hover:text-sky-800' },
+  { id: '4', key: 'PROPOSAL_PENDING', label: 'Proposal', color: 'bg-sky-500', text: 'text-sky-700', badge: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100 hover:text-sky-800' },
   { id: '5', key: 'NEGOTIATION', label: 'Negotiation', color: 'bg-blue-600', text: 'text-blue-800', badge: 'bg-blue-50 text-blue-800 border-blue-300 hover:bg-blue-100 hover:text-blue-900' },
   { id: '6', key: 'CONVERTED', label: 'Converted', color: 'bg-emerald-500', text: 'text-emerald-700', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800' },
 ]

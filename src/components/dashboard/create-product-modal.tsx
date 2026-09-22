@@ -53,6 +53,7 @@ interface CreateProductModalProps {
   onClose: () => void
   businessId: string
   onCreated: (product: Product) => void
+  initialWarehouseId?: string
 }
 
 interface FormState {
@@ -83,7 +84,7 @@ const DEFAULT_FORM: FormState = {
   warehouseId: '',
 }
 
-export function CreateProductModal({ open, onClose, businessId, onCreated }: CreateProductModalProps) {
+export function CreateProductModal({ open, onClose, businessId, onCreated, initialWarehouseId }: CreateProductModalProps) {
   const [form, setForm] = React.useState<FormState>(DEFAULT_FORM)
   const [warehouses, setWarehouses] = React.useState<Warehouse[]>([])
   const [submitting, setSubmitting] = React.useState(false)
@@ -98,7 +99,8 @@ export function CreateProductModal({ open, onClose, businessId, onCreated }: Cre
     if (!open) return
     setForm({
       ...DEFAULT_FORM,
-      type: isTrading ? 'GOODS' : 'GOODS'
+      type: isTrading ? 'GOODS' : 'GOODS',
+      warehouseId: initialWarehouseId || ''
     })
     setErrors({})
     setActiveTab('basic')

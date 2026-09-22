@@ -430,16 +430,52 @@ export function LeavesPageClient({ businessId }: { businessId: string }) {
     }
   }
 
+  const handleUpdateStatus = async (id: string, status: 'APPROVED' | 'REJECTED') => {
+    try {
+      const token = getCookie('token') || getCookie('accessToken')
+      const res = await fetch(`${API_BASE}/api/leaves/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'x-business-id': businessId,
+        },
+        body: JSON.stringify({ status }),
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || `Failed to ${status.toLowerCase()} leave`)
+      }
+
+      toast({
+        title: 'Status Updated',
+        description: `Leave request has been ${status.toLowerCase()}.`,
+      })
+
+      await fetchData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err?.message || 'Failed to update leave status',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const leaveCodeLabels = useMemo(() => {
     return leaveTypeOptions.reduce<Record<string, string>>((acc, item) => {
+      const displayName = (item as any).name || item.code
       if (String(item.code || '').trim().toUpperCase() === LWP_CODE) {
-        acc[item.code] = `${item.code} (∞/year)`
+        acc[item.code] = `${displayName} (∞/year)`
       } else {
-        acc[item.code] = `${item.code}${item.yearlyLimit > 0 ? ` (${item.yearlyLimit}/year)` : ''}`
+        acc[item.code] = `${displayName}${item.yearlyLimit > 0 ? ` (${item.yearlyLimit}/year)` : ''}`
       }
       return acc
     }, {})
   }, [leaveTypeOptions])
+
+  const canManageLeaves = !isEmployeeSession
 
   const filteredLeaves = useMemo(() => {
     const from = fromDate ? new Date(fromDate) : null
@@ -647,6 +683,9 @@ export function LeavesPageClient({ businessId }: { businessId: string }) {
                     <th className="text-left px-6 py-4 font-semibold text-muted-foreground dark:text-slate-400 uppercase text-xs tracking-wider">Date</th>
                     <th className="text-left px-6 py-4 font-semibold text-muted-foreground dark:text-slate-400 uppercase text-xs tracking-wider">Duration</th>
                     <th className="text-left px-6 py-4 font-semibold text-muted-foreground dark:text-slate-400 uppercase text-xs tracking-wider">Status</th>
+                    {canManageLeaves && (
+                      <th className="text-right px-6 py-4 font-semibold text-muted-foreground dark:text-slate-400 uppercase text-xs tracking-wider">Actions</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -665,7 +704,7 @@ export function LeavesPageClient({ businessId }: { businessId: string }) {
                         {leaveCodeLabels[item.leaveCode] || item.leaveCode}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground dark:text-slate-400 font-medium">
-                        {item.date || '-'}
+                        {item.date ? new Date(item.date).toLocaleDateString() : '-'}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground dark:text-slate-400 font-medium">
                         {item.duration === 'HALF' ? 'Half Day' : 'Full Day'}
@@ -675,6 +714,30 @@ export function LeavesPageClient({ businessId }: { businessId: string }) {
                           {item.status}
                         </Badge>
                       </td>
+                      {canManageLeaves && (
+                        <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                          {item.status === 'PENDING' ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 dark:border-green-900/50 dark:hover:bg-green-900/20"
+                                onClick={() => handleUpdateStatus(item.id, 'APPROVED')}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900/50 dark:hover:bg-red-900/20"
+                                onClick={() => handleUpdateStatus(item.id, 'REJECTED')}
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          ) : null}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
