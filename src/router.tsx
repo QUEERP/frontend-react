@@ -74,6 +74,7 @@ function buildReactRoutes(node: RouteNode): RouteObject {
   if (children.length > 0 && element) {
     return {
       path: node.path,
+      element: React.createElement(Outlet),
       children: [
         { index: true, element },
         ...children,
@@ -83,7 +84,7 @@ function buildReactRoutes(node: RouteNode): RouteObject {
 
   return {
     path: node.path,
-    element,
+    element: element || (children.length > 0 ? React.createElement(Outlet) : undefined),
     children: children.length > 0 ? children : undefined,
   };
 }

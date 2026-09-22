@@ -233,6 +233,7 @@ export function LoanPageClient({ businessId }: { businessId: string }) {
     const query = searchTerm.toLowerCase()
     return loanList.filter((item) => {
       const base = `${item.employeeName} ${item.designation} ${item.status} ${item.totalAmount}`.toLowerCase()
+      return base.includes(query)
     })
   }, [loanList, searchTerm])
 

@@ -142,8 +142,8 @@ export function PayrollDetailPageClient({ businessId, payrollId }: { businessId:
       return
     }
 
-    setDownloadingPayslipId(payslip.id)
     try {
+      setDownloadingPayslipId(payslip.id)
       const token = getCookie('token') || getCookie('accessToken')
       const downloadUrl = `${API_BASE}/api/payrolls/payslip/${payslip.id}/download-pdf`
 
@@ -273,7 +273,7 @@ export function PayrollDetailPageClient({ businessId, payrollId }: { businessId:
                       <Button
                         variant="outline"
                         size="sm"
-                        className="cursor-pointer text-xs"
+                        className="cursor-pointer text-xs hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 transition-colors"
                         onClick={() => void handleDownloadPayslip(row)}
                         disabled={downloadingPayslipId === row.id}
                       >

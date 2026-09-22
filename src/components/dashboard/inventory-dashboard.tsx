@@ -124,9 +124,9 @@ export function InventoryDashboard() {
               <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Total Valuation</p>
               <DollarSign className="size-4 text-emerald-500" />
             </div>
-            <h2 className="text-3xl font-black mt-2">
-              <span className="text-xl text-muted-foreground mr-1">{currency}</span>
-              {(data.valuation / 1000).toFixed(1)}K
+            <h2 className="text-3xl font-black mt-2 flex items-baseline">
+              <span className="text-xl text-muted-foreground mr-1 select-none pointer-events-none" translate="no">{currency}</span>
+              <span>{(data.valuation / 1000).toFixed(1)}K</span>
             </h2>
             <div className="mt-4 flex items-center gap-1 text-emerald-600">
               <TrendingUp className="size-3" />
@@ -219,8 +219,8 @@ export function InventoryDashboard() {
                     <div className="flex justify-between items-end">
                       <div>
                         <p className="text-xs font-black">{wh.name}</p>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase">
-                          {wh.stockSummary?.totalProducts || 0} Products • {currency} {((wh.stockSummary?.totalValue || 0) / 1000).toFixed(1)}K
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase flex items-center gap-1">
+                          {wh.stockSummary?.totalProducts || 0} Products • <span className="select-none pointer-events-none" translate="no">{currency}</span> <span>{((wh.stockSummary?.totalValue || 0) / 1000).toFixed(1)}K</span>
                         </p>
                       </div>
                       <span className={cn(

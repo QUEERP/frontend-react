@@ -2,8 +2,9 @@ import { toast } from 'sonner';
 import React, { useCallback, useEffect, useState } from 'react'
 import {  useNavigate, useParams  } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
-import { SlidersHorizontal, ArrowLeft, Plus, Trash2, Loader2 } from 'lucide-react'
+import { SlidersHorizontal, ArrowLeft, Plus, Trash2, Loader2, PackagePlus } from 'lucide-react'
 import { stockAPI, warehousesAPI, productsAPI, Warehouse, Product } from '@/lib/api/inventory'
+import { CreateProductModal } from '@/components/dashboard/create-product-modal'
 import { warehousesAPI as locationsAPI, WarehouseLocation } from '@/lib/api/warehouses'
 import { useBusinessData } from './business-data-provider'
 import { useToast } from '@/components/ui/use-toast'
@@ -31,6 +32,7 @@ export default function NewStockAdjustmentPageClient() {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCreateProductModalOpen, setIsCreateProductModalOpen] = useState(false)
 
   const [warehouseId, setWarehouseId] = useState('')
   const [locations, setLocations] = useState<WarehouseLocation[]>([])
@@ -143,9 +145,23 @@ export default function NewStockAdjustmentPageClient() {
               </div>
               <div className="space-y-2">
                 <Label>Product *</Label>
-                <Select value={productId} onValueChange={setProductId} disabled={isLoading}>
+                <Select value={productId || 'none'} onValueChange={v => {
+                  if (v !== 'none') setProductId(v)
+                }} disabled={isLoading}>
                   <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
-                  <SelectContent>{products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="none" className="hidden">Select product</SelectItem>
+                    {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    <div className="border-t border-border mt-1 pt-1">
+                      <button 
+                        type="button" 
+                        onMouseDown={(e) => { e.preventDefault(); setIsCreateProductModalOpen(true); }} 
+                        className="flex w-full items-center gap-2 px-2 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded cursor-pointer transition-colors"
+                      >
+                        <PackagePlus className="h-4 w-4" />+ Create Product
+                      </button>
+                    </div>
+                  </SelectContent>
                 </Select>
               </div>
             </div>
@@ -191,6 +207,17 @@ export default function NewStockAdjustmentPageClient() {
           </Button>
         </div>
       </form>
+
+      <CreateProductModal
+        open={isCreateProductModalOpen}
+        onClose={() => setIsCreateProductModalOpen(false)}
+        businessId={businessId}
+        initialWarehouseId={warehouseId}
+        onCreated={(product) => {
+          setProducts(prev => [product, ...prev]);
+          setProductId(product.id);
+        }}
+      />
     </div>
   )
 }

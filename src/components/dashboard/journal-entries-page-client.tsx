@@ -342,8 +342,8 @@ export default function JournalEntriesPageClient() {
               Are you sure you want to delete this journal entry? This action cannot be undone and will permanently remove this record from your books.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4 gap-2 sm:gap-0">
-            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="mt-4 sm:space-x-2">
+            <AlertDialogCancel className="rounded-xl mt-0">Cancel</AlertDialogCancel>
             <AlertDialogAction className="rounded-xl bg-red-600 hover:bg-red-700 gap-2" onClick={handleDelete}>
               <Trash2 className="h-4 w-4" />
               Delete Entry

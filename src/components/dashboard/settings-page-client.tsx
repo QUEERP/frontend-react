@@ -1171,7 +1171,7 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                               placeholder={leave.system ? "Infinite" : "Days"}
                               onChange={(e) => {
                                 const lt = [...formData.leaveTypes]
-                                lt[index].yearlyLimit = e.target.value ? parseInt(e.target.value, 10) : 0
+                                lt[index].yearlyLimit = e.target.value ? parseInt(e.target.value, 10) : null
                                 updateField('leaveTypes', lt)
                               }} 
                             />
