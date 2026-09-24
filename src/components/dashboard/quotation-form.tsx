@@ -214,7 +214,7 @@ export function QuotationForm({
         i === index
           ? {
             ...item,
-            [field]: field === 'description' || field === 'itemName' || field === 'itemType' || field === 'hsnSacCode' || field === 'productId' ? String(value) : Number(value),
+            [field]: ['description', 'itemName', 'itemType', 'hsnSacCode', 'productId', 'warehouseId', 'unit'].includes(field) ? String(value) : Number(value),
           }
           : item,
       ),
