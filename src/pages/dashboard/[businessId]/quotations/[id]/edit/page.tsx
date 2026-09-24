@@ -49,7 +49,9 @@ export default function EditQuotationPage() {
               sgstPercent: item.sgstPercent || (item.taxPercent / 2) || 0,
               igstPercent: item.igstPercent || item.taxPercent || 0,
               itemType: item.itemType || 'GOODS',
-              hsnSacCode: item.hsnSacCode || ''
+              hsnSacCode: item.hsnSacCode || '',
+              warehouseId: item.warehouseId || '',
+              unit: item.unit || 'pcs'
             }))
           })
         }
