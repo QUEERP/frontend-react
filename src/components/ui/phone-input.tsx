@@ -39,15 +39,20 @@ export function PhoneInput({ value, onChange, defaultCountry, id, className, req
     }
   }, [value]);
 
-  // Sync with defaultCountry prop if value is empty
+  // Sync with defaultCountry prop
   useEffect(() => {
-    if (defaultCountry && !value && !number) {
+    if (defaultCountry) {
       const match = COUNTRY_DIAL_CODES.find(c => c.country.toLowerCase() === defaultCountry.toLowerCase());
-      if (match) {
+      if (match && match.code !== selectedCountry) {
         setSelectedCountry(match.code);
+        if (number) {
+          onChange(`${match.dialCode} ${number}`);
+        } else if (!value) {
+          // If no value, we just updated the country code visually
+        }
       }
     }
-  }, [defaultCountry, value, number]);
+  }, [defaultCountry]);
 
   const handleCountryChange = (newCode: string) => {
     setSelectedCountry(newCode);
