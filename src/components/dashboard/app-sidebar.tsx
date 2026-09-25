@@ -1093,7 +1093,13 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/activities`, label: 'Activities', icon: ActivityIcon, path: '/activities' },
                               ].filter(item => isMenuVisible(bType, 'Sales', 'Activities', item.label)).map(({ href, label, icon: Icon, path }) => (
                                 <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                  <SidebarMenuSubButton asChild size="sm" isActive={
+                                    path.startsWith('type=') 
+                                      ? pathname.includes('/activities') && searchParams.get('type') === path.split('=')[1]
+                                      : path === '/activities'
+                                        ? pathname.includes('/activities') && !searchParams.get('type')
+                                        : pathname === href || pathname.startsWith(href + '/')
+                                  }>
                                     <Link to={href} className="flex items-center gap-2">
                                       <Icon className="size-4" />
                                       <span>{label}</span>

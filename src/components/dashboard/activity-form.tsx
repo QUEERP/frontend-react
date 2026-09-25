@@ -38,7 +38,7 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [formData, setFormData] = useState({
-    type: 'Call' as 'Call' | 'Meeting',
+    type: 'Call' as 'Call' | 'Meeting' | 'Task' | 'Email' | 'Note',
     title: '',
     description: '',
     activityDate: new Date().toISOString().split('T')[0],
@@ -70,9 +70,9 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
         fetch(`${API_ROOT}/customers`, { headers }),
       ]);
 
-      if (leadsRes.ok) setLeads((await leadsRes.json()).leads || []);
-      if (dealsRes.ok) setDeals((await dealsRes.json()).deals || []);
-      if (customersRes.ok) setCustomers((await customersRes.json()).customers || []);
+      if (leadsRes.ok) setLeads((await leadsRes.json()).data || []);
+      if (dealsRes.ok) setDeals((await dealsRes.json()).data || []);
+      if (customersRes.ok) setCustomers((await customersRes.json()).data || []);
     } catch (error) {
       console.error('Error fetching options:', error);
     } finally {
@@ -88,8 +88,8 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         const typeParam = params.get('type');
-        if (typeParam === 'Call' || typeParam === 'Meeting') {
-          setFormData(prev => ({ ...prev, type: typeParam }));
+        if (['Call', 'Meeting', 'Task', 'Email', 'Note'].includes(typeParam || '')) {
+          setFormData(prev => ({ ...prev, type: typeParam as any }));
         }
       }
     }
@@ -161,7 +161,7 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex flex-col leading-tight">
-          <h1 className="text-2xl font-bold text-foreground dark:text-slate-100 tracking-tight">{activityId ? 'Edit Activity' : 'Create New Activity'}</h1>
+          <h1 className="text-2xl font-bold text-foreground dark:text-slate-100 tracking-tight">{activityId ? `Edit ${formData.type}` : `Create New ${formData.type}`}</h1>
           <p className="text-sm font-medium text-muted-foreground dark:text-slate-400 mt-0.5">Track interactions and follow-ups</p>
         </div>
       </div>
@@ -177,11 +177,14 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
                     <label className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Type <span className="text-rose-500">*</span></label>
-                    <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value as 'Call' | 'Meeting' })}>
+                    <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value as 'Call' | 'Meeting' | 'Task' | 'Email' | 'Note' })}>
                       <SelectTrigger className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue /></SelectTrigger>
                       <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">
                         <SelectItem value="Call" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Call</SelectItem>
                         <SelectItem value="Meeting" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Meeting</SelectItem>
+                        <SelectItem value="Task" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Task</SelectItem>
+                        <SelectItem value="Email" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Email</SelectItem>
+                        <SelectItem value="Note" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Note</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -249,9 +252,9 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
                   <Select value={formData.customerId} onValueChange={(value) => setFormData({ ...formData, customerId: value })}>
                     <SelectTrigger className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue placeholder="Select a customer" /></SelectTrigger>
                     <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">
-                      {customers.map((customer) => (
+                      {customers.map((customer: any) => (
                         <SelectItem key={customer.id} value={customer.id} className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">
-                          {customer.name}
+                          {customer.company || customer.name || 'Unnamed Customer'}
                         </SelectItem>
                       ))}
                       <div className="border-t border-border dark:border-slate-800 mt-1 pt-1">
