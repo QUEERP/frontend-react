@@ -124,7 +124,7 @@ export function InvoicePaymentPageClient({
     if (!invoice) return
     setPaymentForm((prev) => ({
       ...prev,
-      amountReceived: String(invoiceAmount || 0),
+      amountReceived: String(Math.max((invoiceAmount || 0) - (invoice.amountPaid || 0), 0)),
       paymentDate: new Date().toISOString().split('T')[0],
       currency: invoice.currency || business?.baseCurrency?.code || 'AED',
     }))
@@ -169,7 +169,8 @@ export function InvoicePaymentPageClient({
         }
 
         const list = Array.isArray(payload?.data) ? payload.data : []
-        const paidAmount = list.reduce((sum: number, payment: any) => sum + Number(payment?.amount || 0), 0)
+        const fetchedPaidAmount = list.reduce((sum: number, payment: any) => sum + Number(payment?.amount || 0), 0)
+        const paidAmount = fetchedPaidAmount > 0 ? fetchedPaidAmount : (invoice?.amountPaid || 0)
         const calculatedRemaining = Math.max(invoiceAmount - paidAmount, 0)
         const backendStatus = normalizeInvoiceStatus(invoice?.status)
         const computedStatus = calculatedRemaining === 0 ? 'PAID' : paidAmount > 0 ? 'PARTIALLY_PAID' : backendStatus
