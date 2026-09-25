@@ -34,7 +34,7 @@ export default function ReorderAlertsPageClient() {
   }, [businessId])
   useEffect(() => { fetchData() }, [fetchData])
 
-  const filtered = alerts.filter(a => !search || a.product.name.toLowerCase().includes(search.toLowerCase()) || a.warehouse.name.toLowerCase().includes(search.toLowerCase()))
+  const filtered = alerts.filter(a => !search || a.product?.name?.toLowerCase().includes(search.toLowerCase()) || a.warehouse?.name?.toLowerCase().includes(search.toLowerCase()))
   const critical = alerts.filter(a => a.quantity <= 0).length
   const low = alerts.filter(a => a.quantity > 0 && a.quantity <= a.reorderLevel).length
 
@@ -80,14 +80,14 @@ export default function ReorderAlertsPageClient() {
                     const isCritical = a.quantity <= 0
                     return (
                       <TableRow key={i} className={`hover:bg-muted/20 ${isCritical ? 'bg-red-50/40' : 'bg-amber-50/30'}`}>
-                        <TableCell className="pl-4 font-medium text-sm">{a.product.name}</TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">{a.product.sku}</TableCell>
-                        <TableCell className="text-sm">{a.warehouse.name}</TableCell>
+                        <TableCell className="pl-4 font-medium text-sm">{a.product?.name || 'Unknown'}</TableCell>
+                        <TableCell className="font-mono text-xs text-muted-foreground">{a.product?.sku || '-'}</TableCell>
+                        <TableCell className="text-sm">{a.warehouse?.name || 'Unknown'}</TableCell>
                         <TableCell className={`text-right font-bold ${isCritical ? 'text-red-600' : 'text-amber-600'}`}>{a.quantity}</TableCell>
                         <TableCell className="text-right text-sm text-muted-foreground">{a.reorderLevel}</TableCell>
-                        <TableCell className="text-right text-sm text-indigo-600 font-medium">{a.product.reorderQty || '—'}</TableCell>
+                        <TableCell className="text-right text-sm text-indigo-600 font-medium">{a.product?.reorderQty || '—'}</TableCell>
                         <TableCell className="pr-4">
-                          <Link to={`/dashboard/${businessId}/purchase-requests/new?productId=${a.product.id}`}>
+                          <Link to={`/dashboard/${businessId}/purchase-requests/new?productId=${a.product?.id || ''}`}>
                             <Button size="sm" variant="outline" className="h-7 text-xs">Request PO</Button>
                           </Link>
                         </TableCell>

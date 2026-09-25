@@ -188,7 +188,7 @@ export function ViewVendorClient({ businessId, vendorId }: { businessId: string,
               <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">Phone</p>
               <div className="flex items-center gap-2">
                 <PhoneIcon className="size-4 text-slate-400" />
-                <p className="font-medium text-sm">{vendor.phone ? `${vendor.countryCode} ${vendor.phone}` : '-'}</p>
+                <p className="font-medium text-sm">{vendor.phone ? (vendor.phone.startsWith('+') ? vendor.phone : `${vendor.countryCode} ${vendor.phone}`) : '-'}</p>
               </div>
             </div>
           </CardContent>

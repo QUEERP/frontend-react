@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -403,13 +404,13 @@ export function VendorForm({
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label className="text-foreground font-semibold">Phone Number</Label>
-                  <Input
-                    type="tel"
+                  <PhoneInput
+                    id="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="+1 234 567 8900"
-                    disabled={submitting}
-                    className="h-11 rounded-xl border-border focus-visible:ring-blue-500 shadow-sm"
+                    onChange={(val) => setFormData(prev => ({ ...prev, phone: val }))}
+                    defaultCountry={formData.country}
+                    required={false}
+                    className="h-11"
                   />
                 </div>
               </div>
