@@ -3,13 +3,21 @@ import { useParams, useSearchParams } from "react-router-dom";
 
 export default function AddInvoicePage() {
   const routerParams = useParams() as any;
-  const { businessId, id } = routerParams;
+  const { businessId } = routerParams;
 
-  
   const searchParams = useSearchParams()[0];
+  const id = searchParams.get('id');
+  const salesOrderId = searchParams.get('salesOrderId');
+  const projectId = searchParams.get('projectId');
+  const customerId = searchParams.get('customerId');
 
-const salesOrderId = searchParams.get('salesOrderId');
-const projectId = searchParams.get('projectId');
-
-  return <AddInvoiceClient businessId={businessId as string} salesOrderId={salesOrderId || undefined} projectId={projectId || undefined} />
+  return (
+    <AddInvoiceClient 
+      businessId={businessId as string} 
+      invoiceId={id || undefined}
+      salesOrderId={salesOrderId || undefined} 
+      projectId={projectId || undefined}
+      prefillCustomerId={customerId || undefined}
+    />
+  )
 }

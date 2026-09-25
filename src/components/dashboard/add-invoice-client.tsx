@@ -331,9 +331,12 @@ export function AddInvoiceClient({
           currency: (so as any).currency || prev.currency,
           discount: (so as any).discount ?? prev.discount,
           shippingCharges: (so as any).shippingCharges ?? prev.shippingCharges,
+          terms: so.termsConditions || prev.terms,
           country: (so as any).country || prev.country,
           state: (so as any).state || prev.state,
           emirate: (so as any).emirate || prev.emirate,
+          reverseCharge: so.reverseCharge || prev.reverseCharge,
+          vatType: so.vatType || prev.vatType,
         }))
         setItems((so.items || []).map((it: any) => ({
           id: it.id || Math.random().toString(36).substr(2, 9),
