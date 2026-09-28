@@ -9,7 +9,7 @@ import { ServerPagination } from '@/components/ui/server-pagination'
 import { DateRange } from 'react-day-picker'
 import { format } from 'date-fns'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { formatCurrency } from '@/lib/utils/currency'
+import { formatAmountOnly } from '@/lib/utils/currency'
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -310,7 +310,7 @@ export function TradingInventoryReportClient() {
         />
         <KpiCard
           title="Total Stock Value"
-          value={formatCurrency(data.kpis.totalStockValue, currency)}
+          value={formatAmountOnly(data?.kpis?.totalStockValue || 0)}
           subtext="Value on hand"
           icon={BarChart3}
           colorClass="border-l-indigo-500"
@@ -467,7 +467,7 @@ export function TradingInventoryReportClient() {
                       <TableRow key={i}>
                         <TableCell className="font-medium">{c.name}</TableCell>
                         <TableCell className="text-right">{c.productCount}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(c.totalStockValue, currency)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatAmountOnly(c.totalValue)}</TableCell>
                       </TableRow>
                     ))
                   )}
@@ -502,7 +502,7 @@ export function TradingInventoryReportClient() {
                       <TableRow key={i}>
                         <TableCell className="font-medium">{b.name}</TableCell>
                         <TableCell className="text-right">{b.productCount}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(b.totalStockValue, currency)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatAmountOnly(b.totalValue)}</TableCell>
                       </TableRow>
                     ))
                   )}
@@ -573,7 +573,7 @@ export function TradingInventoryReportClient() {
                       <TableRow key={i}>
                         <TableCell className="font-medium">{w.name}</TableCell>
                         <TableCell className="text-right">{w.productsStored}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(w.totalValue, currency)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatAmountOnly(w.totalValue)}</TableCell>
                         <TableCell className="text-right text-muted-foreground">{w.utilization}</TableCell>
                       </TableRow>
                     ))
@@ -611,7 +611,7 @@ export function TradingInventoryReportClient() {
                         <TableCell className="font-medium">{s.productName}</TableCell>
                         <TableCell>{s.warehouseName}</TableCell>
                         <TableCell className="text-right font-medium">{s.quantityOnHand}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">{formatCurrency(s.value, currency)}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{formatAmountOnly(s.unitCost)}</TableCell>
                       </TableRow>
                     ))
                   )}

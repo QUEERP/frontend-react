@@ -4,6 +4,7 @@ import {  useNavigate, useParams  } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { Undo2, ArrowLeft, Plus, Trash2, Loader2, PackageX } from 'lucide-react'
 import { purchaseReturnsAPI, vendorsAPI, Vendor } from '@/lib/api/purchase'
+import { purchaseOrdersAPI, PurchaseOrder } from '@/lib/api/purchase-orders'
 import { productsAPI, Product } from '@/lib/api/inventory'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,8 @@ export default function NewPurchaseReturnPageClient() {
   
 
   const [vendors, setVendors] = useState<Vendor[]>([])
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([])
+  const [purchaseOrderId, setPurchaseOrderId] = useState('')
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -40,7 +43,7 @@ export default function NewPurchaseReturnPageClient() {
     if (!businessId) return
     try {
       setIsLoading(true)
-      const [vRes, pRes] = await Promise.allSettled([vendorsAPI.getAll(businessId), productsAPI.getAll(businessId)])
+      const [vRes, pRes, poRes] = await Promise.allSettled([vendorsAPI.getAll(businessId), productsAPI.getAll(businessId), purchaseOrdersAPI.getPurchaseOrders(businessId)])
       if (vRes.status === 'fulfilled') {
         const vData = (vRes.value as any).vendors || []
         setVendors(vData)
@@ -55,6 +58,25 @@ export default function NewPurchaseReturnPageClient() {
   
   useEffect(() => { fetchData() }, [fetchData])
 
+  
+  const handlePOSelect = (poId: string) => {
+    setPurchaseOrderId(poId);
+    if (poId === 'none') {
+      return;
+    }
+    const po = purchaseOrders.find(p => p.id === poId);
+    if (po) {
+      if (po.vendorId) setVendorId(po.vendorId);
+      if (po.items && po.items.length > 0) {
+        setItems(po.items.map(i => ({
+          productId: i.product?.id || '',
+          quantity: i.quantity,
+          reason: 'DAMAGED'
+        })));
+      }
+    }
+  };
+  
   const addItem = () => setItems(p => [...p, { productId: '', quantity: 1, reason: 'DAMAGED' }])
   const removeItem = (i: number) => setItems(p => p.length === 1 ? p : p.filter((_, idx) => idx !== i))
   const updateItem = (i: number, f: keyof ReturnItem, v: string | number) => setItems(p => p.map((item, idx) => idx === i ? { ...item, [f]: v } : item))
@@ -66,7 +88,7 @@ export default function NewPurchaseReturnPageClient() {
     if (validItems.length === 0) { toast({ title: 'Add at least one item to return', variant: 'destructive' }); return }
     try {
       setIsSubmitting(true)
-      await purchaseReturnsAPI.create(businessId, { vendorId, returnDate, notes, items: validItems })
+      await purchaseReturnsAPI.create(businessId, { vendorId, purchaseOrderId: purchaseOrderId || undefined, returnDate, notes, items: validItems } as any)
       toast({ title: 'Purchase return created successfully' })
       navigate(`/dashboard/${businessId}/purchase-returns`)
     } catch (err: any) {
@@ -104,7 +126,19 @@ export default function NewPurchaseReturnPageClient() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-400">Purchase Order</Label>
+                  <Select value={purchaseOrderId} onValueChange={handlePOSelect} disabled={isLoading}>
+                    <SelectTrigger className="h-12 w-full border-border dark:border-[#23272c] bg-card dark:bg-[#121418] rounded-xl text-foreground dark:text-slate-200">
+                      <SelectValue placeholder="Select PO (Optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Select —</SelectItem>
+                      {purchaseOrders.map(po => <SelectItem key={po.id} value={po.id} className="font-medium">{po.poNumber}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-400">Vendor *</Label>
                   <Select value={vendorId} onValueChange={setVendorId} disabled={isLoading}>

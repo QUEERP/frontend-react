@@ -68,6 +68,16 @@ export function PurchaseOrdersPageClient({ businessId }: PurchaseOrdersPageClien
     fetchOrders()
   }, [fetchOrders])
 
+  const handleMarkReceived = async (order: any) => {
+    try {
+      await purchaseOrdersAPI.markReceived(businessId as string, order.id);
+      toast.success('Order marked as received. GRN and Bill generated.');
+      fetchOrders();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to mark as received');
+    }
+  };
+
   const handleDelete = async (orderId: string) => {
     if (!confirm('Are you sure you want to delete this purchase order?')) return;
     try {

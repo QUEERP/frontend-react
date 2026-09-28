@@ -157,16 +157,16 @@ export function InventoryItemTable({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[200px]">Description</th>
                 {!isService && <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[150px]">Warehouse</th>}
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[140px]">{isService ? 'SAC' : 'HSN'}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[100px]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[120px]">
                   {items.length > 0 ? (
                     items[0].itemType === 'SERVICE' ? 'HRS' :
                     ['kg', 'gram', 'meter', 'litre'].includes((items[0].unit || '').toLowerCase()) ? items[0].unit?.toUpperCase() : 'QTY'
                   ) : (isService ? 'HRS' : 'QTY')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[120px]">Unit</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[120px]">Rate</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[100px]">{taxLabel} %</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[140px]">Total</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[120px]">Unit</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[160px]">Rate</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[120px]">{taxLabel} %</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[160px]">Total</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[60px]"></th>
               </tr>
             </thead>
@@ -306,10 +306,14 @@ export function InventoryItemTable({
                       min="0"
                       step="0.01"
                       value={item.quantity === 0 ? '' : item.quantity}
-                      onChange={(e) => updateItem(index, { quantity: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.length > 10) return;
+                        updateItem(index, { quantity: parseFloat(val) || 0 })
+                      }}
                       onKeyDown={(e) => { if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') e.preventDefault() }}
                       className={cn(
-                        "h-10 text-center border-muted-foreground/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                        "min-w-[100px] h-10 text-center border-muted-foreground/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
                         mode === 'sales' && !isService && item.quantity > (item.availableStock || 0) && "border-red-500 focus-visible:ring-red-500"
                       )}
                     />
@@ -345,9 +349,13 @@ export function InventoryItemTable({
                         min="0"
                         step="0.01"
                         value={item.price === 0 ? '' : item.price}
-                        onChange={(e) => updateItem(index, { price: parseFloat(e.target.value) || 0 })}
+                        onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.length > 12) return;
+                        updateItem(index, { price: parseFloat(val) || 0 })
+                      }}
                         onKeyDown={(e) => { if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') e.preventDefault() }}
-                        className="h-10 pl-8 border-muted-foreground/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="min-w-[120px] h-10 pl-8 border-muted-foreground/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </td>
@@ -362,7 +370,7 @@ export function InventoryItemTable({
                   </td>
 
                   <td className="px-4 py-4 align-top text-right">
-                    <div className="h-10 flex items-center justify-end font-semibold text-sm">
+                    <div className="h-10 flex items-center justify-end font-semibold text-sm truncate" title={`${currency} ${item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}>
                       {currency} {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </td>

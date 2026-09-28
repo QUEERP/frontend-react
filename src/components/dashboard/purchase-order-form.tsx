@@ -346,7 +346,7 @@ export function PurchaseOrderForm({
               <div className="p-6 bg-blue-50 dark:bg-blue-500/5 rounded-2xl border border-blue-100 dark:border-blue-500/10 flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600/70 dark:text-blue-400/70">Estimated Total</p>
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{displayCurrency} {summary.total.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-400 truncate max-w-[200px]" title={`${displayCurrency} ${summary.total.toLocaleString()}`}>{displayCurrency} {summary.total.toLocaleString()}</p>
                 </div>
                 <FileText className="size-8 text-blue-200 dark:text-blue-500/20" />
               </div>

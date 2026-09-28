@@ -32,6 +32,7 @@ import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { toast } from 'sonner'
 import { CURRENCIES, Currency } from '@/lib/currencies'
 import { cn } from '@/lib/utils'
+import { CountrySelect } from '@/components/dashboard/country-select'
 
 type VendorFormData = {
   name: string
@@ -49,6 +50,21 @@ type VendorFormData = {
   preferredVendor: boolean
   status: string
   notes: string
+}
+
+const ISO_COUNTRY_MAP: Record<string, any> = {
+  "India": "IN",
+  "United Arab Emirates": "AE",
+  "United States": "US",
+  "United Kingdom": "GB",
+  "Saudi Arabia": "SA",
+  "Canada": "CA",
+  "Australia": "AU",
+  "Singapore": "SG",
+  "Malaysia": "MY",
+  "UAE": "AE",
+  "USA": "US",
+  "UK": "GB"
 }
 
 const COMMON_COUNTRIES = [
@@ -306,21 +322,20 @@ export function VendorForm({
                       <SelectItem value="Freelancer">Freelancer</SelectItem>
                       <SelectItem value="Transporter">Transporter</SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
+                      {!["Supplier", "Manufacturer", "Service Provider", "Contractor", "Freelancer", "Transporter", "Other"].includes(formData.vendorType) && formData.vendorType ? (
+                        <SelectItem value={formData.vendorType}>{formData.vendorType}</SelectItem>
+                      ) : null}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-semibold">Region/Country *</Label>
-                  <Select disabled={submitting} value={formData.country} onValueChange={handleCountryChange}>
-                    <SelectTrigger className="h-11 rounded-xl border-border focus-visible:ring-blue-500 shadow-sm">
-                      <SelectValue placeholder="Select country" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-border shadow-lg max-h-60">
-                      {COMMON_COUNTRIES.map(c => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CountrySelect 
+                    disabled={submitting}
+                    value={formData.country}
+                    onValueChange={handleCountryChange}
+                    className="h-11 rounded-xl border-border focus-visible:ring-blue-500 shadow-sm bg-card hover:bg-card"
+                  />
                 </div>
                 <div className="space-y-2 flex flex-col justify-end">
                   <Label className="text-foreground font-semibold mb-2">Currency *</Label>
@@ -408,7 +423,7 @@ export function VendorForm({
                     id="phone"
                     value={formData.phone}
                     onChange={(val) => setFormData(prev => ({ ...prev, phone: val }))}
-                    defaultCountry={formData.country}
+                    defaultCountry={ISO_COUNTRY_MAP[formData.country] || 'US'}
                     required={false}
                     className="h-11"
                   />

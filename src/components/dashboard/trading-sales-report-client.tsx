@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle, Users, Receipt, Wallet, Layers } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { formatCurrency } from '@/lib/utils/currency'
+import { formatAmountOnly } from '@/lib/utils/currency'
 import { getCookie } from '@/lib/utils'
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -306,10 +306,10 @@ export function TradingSalesReportClient() {
   const paymentsCount = data.paymentsList?.length || 0;
 
   const funnelStages = [
-    { name: 'Quotations', count: quotesCount, value: formatCurrency(quotesValue, currency) },
-    { name: 'Sales Orders', count: ordersCount, value: formatCurrency(ordersValue, currency), conversionPercent: quotesCount ? Math.round((ordersCount / quotesCount) * 100) : 0 },
-    { name: 'Invoices', count: invoicesCount, value: formatCurrency(invoicesValue, currency), conversionPercent: ordersCount ? Math.round((invoicesCount / ordersCount) * 100) : 0 },
-    { name: 'Payments', count: paymentsCount, value: formatCurrency(data.totalPaymentsMade, currency), conversionPercent: invoicesCount ? Math.round((paymentsCount / invoicesCount) * 100) : 0 },
+    { name: 'Quotations', count: quotesCount, value: formatAmountOnly(data.quotationsList?.reduce((acc: number, curr: any) => acc + (curr.totalAmount || 0), 0) || 0) },
+    { name: 'Sales Orders', count: ordersCount, value: formatAmountOnly(data.salesOrdersList?.reduce((acc: number, curr: any) => acc + (curr.totalAmount || 0), 0) || 0), conversionPercent: quotesCount ? Math.round((ordersCount / quotesCount) * 100) : 0 },
+    { name: 'Invoices', count: invoicesCount, value: formatAmountOnly(data.invoicesList?.reduce((acc: number, curr: any) => acc + (curr.totalAmount || 0), 0) || 0), conversionPercent: ordersCount ? Math.round((invoicesCount / ordersCount) * 100) : 0 },
+    { name: 'Payments', count: paymentsCount, value: formatAmountOnly(data.totalPaymentsMade || 0), conversionPercent: invoicesCount ? Math.round((paymentsCount / invoicesCount) * 100) : 0 },
   ];
 
   const returnsCount = data.returnsList?.length || 0;
@@ -318,9 +318,9 @@ export function TradingSalesReportClient() {
   const recurringValue = data.recurringList?.reduce((a, c) => a + (c.grandTotal || 0), 0) || 0;
 
   const funnelBranches = [
-    { name: 'Credit Notes', count: data.creditNotesList?.length || 0, value: formatCurrency(data.totalCreditNotes, currency), note: 'Adjustments applied' },
-    { name: 'Returns', count: returnsCount, value: formatCurrency(returnsValue, currency), note: 'Goods returned' },
-    { name: 'Recurring', count: recurringCount, value: formatCurrency(recurringValue, currency), note: 'Active profiles' }
+    { name: 'Credit Notes', count: data.creditNotesList?.length || 0, value: formatAmountOnly(data.creditNotesList?.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0) || 0), note: 'Adjustments applied' },
+    { name: 'Returns', count: returnsCount, value: formatAmountOnly(data.returnsList?.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0) || 0), note: 'Goods returned' },
+    { name: 'Recurring', count: recurringCount, value: formatAmountOnly(data.recurringList?.reduce((acc: number, curr: any) => acc + (curr.totalAmount || 0), 0) || 0), note: 'Active profiles' }
   ];
 
   return (
@@ -365,7 +365,7 @@ export function TradingSalesReportClient() {
         
         <KpiCard 
           title="Total Payments" 
-          value={formatCurrency(data.totalPaymentsMade, currency)} 
+          value={formatAmountOnly(data?.totalPaymentsMade || 0)} 
           subtext="All payments received" 
           icon={Wallet} 
           colorClass="border-emerald-600" 
@@ -384,7 +384,7 @@ export function TradingSalesReportClient() {
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center">
               <span className="text-xs font-semibold text-muted-foreground">Allocated</span>
-              <span className="text-sm font-bold text-foreground">{formatCurrency(data.paymentsAllocated, currency)}</span>
+              <span className="text-sm font-bold text-foreground">{formatAmountOnly(data?.paymentsAllocated || 0)}</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-1.5 dark:bg-slate-800">
               <div 
@@ -394,14 +394,14 @@ export function TradingSalesReportClient() {
             </div>
             <div className="flex justify-between items-center mt-1">
               <span className="text-xs font-semibold text-muted-foreground">Remaining</span>
-              <span className="text-sm font-bold text-rose-600">{formatCurrency(data.paymentsRemaining, currency)}</span>
+              <span className="text-sm font-bold text-rose-600">{formatAmountOnly(data?.paymentsRemaining || 0)}</span>
             </div>
           </div>
         </KpiCard>
         
         <KpiCard 
           title="Credit Notes" 
-          value={formatCurrency(data.totalCreditNotes, currency)} 
+          value={formatAmountOnly(data?.totalCreditNotes || 0)} 
           subtext="Total issued credits" 
           icon={Receipt} 
           colorClass="border-purple-600" 
@@ -463,8 +463,8 @@ export function TradingSalesReportClient() {
                           <TableCell className="text-slate-600">{payment.customer?.company || '-'}</TableCell>
                           <TableCell className="text-slate-600">{payment.project?.projectName || '-'}</TableCell>
                           <TableCell className="text-slate-600">{payment.paymentMode}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(payment.amount, currency)}</TableCell>
-                          <TableCell className="text-right text-emerald-600 font-medium">{formatCurrency(payment.amountAllocated, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(payment.amount)} {payment.currency || 'AED'}</TableCell>
+                          <TableCell className="text-right text-emerald-600 font-medium">{formatAmountOnly(payment.amountAllocated)} {payment.currency || 'AED'}</TableCell>
                           <TableCell>
                             <StatusPill status={payment.status} />
                           </TableCell>
@@ -498,9 +498,9 @@ export function TradingSalesReportClient() {
                       data.customersList.map((customer) => (
                         <TableRow key={customer.id} className="hover:bg-slate-50/80 transition-colors">
                           <TableCell className="font-medium text-slate-900">{customer.company}</TableCell>
-                          <TableCell className="text-right text-slate-900">{formatCurrency(customer.totalInvoiced || 0, currency)}</TableCell>
-                          <TableCell className="text-right text-emerald-600">{formatCurrency(customer.totalPaid || 0, currency)}</TableCell>
-                          <TableCell className="text-right text-rose-600">{formatCurrency(customer.outstanding || 0, currency)}</TableCell>
+                          <TableCell className="text-right text-slate-900">{formatAmountOnly(customer.totalInvoiced)}</TableCell>
+                          <TableCell className="text-right text-emerald-600">{formatAmountOnly(customer.totalPaid)}</TableCell>
+                          <TableCell className="text-right text-rose-600">{formatAmountOnly(customer.totalRemaining)}</TableCell>
                           <TableCell className="text-slate-600">{customer.lastPaymentDate ? new Date(customer.lastPaymentDate).toLocaleDateString() : '-'}</TableCell>
                         </TableRow>
                       ))
@@ -535,7 +535,7 @@ export function TradingSalesReportClient() {
                           <TableCell className="text-slate-600">{note.customer?.company || '-'}</TableCell>
                           <TableCell className="text-slate-600">{note.invoice?.invoiceNumber || '-'}</TableCell>
                           <TableCell className="text-slate-600">{note.reason || '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(note.amount, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(note.amount)}</TableCell>
                         </TableRow>
                       ))
                     ) : (
@@ -567,7 +567,7 @@ export function TradingSalesReportClient() {
                         <TableRow key={quote.id} className="hover:bg-slate-50/80 transition-colors">
                           <TableCell className="font-medium text-slate-900">{new Date(quote.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell className="text-slate-600">{quote.customer?.company || '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(quote.totalAmount, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(quote.totalAmount)}</TableCell>
                           <TableCell><StatusPill status={quote.status} /></TableCell>
                           <TableCell className="text-slate-600">{quote.convertedTo || '-'}</TableCell>
                         </TableRow>
@@ -601,7 +601,7 @@ export function TradingSalesReportClient() {
                         <TableRow key={order.id} className="hover:bg-slate-50/80 transition-colors">
                           <TableCell className="font-medium text-slate-900">{new Date(order.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell className="text-slate-600">{order.customer?.company || '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(order.totalAmount, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(order.totalAmount)}</TableCell>
                           <TableCell className="text-slate-600">{order.quotation?.quoteNumber || '-'}</TableCell>
                           <TableCell><StatusPill status={order.status} /></TableCell>
                         </TableRow>
@@ -638,9 +638,9 @@ export function TradingSalesReportClient() {
                           <TableCell className="font-medium text-slate-900">{new Date(invoice.invoiceDate).toLocaleDateString()}</TableCell>
                           <TableCell className="text-slate-600">{invoice.customer?.company || '-'}</TableCell>
                           <TableCell className="text-slate-600">{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(invoice.grandTotal, currency)}</TableCell>
-                          <TableCell className="text-right text-emerald-600">{formatCurrency(invoice.paidAmount, currency)}</TableCell>
-                          <TableCell className="text-right text-rose-600">{formatCurrency(invoice.balance, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(invoice.grandTotal)}</TableCell>
+                          <TableCell className="text-right text-emerald-600">{formatAmountOnly(invoice.paidAmount)}</TableCell>
+                          <TableCell className="text-right text-rose-600">{formatAmountOnly(invoice.balance)}</TableCell>
                           <TableCell><StatusPill status={invoice.status} /></TableCell>
                         </TableRow>
                       ))
@@ -675,7 +675,7 @@ export function TradingSalesReportClient() {
                           <TableCell className="text-slate-600">{ret.customer?.company || '-'}</TableCell>
                           <TableCell className="text-slate-600">{ret.invoice?.invoiceNumber || '-'}</TableCell>
                           <TableCell className="text-slate-600">{ret.reason || '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(ret.totalAmount, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(ret.totalAmount)}</TableCell>
                         </TableRow>
                       ))
                     ) : (
@@ -708,7 +708,7 @@ export function TradingSalesReportClient() {
                           <TableCell className="text-slate-600">{rec.customer?.company || '-'}</TableCell>
                           <TableCell className="text-slate-600 capitalize">{rec.frequency.toLowerCase()}</TableCell>
                           <TableCell className="text-slate-600">{rec.nextInvoiceDate ? new Date(rec.nextInvoiceDate).toLocaleDateString() : '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(rec.grandTotal, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(rec.grandTotal)}</TableCell>
                           <TableCell><StatusPill status={rec.status} /></TableCell>
                         </TableRow>
                       ))

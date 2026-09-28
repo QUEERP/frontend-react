@@ -1,3 +1,4 @@
+import { formatAmountOnly } from '@/lib/utils/currency';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Download, Briefcase, FileText, BarChart3, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card"
@@ -291,7 +292,7 @@ export function ProjectOperationsReportClient({ businessId }: { businessId: stri
         />
         <KpiCard
           title="Total Expenses"
-          value={formatCurrency(data.kpis.totalExpenses, currency)}
+          value={formatAmountOnly(data?.kpis?.totalExpenses || 0)}
           subtext="Expenses this period"
           icon={BarChart3}
           colorClass="border-l-amber-500"
@@ -300,7 +301,7 @@ export function ProjectOperationsReportClient({ businessId }: { businessId: stri
         />
         <KpiCard
           title="Revenue Collected"
-          value={formatCurrency(data.kpis.revenueCollected, currency)}
+          value={formatAmountOnly(data?.kpis?.revenueCollected || 0)}
           subtext="Payments this period"
           icon={BarChart3}
           colorClass="border-l-emerald-500"
@@ -385,8 +386,8 @@ export function ProjectOperationsReportClient({ businessId }: { businessId: stri
                     ) : (data?.lists?.projects || []).map((item: any) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.projectName}</TableCell>
-                        <TableCell>{formatCurrency(item.budget, currency)}</TableCell>
-                        <TableCell>{formatCurrency(item.actualCost, currency)}</TableCell>
+                        <TableCell>{formatAmountOnly(item.budget)}</TableCell>
+                        <TableCell>{formatAmountOnly(item.actualCost)}</TableCell>
                         <TableCell>{item.profitability?.toFixed(1)}%</TableCell>
                         <TableCell><StatusPill status={item.status} /></TableCell>
                       </TableRow>
@@ -539,7 +540,7 @@ export function ProjectOperationsReportClient({ businessId }: { businessId: stri
                         <TableCell>{item.date ? format(new Date(item.date), 'MMM dd, yyyy') : '-'}</TableCell>
                         <TableCell>{item.project?.projectName}</TableCell>
                         <TableCell>{item.category}</TableCell>
-                        <TableCell>{formatCurrency(item.amount, currency)}</TableCell>
+                        <TableCell>{formatAmountOnly(item.amount)}</TableCell>
                         <TableCell><StatusPill status={item.status} /></TableCell>
                       </TableRow>
                     ))}
@@ -569,7 +570,7 @@ export function ProjectOperationsReportClient({ businessId }: { businessId: stri
                       <TableRow key={item.id}>
                         <TableCell>{item.invoiceDate ? format(new Date(item.invoiceDate), 'MMM dd, yyyy') : '-'}</TableCell>
                         <TableCell>{item.project?.projectName}</TableCell>
-                        <TableCell>{formatCurrency(item.grandTotal, currency)}</TableCell>
+                        <TableCell>{formatAmountOnly(item.grandTotal)}</TableCell>
                         <TableCell><StatusPill status={item.status} /></TableCell>
                       </TableRow>
                     ))}

@@ -116,9 +116,9 @@ export default function NotesPage() {
         fetch(`${API_ROOT}/customers`, { headers }),
       ])
       
-      if (leadsRes.ok) setLeads((await leadsRes.json()).leads || [])
-      if (dealsRes.ok) setDeals((await dealsRes.json()).deals || [])
-      if (customersRes.ok) setCustomers((await customersRes.json()).customers || [])
+      if (leadsRes.ok) setLeads((await leadsRes.json()).data || [])
+      if (dealsRes.ok) setDeals((await dealsRes.json()).data || [])
+      if (customersRes.ok) setCustomers((await customersRes.json()).data || [])
     } catch (error) {
       console.error('Relations loading failed:', error)
     }
