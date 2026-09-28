@@ -423,7 +423,7 @@ export function VendorForm({
                     id="phone"
                     value={formData.phone}
                     onChange={(val) => setFormData(prev => ({ ...prev, phone: val }))}
-                    defaultCountry={ISO_COUNTRY_MAP[formData.country] || 'US'}
+                    defaultCountry={formData.country?.trim() || 'US'}
                     required={false}
                     className="h-11"
                   />
