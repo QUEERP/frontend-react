@@ -102,4 +102,75 @@ export const recurringInvoicesAPI = {
 
     return payload
   },
+
+  async getProfile(businessId: string, id: string): Promise<{ success: boolean; data: RecurringInvoiceProfile; message?: string }> {
+    const token = getCookie('token') || getCookie('accessToken')
+    if (!token) throw new Error('No authentication token found')
+
+    const response = await fetch(`${API_ROOT}/recurring-invoices/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-business-id': businessId,
+      },
+    })
+
+    const payload = await response.json().catch(() => ({}))
+
+    if (!response.ok || !payload?.success) {
+      throw new Error(payload?.message || 'Failed to fetch recurring invoice profile')
+    }
+
+    return payload
+  },
+
+  async updateProfile(
+    businessId: string,
+    id: string,
+    data: any
+  ): Promise<{ success: boolean; data?: any; message?: string }> {
+    const token = getCookie('token') || getCookie('accessToken')
+    if (!token) throw new Error('No authentication token found')
+
+    const response = await fetch(`${API_ROOT}/recurring-invoices/${id}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'x-business-id': businessId,
+      },
+      body: JSON.stringify(data),
+    })
+
+    const payload = await response.json().catch(() => ({}))
+
+    if (!response.ok || !payload?.success) {
+      throw new Error(payload?.message || 'Failed to update recurring invoice profile')
+    }
+
+    return payload
+  },
+
+  async deleteProfile(
+    businessId: string,
+    id: string
+  ): Promise<{ success: boolean; message?: string }> {
+    const token = getCookie('token') || getCookie('accessToken')
+    if (!token) throw new Error('No authentication token found')
+
+    const response = await fetch(`${API_ROOT}/recurring-invoices/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-business-id': businessId,
+      },
+    })
+
+    const payload = await response.json().catch(() => ({}))
+
+    if (!response.ok || !payload?.success) {
+      throw new Error(payload?.message || 'Failed to delete recurring invoice profile')
+    }
+
+    return payload
+  },
 }

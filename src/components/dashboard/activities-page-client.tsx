@@ -102,8 +102,8 @@ export default function ActivitiesPageClient() {
       }
 
       const data = await response.json();
-      if (data.success && Array.isArray(data.activities)) {
-        setActivities(data.activities);
+      if (data.success && Array.isArray(data.data)) {
+        setActivities(data.data);
       } else {
         setActivities([]);
       }

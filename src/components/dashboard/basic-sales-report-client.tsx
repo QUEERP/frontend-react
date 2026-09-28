@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle, Users, CreditCard, Receipt, Wallet, Layers, Download, FileText } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { formatCurrency } from '@/lib/utils/currency'
+import { formatAmountOnly } from '@/lib/utils/currency'
 import { getCookie } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -195,7 +195,7 @@ export function BasicSalesReportClient() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-extrabold text-emerald-700">
-              {formatCurrency(data.totalPaymentsMade, currency)}
+              {formatAmountOnly(data.totalPaymentsMade)}
             </div>
             <p className="text-xs text-muted-foreground mt-1 font-medium">All payments received</p>
           </CardContent>
@@ -213,7 +213,7 @@ export function BasicSalesReportClient() {
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-semibold text-muted-foreground">Allocated</span>
-                <span className="text-sm font-bold text-foreground">{formatCurrency(data.paymentsAllocated, currency)}</span>
+                <span className="text-sm font-bold text-foreground">{formatAmountOnly(data.paymentsAllocated)}</span>
               </div>
               <div className="w-full bg-slate-100 rounded-full h-1.5 dark:bg-slate-800">
                 <div 
@@ -223,7 +223,7 @@ export function BasicSalesReportClient() {
               </div>
               <div className="flex justify-between items-center mt-1">
                 <span className="text-xs font-semibold text-muted-foreground">Remaining</span>
-                <span className="text-sm font-bold text-rose-600">{formatCurrency(data.paymentsRemaining, currency)}</span>
+                <span className="text-sm font-bold text-rose-600">{formatAmountOnly(data.paymentsRemaining)}</span>
               </div>
             </div>
           </CardContent>
@@ -239,7 +239,7 @@ export function BasicSalesReportClient() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-extrabold text-foreground">
-              {formatCurrency(data.totalCreditNotes, currency)}
+              {formatAmountOnly(data.totalCreditNotes)}
             </div>
             <p className="text-xs text-muted-foreground mt-1 font-medium">Total issued credits</p>
           </CardContent>
@@ -295,8 +295,8 @@ export function BasicSalesReportClient() {
                               {payment.paymentMode}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(payment.amount, currency)}</TableCell>
-                          <TableCell className="text-right text-emerald-600 font-medium">{formatCurrency(payment.amountAllocated, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(payment.amount)} {payment.currency || 'AED'}</TableCell>
+                          <TableCell className="text-right text-emerald-600 font-medium">{formatAmountOnly(payment.amountAllocated)} {payment.currency || 'AED'}</TableCell>
                           <TableCell>
                             <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
                               payment.status === 'fully_applied' ? 'bg-emerald-100 text-emerald-700' : 
@@ -366,8 +366,8 @@ export function BasicSalesReportClient() {
                         <TableRow key={note.id} className="hover:bg-slate-50/80 transition-colors">
                           <TableCell className="font-medium text-slate-900">{new Date(note.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell className="text-slate-600">{note.customer?.company || '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(note.amount, currency)}</TableCell>
-                          <TableCell className="text-right text-rose-600 font-medium">{formatCurrency(note.remainingAmount, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(note.amount)}</TableCell>
+                          <TableCell className="text-right text-rose-600 font-medium">{formatAmountOnly(note.remainingAmount)}</TableCell>
                           <TableCell>
                             <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
                               note.status === 'APPLIED' ? 'bg-emerald-100 text-emerald-700' : 

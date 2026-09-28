@@ -62,6 +62,14 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { EditableTaxSelect } from '@/components/dashboard/editable-tax-select'
+import { Link, useNavigate } from 'react-router-dom'
+import { MoreHorizontal, FileText, Download, Edit, Trash } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface Props {
   businessId: string
@@ -100,35 +108,10 @@ export function RecurringInvoicesPageClient({ businessId }: Props) {
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState('')
   const [triggerLoading, setTriggerLoading] = React.useState(false)
-  const [createOpen, setCreateOpen] = React.useState(false)
-  const [createLoading, setCreateLoading] = React.useState(false)
   const [customers, setCustomers] = React.useState<Customer[]>([])
 
-  // Create form state
-  const [form, setForm] = React.useState({
-    customerId: '',
-    frequency: 'MONTHLY',
-    startDate: '',
-    endDate: '',
-    description: '',
-    quantity: '1',
-    rate: '',
-    taxPercent: '0',
-  })
 
-  const selectedCustomer = customers.find(c => c.id === form.customerId)
-  const customerCountryName = (selectedCustomer?.country || selectedCustomer?.region || '').trim().toUpperCase()
-  const isCustomerSelected = !!selectedCustomer
-  const isOtherCountry = isCustomerSelected && customerCountryName !== '' && customerCountryName !== 'INDIA' && customerCountryName !== 'UAE' && customerCountryName !== 'UNITED ARAB EMIRATES'
 
-  const getTaxLabel = (c: string) => {
-    const cUp = c.toUpperCase()
-    if (['AUSTRALIA', 'CANADA', 'NEW ZEALAND', 'SINGAPORE', 'MALAYSIA'].includes(cUp)) return 'GST %'
-    if (['UNITED STATES', 'USA', 'US'].includes(cUp)) return 'Sales Tax %'
-    if (['UNITED KINGDOM', 'UK', 'SOUTH AFRICA'].includes(cUp)) return 'VAT %'
-    return 'Tax %'
-  }
-  const taxLabel = isOtherCountry ? getTaxLabel(customerCountryName) : 'Tax %'
 
   const fetchProfiles = React.useCallback(async () => {
     try {
@@ -169,42 +152,52 @@ export function RecurringInvoicesPageClient({ businessId }: Props) {
     }
   }
 
-  const handleCreate = async () => {
-    if (!form.customerId) return toast.error('Customer ID is required')
-    if (!form.startDate) return toast.error('Start date is required')
-    if (!form.rate) return toast.error('Rate is required')
-
-    const qty = parseFloat(form.quantity) || 1
-    const rate = parseFloat(form.rate) || 0
-    const tax = parseFloat(form.taxPercent) || 0
-
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this profile?')) return
     try {
-      setCreateLoading(true)
-      await recurringInvoicesAPI.createProfile(businessId, {
-        customerId: form.customerId,
-        frequency: form.frequency,
-        startDate: form.startDate,
-        endDate: form.endDate || undefined,
-        items: [
-          {
-            description: form.description || 'Recurring Service',
-            quantity: qty,
-            rate,
-            taxPercent: tax,
-            total: qty * rate * (1 + tax / 100),
-          },
-        ],
-      })
-      toast.success('Recurring invoice profile created')
-      setCreateOpen(false)
-      setForm({ customerId: '', frequency: 'MONTHLY', startDate: '', endDate: '', description: '', quantity: '1', rate: '', taxPercent: '0' })
+      await recurringInvoicesAPI.deleteProfile(businessId, id)
+      toast.success('Profile deleted successfully')
       fetchProfiles()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create profile')
-    } finally {
-      setCreateLoading(false)
+      toast.error(err instanceof Error ? err.message : 'Failed to delete profile')
     }
   }
+
+  const handleDownload = async (id: string) => {
+    try {
+      toast.info('Downloading PDF...')
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] || 
+                    document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1]
+                    
+      // Import API_ROOT from config directly if not available, but for now we'll construct it relative to origin or use window.location
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api'
+      
+      const response = await fetch(`${API_URL}/recurring-invoices/${id}/download-pdf`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-business-id': businessId,
+        },
+      })
+      
+      if (!response.ok) throw new Error('Failed to download PDF')
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Recurring-Profile-${id}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      toast.success('PDF downloaded successfully')
+    } catch (error) {
+      console.error(error)
+      toast.error('Failed to download PDF')
+    }
+  }
+
 
   const filtered = React.useMemo(() => {
     const kw = search.trim().toLowerCase()
@@ -281,160 +274,12 @@ export function RecurringInvoicesPageClient({ businessId }: Props) {
               </AlertDialogContent>
             </AlertDialog>
 
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
-                <Button className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm cursor-pointer">
-                  <Plus className="h-4 w-4" />
-                  New Profile
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl p-0 flex flex-col gap-0 max-h-[90vh] overflow-hidden rounded-2xl dark:bg-slate-900 dark:border-slate-800">
-                <div className="px-6 py-5 border-b border-border dark:border-slate-800 bg-muted/50 dark:bg-slate-900/50 shrink-0">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-xl font-bold text-foreground dark:text-slate-100">
-                      <div className="h-8 w-8 rounded-full bg-teal-100 dark:bg-teal-500/20 flex items-center justify-center">
-                        <RefreshCw className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                      </div>
-                      Create Recurring Profile
-                    </DialogTitle>
-                    <DialogDescription className="text-muted-foreground dark:text-slate-400 font-medium ml-10 mt-1">
-                      Set up an automated billing schedule for a customer.
-                    </DialogDescription>
-                  </DialogHeader>
-                </div>
-
-                <div className="overflow-y-auto p-6 custom-scrollbar flex-1 overscroll-contain min-h-0">
-                  <div className="grid gap-6">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="ri-customer" className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Customer ID <span className="text-rose-500">*</span></Label>
-                      <Select value={form.customerId} onValueChange={(v) => setForm(f => ({ ...f, customerId: v }))}>
-                        <SelectTrigger id="ri-customer" className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100">
-                          <SelectValue placeholder="Select Customer" />
-                        </SelectTrigger>
-                        <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">
-                          {customers.map(c => (
-                            <SelectItem key={c.id} value={c.id} className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">
-                              {c.company || c.name || c.id}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="ri-freq" className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Billing Frequency</Label>
-                        <Select
-                          value={form.frequency}
-                          onValueChange={(v) => setForm((f) => ({ ...f, frequency: v }))}
-                        >
-                          <SelectTrigger id="ri-freq" className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">
-                            <SelectItem value="DAILY" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Daily</SelectItem>
-                            <SelectItem value="WEEKLY" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Weekly</SelectItem>
-                            <SelectItem value="MONTHLY" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Monthly</SelectItem>
-                            <SelectItem value="YEARLY" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Yearly</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="ri-tax" className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">{taxLabel}</Label>
-                        {isOtherCountry ? (
-                          <Input
-                            id="ri-tax"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={form.taxPercent}
-                            onChange={(e) => setForm((f) => ({ ...f, taxPercent: e.target.value }))}
-                            className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
-                          />
-                        ) : (
-                          <EditableTaxSelect
-                            value={Number(form.taxPercent || 0)}
-                            onChange={(val) => setForm((f) => ({ ...f, taxPercent: String(val) }))}
-                            options={[0, 5, 12, 15, 18, 28]}
-                            size="default"
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="ri-desc" className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Service Description</Label>
-                      <Input
-                        id="ri-desc"
-                        placeholder="e.g. Monthly SaaS Subscription"
-                        value={form.description}
-                        onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                        className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="ri-qty" className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Quantity</Label>
-                        <Input
-                          id="ri-qty"
-                          type="number"
-                          min="1"
-                          value={form.quantity}
-                          onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
-                          className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="ri-rate" className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Rate (₹) <span className="text-rose-500">*</span></Label>
-                        <Input
-                          id="ri-rate"
-                          type="number"
-                          min="0"
-                          placeholder="0.00"
-                          value={form.rate}
-                          onChange={(e) => setForm((f) => ({ ...f, rate: e.target.value }))}
-                          className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 font-mono"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="ri-start" className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Start Date <span className="text-rose-500">*</span></Label>
-                        <Input
-                          id="ri-start"
-                          type="date"
-                          value={form.startDate}
-                          onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
-                          className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 [&::-webkit-calendar-picker-indicator]:dark:invert"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="ri-end" className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">End Date <span className="text-slate-400 font-normal normal-case tracking-normal">(optional)</span></Label>
-                        <Input
-                          id="ri-end"
-                          type="date"
-                          value={form.endDate}
-                          onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
-                          className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 [&::-webkit-calendar-picker-indicator]:dark:invert"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-6 py-4 border-t border-border dark:border-slate-800 bg-muted/30 dark:bg-slate-900 shrink-0 flex justify-end gap-3">
-                  <Button
-                    variant="outline"
-                    className="rounded-xl h-10 border-border dark:border-slate-700 text-muted-foreground dark:text-slate-300 hover:bg-muted dark:hover:bg-slate-800 font-semibold cursor-pointer"
-                    onClick={() => setCreateOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreate} disabled={createLoading} className="rounded-xl h-10 bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm cursor-pointer">
-                    {createLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Create Profile
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button asChild className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm cursor-pointer">
+              <Link to={`/dashboard/${businessId}/recurring-invoices/create`}>
+                <Plus className="h-4 w-4" />
+                New Profile
+              </Link>
+            </Button>
           </div>
         </header>
       </div>
@@ -531,9 +376,11 @@ export function RecurringInvoicesPageClient({ businessId }: Props) {
             <p className="mt-1 text-sm text-muted-foreground dark:text-slate-400 max-w-sm">
               Create a billing profile to automate invoice generation.
             </p>
-            <Button className="mt-6 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm cursor-pointer" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Create First Profile
+            <Button asChild className="mt-6 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm cursor-pointer">
+              <Link to={`/dashboard/${businessId}/recurring-invoices/create`}>
+                <Plus className="h-4 w-4" />
+                Create First Profile
+              </Link>
             </Button>
           </div>
         ) : (
@@ -548,6 +395,7 @@ export function RecurringInvoicesPageClient({ businessId }: Props) {
                   <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">End Date</TableHead>
                   <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Next Billing</TableHead>
                   <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-6 text-right">Amount</TableHead>
+                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4 text-center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -608,6 +456,37 @@ export function RecurringInvoicesPageClient({ businessId }: Props) {
                         <span className="font-bold text-sm text-foreground dark:text-slate-200">
                           {formatCurrency(profile.grandTotal || 0)}
                         </span>
+                      </TableCell>
+                      <TableCell className="px-4 py-4 text-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-800">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48 dark:bg-slate-900 dark:border-slate-800">
+                            <DropdownMenuItem asChild className="cursor-pointer">
+                              <Link to={`/dashboard/${businessId}/recurring-invoices/${profile.id}`}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                View Details
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild className="cursor-pointer">
+                              <Link to={`/dashboard/${businessId}/recurring-invoices/${profile.id}/edit`}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Profile
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDownload(profile.id)} className="cursor-pointer">
+                              <Download className="h-4 w-4 mr-2" />
+                              Download PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(profile.id)} className="cursor-pointer text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-500/10 focus:text-red-600 dark:focus:text-red-400">
+                              <Trash className="h-4 w-4 mr-2" />
+                              Delete Profile
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   )

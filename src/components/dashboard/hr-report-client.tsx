@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Users, Clock, CalendarDays, Receipt, Timer, CreditCard, Landmark, FileText, Briefcase, Download } from 'lucide-react'
 import { getTradingHRReport, HRReportData } from '@/lib/api/hr-reports'
-import { formatCurrency } from '@/lib/utils/currency'
+import { formatAmountOnly } from '@/lib/utils/currency'
 import { DateRange } from 'react-day-picker'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -305,35 +305,17 @@ export function HRReportClient({ businessId }: { businessId: string }) {
         />
         <KpiCard
           title="Payroll This Period"
-          value={formatCurrency(data?.kpis?.payrollThisPeriod || 0)}
-          icon={Receipt}
-          subtext="Processed/pending"
+          value={formatAmountOnly(data?.kpis?.payrollThisPeriod || 0)}
+          icon={CreditCard}
+          subtext="Total processed"
           colorClass="border-emerald-500"
           bgClass="bg-emerald-100 dark:bg-emerald-900/30"
           textClass="text-emerald-600 dark:text-emerald-400"
         />
-        <KpiCard
-          title="Overtime This Period"
-          value={`${data?.kpis?.overtimeHours || 0} hrs`}
-          icon={Timer}
-          subtext="Total overtime"
-          colorClass="border-purple-500"
-          bgClass="bg-purple-100 dark:bg-purple-900/30"
-          textClass="text-purple-600 dark:text-purple-400"
-        />
-        <KpiCard
-          title="Open Loans/Advances"
-          value={formatCurrency(data?.kpis?.openLoansBalance || 0)}
-          icon={CreditCard}
-          subtext={`${data?.kpis?.openLoansCount || 0} active loans`}
-          colorClass="border-indigo-500"
-          bgClass="bg-indigo-100 dark:bg-indigo-900/30"
-          textClass="text-indigo-600 dark:text-indigo-400"
-        />
       </div>
 
-      {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setPage(1); }} className="space-y-4">
+      <div className="mt-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <TabPills 
             tabs={[
@@ -486,9 +468,9 @@ export function HRReportClient({ businessId }: { businessId: string }) {
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.employeeName}</TableCell>
                         <TableCell>{item.payroll ? `${item.payroll.month}/${item.payroll.year}` : '-'}</TableCell>
-                        <TableCell>{formatCurrency(item.basicSalary, currency)}</TableCell>
-                        <TableCell>{formatCurrency(item.deduction, currency)}</TableCell>
-                        <TableCell>{formatCurrency(item.netSalary, currency)}</TableCell>
+                        <TableCell>{formatAmountOnly(item.basicPay)}</TableCell>
+                        <TableCell>{formatAmountOnly(item.totalDeductions)}</TableCell>
+                        <TableCell>{formatAmountOnly(item.netPay)}</TableCell>
                         <TableCell><StatusPill status={item.status} /></TableCell>
                       </TableRow>
                     ))}
@@ -522,8 +504,8 @@ export function HRReportClient({ businessId }: { businessId: string }) {
                         <TableCell className="font-medium">{item.employee?.name}</TableCell>
                         <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
                         <TableCell>{item.overtimeHours}</TableCell>
-                        <TableCell>{formatCurrency(item.rate, currency)}</TableCell>
-                        <TableCell>{formatCurrency(item.amount, currency)}</TableCell>
+                        <TableCell>{formatAmountOnly(item.overtimeRate)}</TableCell>
+                        <TableCell>{formatAmountOnly(item.totalOvertimePay)}</TableCell>
                         <TableCell><StatusPill status={item.status} /></TableCell>
                       </TableRow>
                     ))}
@@ -555,8 +537,8 @@ export function HRReportClient({ businessId }: { businessId: string }) {
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.employee?.name}</TableCell>
                         <TableCell>Loan</TableCell>
-                        <TableCell>{formatCurrency(item.totalAmount, currency)}</TableCell>
-                        <TableCell>{formatCurrency(item.remainingAmount, currency)}</TableCell>
+                        <TableCell>{formatAmountOnly(item.amount)}</TableCell>
+                        <TableCell>{formatAmountOnly(item.balanceRemaining)}</TableCell>
                         <TableCell><StatusPill status={item.status} /></TableCell>
                       </TableRow>
                     ))}
@@ -661,6 +643,7 @@ export function HRReportClient({ businessId }: { businessId: string }) {
           </TabsContent>
         </div>
       </Tabs>
+    </div>
     </div>
   )
 }

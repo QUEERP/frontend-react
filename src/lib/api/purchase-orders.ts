@@ -170,6 +170,29 @@ export const purchaseOrdersAPI = {
     return response.json()
   },
 
+  async markReceived(
+    businessId: string,
+    orderId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const token = getCookie('token') || getCookie('accessToken')
+    if (!token) throw new Error('No authentication token found')
+
+    const response = await fetch(`${API_ROOT}/purchase-order/${orderId}/receive-all`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-business-id': businessId,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.message || 'Failed to mark purchase order as received')
+    }
+
+    return response.json()
+  },
+
   async deletePurchaseOrder(
     businessId: string,
     orderId: string,

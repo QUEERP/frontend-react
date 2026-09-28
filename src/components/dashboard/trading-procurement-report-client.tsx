@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle, Users, ShoppingCart, Receipt, Wallet, Layers } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { formatCurrency } from '@/lib/utils/currency'
+import { formatAmountOnly } from '@/lib/utils/currency'
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -253,15 +253,15 @@ export function TradingProcurementReportClient() {
   const { kpis, funnel } = data;
 
   const funnelStages = [
-    { name: 'Purchase Requests', count: funnel.requests.count, value: formatCurrency(funnel.requests.value, currency) },
-    { name: 'Purchase Orders', count: funnel.pos.count, value: formatCurrency(funnel.pos.value, currency), conversionPercent: funnel.requests.count ? Math.round((funnel.pos.count / funnel.requests.count) * 100) : 0 },
-    { name: 'Receipts', count: funnel.receipts.count, value: formatCurrency(funnel.receipts.value, currency), conversionPercent: funnel.pos.count ? Math.round((funnel.receipts.count / funnel.pos.count) * 100) : 0 },
-    { name: 'Bills', count: funnel.bills.count, value: formatCurrency(funnel.bills.value, currency), conversionPercent: funnel.receipts.count ? Math.round((funnel.bills.count / funnel.receipts.count) * 100) : 0 },
-    { name: 'Vendor Payments', count: funnel.payments.count, value: formatCurrency(funnel.payments.value, currency), conversionPercent: funnel.bills.count ? Math.round((funnel.payments.count / funnel.bills.count) * 100) : 0 },
+    { name: 'Purchase Requests', count: funnel.requests.count, value: formatAmountOnly(funnel.requests.value) },
+    { name: 'Purchase Orders', count: funnel.pos.count, value: formatAmountOnly(funnel.pos.value), conversionPercent: funnel.requests.count ? Math.round((funnel.pos.count / funnel.requests.count) * 100) : 0 },
+    { name: 'Receipts', count: funnel.receipts.count, value: formatAmountOnly(funnel.receipts.value), conversionPercent: funnel.pos.count ? Math.round((funnel.receipts.count / funnel.pos.count) * 100) : 0 },
+    { name: 'Bills', count: funnel.bills.count, value: formatAmountOnly(funnel.bills.value), conversionPercent: funnel.receipts.count ? Math.round((funnel.bills.count / funnel.receipts.count) * 100) : 0 },
+    { name: 'Vendor Payments', count: funnel.payments.count, value: formatAmountOnly(funnel.payments.value), conversionPercent: funnel.bills.count ? Math.round((funnel.payments.count / funnel.bills.count) * 100) : 0 },
   ];
 
   const funnelBranches = [
-    { name: 'Returns', count: funnel.returns.count, value: formatCurrency(funnel.returns.value, currency), note: 'Linked to Receipt/Bill' }
+    { name: 'Returns', count: funnel.returns.count, value: formatAmountOnly(funnel.returns.value), note: 'Linked to Receipt/Bill' }
   ];
 
   return (
@@ -307,7 +307,7 @@ export function TradingProcurementReportClient() {
         <KpiCard 
           title="Purchase Orders" 
           value={kpis.totalPOs} 
-          subtext={formatCurrency(kpis.totalPOValue, currency)} 
+          subtext={formatAmountOnly(kpis.totalPOValue)} 
           icon={ShoppingCart} 
           colorClass="border-emerald-600" 
           bgClass="bg-emerald-50" 
@@ -317,7 +317,7 @@ export function TradingProcurementReportClient() {
         <KpiCard 
           title="Bills" 
           value={kpis.totalBills} 
-          subtext={formatCurrency(kpis.totalBillsValue, currency)} 
+          subtext={formatAmountOnly(kpis.totalBillsValue)} 
           icon={Receipt} 
           colorClass="border-amber-500" 
           bgClass="bg-amber-50" 
@@ -327,7 +327,7 @@ export function TradingProcurementReportClient() {
         <KpiCard 
           title="Vendor Payments" 
           value={kpis.totalPayments} 
-          subtext={formatCurrency(kpis.totalPaymentsValue, currency)} 
+          subtext={formatAmountOnly(kpis.totalPaymentsValue)} 
           icon={Wallet} 
           colorClass="border-indigo-500" 
           bgClass="bg-indigo-50" 
@@ -336,7 +336,7 @@ export function TradingProcurementReportClient() {
         
         <KpiCard 
           title="Outstanding" 
-          value={formatCurrency(kpis.outstandingValue, currency)} 
+          value={formatAmountOnly(kpis.outstandingValue)} 
           subtext={`${kpis.overdueBillsCount} overdue bills`} 
           icon={Layers} 
           colorClass="border-rose-500" 
@@ -393,9 +393,9 @@ export function TradingProcurementReportClient() {
                       data.vendorsList.map((vendor) => (
                         <TableRow key={vendor.id} className="hover:bg-slate-50/80 transition-colors">
                           <TableCell className="font-medium text-slate-900">{vendor.name}</TableCell>
-                          <TableCell className="text-right text-slate-900">{formatCurrency(vendor.totalBilled || 0, currency)}</TableCell>
-                          <TableCell className="text-right text-emerald-600">{formatCurrency(vendor.totalPaid || 0, currency)}</TableCell>
-                          <TableCell className="text-right text-rose-600">{formatCurrency(vendor.outstanding || 0, currency)}</TableCell>
+                          <TableCell className="text-right text-slate-900">{formatAmountOnly(vendor.totalBilled)}</TableCell>
+                          <TableCell className="text-right text-emerald-600">{formatAmountOnly(vendor.totalPaid)}</TableCell>
+                          <TableCell className="text-right text-rose-600">{formatAmountOnly(vendor.outstanding)}</TableCell>
                           <TableCell className="text-slate-600">{vendor.lastPaymentDate ? new Date(vendor.lastPaymentDate).toLocaleDateString() : '-'}</TableCell>
                         </TableRow>
                       ))
@@ -430,7 +430,7 @@ export function TradingProcurementReportClient() {
                           <TableCell className="font-medium text-slate-900">{new Date(req.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell className="text-slate-600">{req.requestedBy}</TableCell>
                           <TableCell className="text-slate-600 max-w-xs truncate">{req.description}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(req.value, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(req.estimatedAmount)}</TableCell>
                           <TableCell><StatusPill status={req.status} /></TableCell>
                           <TableCell className="text-slate-600">{req.convertedTo || '-'}</TableCell>
                         </TableRow>
@@ -463,7 +463,7 @@ export function TradingProcurementReportClient() {
                         <TableRow key={order.id} className="hover:bg-slate-50/80 transition-colors">
                           <TableCell className="font-medium text-slate-900">{new Date(order.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell className="text-slate-600">{order.vendor?.name || '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(order.totalAmount, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(order.totalAmount)}</TableCell>
                           <TableCell><StatusPill status={order.status} /></TableCell>
                         </TableRow>
                       ))
@@ -533,9 +533,9 @@ export function TradingProcurementReportClient() {
                           <TableCell className="font-medium text-slate-900">{new Date(bill.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell className="text-slate-600">{bill.vendor?.name || '-'}</TableCell>
                           <TableCell className="text-slate-600">{bill.dueDate ? new Date(bill.dueDate).toLocaleDateString() : '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(bill.grandTotal, currency)}</TableCell>
-                          <TableCell className="text-right text-emerald-600">{formatCurrency(bill.amountPaid || (bill.grandTotal - bill.balance), currency)}</TableCell>
-                          <TableCell className="text-right text-rose-600">{formatCurrency(bill.balance, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(bill.totalAmount)}</TableCell>
+                          <TableCell className="text-right text-emerald-600">{formatAmountOnly(bill.amountPaid)}</TableCell>
+                          <TableCell className="text-right text-rose-600">{formatAmountOnly(bill.balanceDue)}</TableCell>
                           <TableCell><StatusPill status={bill.status} /></TableCell>
                         </TableRow>
                       ))
@@ -569,7 +569,7 @@ export function TradingProcurementReportClient() {
                           <TableCell className="font-medium text-slate-900">{new Date(payment.paymentDate).toLocaleDateString()}</TableCell>
                           <TableCell className="text-slate-600">{payment.vendor?.name || '-'}</TableCell>
                           <TableCell className="text-slate-600">{payment.paymentMode}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(payment.amount, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(payment.amount)}</TableCell>
                           <TableCell><StatusPill status={payment.status} /></TableCell>
                         </TableRow>
                       ))
@@ -604,7 +604,7 @@ export function TradingProcurementReportClient() {
                           <TableCell className="text-slate-600">{ret.vendor || '-'}</TableCell>
                           <TableCell className="text-slate-600">{ret.linkedSource || '-'}</TableCell>
                           <TableCell className="text-slate-600">{ret.reason || '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-slate-900">{formatCurrency(ret.amount, currency)}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-900">{formatAmountOnly(ret.amount)}</TableCell>
                         </TableRow>
                       ))
                     ) : (

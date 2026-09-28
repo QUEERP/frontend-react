@@ -521,7 +521,7 @@ export default function BillForm({ billId }: BillFormProps) {
 
               <div className="bg-blue-50 p-4 rounded border-2 border-blue-200">
                 <p className="text-sm text-muted-foreground">Total Amount</p>
-                <p className="text-2xl font-bold">${total.toFixed(2)}</p>
+                <p className="text-2xl font-bold truncate max-w-[200px]" title={`${total.toFixed(2)}`}>${total.toFixed(2)}</p>
               </div>
             </CardContent>
           </Card>
