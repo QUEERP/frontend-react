@@ -107,7 +107,13 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
       if (!response.ok) throw new Error('Failed to fetch activity');
 
       const data = await response.json();
-      if (data.success) setFormData(data.activity);
+      if (data.success) {
+        const act = data.activity;
+        if (act.type) {
+          act.type = act.type.charAt(0).toUpperCase() + act.type.slice(1).toLowerCase();
+        }
+        setFormData(act);
+      }
     } catch (error) {
       console.error('Error fetching activity:', error);
       toast({ title: 'Error', description: 'Failed to load activity details.', variant: 'destructive' });
@@ -178,7 +184,7 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
                   <div className="space-y-1.5">
                     <label className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Type <span className="text-rose-500">*</span></label>
                     <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value as 'Call' | 'Meeting' | 'Task' | 'Email' | 'Note' })}>
-                      <SelectTrigger className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-full rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue /></SelectTrigger>
                       <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">
                         <SelectItem value="Call" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Call</SelectItem>
                         <SelectItem value="Meeting" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Meeting</SelectItem>
@@ -191,7 +197,7 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
                   <div className="space-y-1.5">
                     <label className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Status <span className="text-rose-500">*</span></label>
                     <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value as 'Scheduled' | 'Completed' | 'Cancelled' })}>
-                      <SelectTrigger className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-full rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue /></SelectTrigger>
                       <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">
                         <SelectItem value="Scheduled" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Scheduled</SelectItem>
                         <SelectItem value="Completed" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Completed</SelectItem>
@@ -233,25 +239,26 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
               <div className="p-6 space-y-6">
                 <div className="space-y-1.5">
                   <label className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Lead</label>
-                  <Select value={formData.leadId} onValueChange={(value) => setFormData({ ...formData, leadId: value })}>
-                    <SelectTrigger className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue placeholder="Select a lead" /></SelectTrigger>
-                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">{leads.map((lead) => (<SelectItem key={lead.id} value={lead.id} className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">{lead.name}</SelectItem>))}</SelectContent>
+                  <Select value={formData.leadId || "none"} onValueChange={(value) => setFormData({ ...formData, leadId: value === "none" ? "" : value })}>
+                    <SelectTrigger className="w-full rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue placeholder="Select a lead" /></SelectTrigger>
+                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl"><SelectItem value="none" className="text-muted-foreground italic">— Clear Selection —</SelectItem>{leads.map((lead) => (<SelectItem key={lead.id} value={lead.id} className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">{lead.name}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Deal</label>
-                  <Select value={formData.dealId} onValueChange={(value) => setFormData({ ...formData, dealId: value })}>
-                    <SelectTrigger className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue placeholder="Select a deal" /></SelectTrigger>
-                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">{deals.map((deal) => (<SelectItem key={deal.id} value={deal.id} className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">{deal.name}</SelectItem>))}</SelectContent>
+                  <Select value={formData.dealId || "none"} onValueChange={(value) => setFormData({ ...formData, dealId: value === "none" ? "" : value })}>
+                    <SelectTrigger className="w-full rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue placeholder="Select a deal" /></SelectTrigger>
+                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl"><SelectItem value="none" className="text-muted-foreground italic">— Clear Selection —</SelectItem>{deals.map((deal) => (<SelectItem key={deal.id} value={deal.id} className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">{deal.name}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-muted-foreground dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Customer</label>
-                  <Select value={formData.customerId} onValueChange={(value) => setFormData({ ...formData, customerId: value })}>
-                    <SelectTrigger className="rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue placeholder="Select a customer" /></SelectTrigger>
+                  <Select value={formData.customerId || "none"} onValueChange={(value) => setFormData({ ...formData, customerId: value === "none" ? "" : value })}>
+                    <SelectTrigger className="w-full rounded-xl border-border dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"><SelectValue placeholder="Select a customer" /></SelectTrigger>
                     <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">
+                      <SelectItem value="none" className="text-muted-foreground italic">— Clear Selection —</SelectItem>
                       {customers.map((customer: any) => (
                         <SelectItem key={customer.id} value={customer.id} className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">
                           {customer.company || customer.name || 'Unnamed Customer'}
