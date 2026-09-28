@@ -13,46 +13,65 @@ interface PhoneInputProps {
 }
 
 export function PhoneInput({ value, onChange, defaultCountry, id, className, required }: PhoneInputProps) {
-  const [selectedCountry, setSelectedCountry] = useState('US');
+  const getInitialCountry = () => {
+    if (defaultCountry) {
+      const match = COUNTRY_DIAL_CODES.find(c => 
+        c.country.toLowerCase() === defaultCountry.toLowerCase() || 
+        c.code.toLowerCase() === defaultCountry.toLowerCase()
+      );
+      if (match) return match.code;
+    }
+    return 'US';
+  };
+  const [selectedCountry, setSelectedCountry] = useState(getInitialCountry());
   const [number, setNumber] = useState('');
 
-  // Handle parsing initial value
+  // Synchronize state precisely
   useEffect(() => {
-    if (!value) {
-      setNumber('');
-      return;
-    }
-    
-    let foundCode = false;
-    for (const country of COUNTRY_DIAL_CODES) {
-      if (value.startsWith(country.dialCode)) {
-        setSelectedCountry(country.code);
-        const numPart = value.substring(country.dialCode.length).trim();
-        setNumber(numPart.replace(/^[-\s]+/, ''));
-        foundCode = true;
-        break;
-      }
-    }
-    
-    if (!foundCode) {
-      setNumber(value);
-    }
-  }, [value]);
+    let parsedCode = '';
+    let parsedNumber = '';
+    let hasDialCode = false;
 
-  // Sync with defaultCountry prop
-  useEffect(() => {
-    if (defaultCountry) {
-      const match = COUNTRY_DIAL_CODES.find(c => c.country.toLowerCase() === defaultCountry.toLowerCase());
-      if (match && match.code !== selectedCountry) {
-        setSelectedCountry(match.code);
-        if (number) {
-          onChange(`${match.dialCode} ${number}`);
-        } else if (!value) {
-          // If no value, we just updated the country code visually
+    if (value) {
+      for (const country of COUNTRY_DIAL_CODES) {
+        if (value.startsWith(country.dialCode)) {
+          parsedCode = country.code;
+          parsedNumber = value.substring(country.dialCode.length).trim().replace(/^[-\s]+/, '');
+          hasDialCode = true;
+          break;
         }
       }
     }
-  }, [defaultCountry]);
+
+    if (hasDialCode) {
+      setSelectedCountry(parsedCode);
+      setNumber(parsedNumber);
+    } else {
+      // If no valid dial code, determine the best country code
+      let bestCode = selectedCountry;
+      if (defaultCountry) {
+        const match = COUNTRY_DIAL_CODES.find(c => 
+          c.country.toLowerCase() === defaultCountry.toLowerCase() || 
+          c.code.toLowerCase() === defaultCountry.toLowerCase()
+        );
+        if (match) bestCode = match.code;
+      }
+      
+      setSelectedCountry(bestCode);
+      
+      if (value) {
+        const cleanVal = value.replace(/^[-\s]+/, '');
+        setNumber(cleanVal);
+        const matchCountry = COUNTRY_DIAL_CODES.find(c => c.code === bestCode);
+        if (matchCountry && cleanVal) {
+          // Push the dial code up to the parent so it's not lost
+          setTimeout(() => onChange(`${matchCountry.dialCode} ${cleanVal}`), 0);
+        }
+      } else {
+        setNumber('');
+      }
+    }
+  }, [value, defaultCountry]);
 
   const handleCountryChange = (newCode: string) => {
     setSelectedCountry(newCode);
