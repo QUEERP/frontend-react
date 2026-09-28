@@ -112,6 +112,11 @@ export default function ActivityForm({ activityId }: ActivityFormProps) {
         if (act.type) {
           act.type = act.type.charAt(0).toUpperCase() + act.type.slice(1).toLowerCase();
         }
+        if (act.activityDate) {
+          try {
+            act.activityDate = new Date(act.activityDate).toISOString().split('T')[0];
+          } catch (e) {}
+        }
         setFormData(act);
       }
     } catch (error) {
