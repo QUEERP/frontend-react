@@ -43,10 +43,11 @@ export default function AddPurchaseOrderPage() {
             warehouseId: '',               // User must fill
             description: it.description || '',
             itemType: it.itemType || 'GOODS',
-            hsnSacCode: it.hsnSacCode || '',
+            hsnSacCode: it.product?.taxCode || it.product?.hsnCode || it.hsnSacCode || '',
             quantity: it.quantity || 1,
             price: it.estimatedPrice || 0, // Est. price as starting rate
             taxPercent: 0,                 // User must fill
+            unit: typeof it.product?.unit === 'object' ? it.product.unit?.abbreviation : (it.product?.unit || 'pcs')
           }))
 
           setInitialData({
