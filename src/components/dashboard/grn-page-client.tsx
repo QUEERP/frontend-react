@@ -1,3 +1,5 @@
+import { exportGRNToPDF } from '@/lib/utils/grn-pdf';
+import { FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom';
@@ -291,6 +293,12 @@ export default function GRNPageClient() {
                                 <Eye className="mr-2 h-4 w-4" /> View Details
                               </Link>
                             </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="cursor-pointer font-medium text-foreground dark:text-slate-300 py-2.5"
+                              onClick={() => exportGRNToPDF(g)}
+                            >
+                              <FileDown className="mr-2 h-4 w-4" /> Download PDF
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator className="dark:bg-[#23272c]" />
                             <DropdownMenuItem 
                               className="cursor-pointer font-medium text-rose-600 dark:text-rose-400 focus:text-rose-700 focus:bg-rose-50 dark:focus:bg-rose-500/10 py-2.5"
@@ -337,3 +345,7 @@ export default function GRNPageClient() {
     </div>
   )
 }
+
+
+
+
