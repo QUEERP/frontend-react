@@ -18,7 +18,7 @@ async function apiFetch<T>(url: string, businessId: string, options?: RequestIni
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export const VENDOR_STATUS = ['ACTIVE', 'INACTIVE', 'BLACKLISTED'] as const
-export const PR_STATUS = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'CONVERTED'] as const
+export const PR_STATUS = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'CANCELLED', 'CONVERTED_TO_PO'] as const
 export const PO_STATUS = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'SENT', 'PARTIAL_RECEIVED', 'FULLY_RECEIVED', 'CANCELLED'] as const
 export const BILL_STATUS = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'UNPAID', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'CANCELLED'] as const
 

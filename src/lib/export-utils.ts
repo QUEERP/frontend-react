@@ -82,7 +82,7 @@ const drawFooter = (doc: jsPDF, pageWidth: number) => {
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(148, 163, 184);
-  doc.text('QUE ERP — UAE Tax Engine', 14, y);
+  doc.text('QUE ERP — Statutory Report', 14, y);
   doc.text('CONFIDENTIAL', pageWidth / 2, y, { align: 'center' });
   doc.text('Page 1 of 1', pageWidth - 14, y, { align: 'right' });
 };

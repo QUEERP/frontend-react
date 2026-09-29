@@ -18,7 +18,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   PENDING_APPROVAL: { label: 'Pending', color: 'bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-500/20', icon: Clock },
   APPROVED: { label: 'Approved', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20', icon: CheckCircle },
   REJECTED: { label: 'Rejected', color: 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 border-red-200 dark:border-red-500/20', icon: XCircle },
-  CONVERTED: { label: 'Converted', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-500/10 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20', icon: ArrowRightCircle },
+  CANCELLED: { label: 'Cancelled', color: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700', icon: XCircle },
+  CONVERTED_TO_PO: { label: 'Converted to PO', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-500/10 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20', icon: ArrowRightCircle },
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -32,7 +33,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function WorkflowPipeline({ counts }: { counts: Record<string, number> }) {
-  const steps = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'CONVERTED']
+  const steps = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'CONVERTED_TO_PO']
   return (
     <div className="flex flex-col sm:flex-row items-center gap-3">
       {steps.map((s, i) => {
@@ -278,7 +279,7 @@ export default function PurchaseRequestsPageClient() {
                               Convert to PO
                             </button>
                           )}
-                          {r.status === 'CONVERTED' && (
+                          {r.status === 'CONVERTED_TO_PO' && (
                             <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wide bg-indigo-100 text-indigo-700 border border-indigo-200">
                               <ArrowRightCircle className="h-3.5 w-3.5" />
                               Converted
@@ -299,7 +300,7 @@ export default function PurchaseRequestsPageClient() {
                               <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/purchase-requests/${r.id}/edit`)}>
                                 <Pencil className="h-4 w-4 mr-2" /> Edit Request
                               </DropdownMenuItem>
-                              {r.status !== 'APPROVED' && r.status !== 'CONVERTED' && (
+                              {r.status !== 'APPROVED' && r.status !== 'CONVERTED_TO_PO' && (
                                 <DropdownMenuItem onClick={async () => {
                                   try {
                                     await purchaseRequestsAPI.update(businessId as string, r.id, { status: 'APPROVED' });
@@ -310,7 +311,7 @@ export default function PurchaseRequestsPageClient() {
                                   <CheckCircle className="h-4 w-4 mr-2 text-emerald-600" /> Mark as Approved
                                 </DropdownMenuItem>
                               )}
-                              {r.status !== 'REJECTED' && r.status !== 'CONVERTED' && (
+                              {r.status !== 'REJECTED' && r.status !== 'CONVERTED_TO_PO' && (
                                 <DropdownMenuItem onClick={async () => {
                                   try {
                                     await purchaseRequestsAPI.update(businessId as string, r.id, { status: 'REJECTED' });

@@ -166,7 +166,7 @@ export default function EditPurchaseRequestPageClient() {
       toast({ title: 'Purchase request updated' })
       navigate(`/dashboard/${businessId}/purchase-requests`)
     } catch (err: any) {
-      toast({ title: err?.message || 'Failed to create PR', variant: 'destructive' })
+      toast({ title: err?.message || 'Failed to update PR', variant: 'destructive' })
     } finally { setIsSubmitting(false) }
   }
 

@@ -79,7 +79,7 @@ export default function AddPurchaseOrderPage() {
       // Mark the source PR as CONVERTED
       if (sourcePRId) {
         try {
-          await purchaseRequestsAPI.update(businessId, sourcePRId, { status: 'CONVERTED' as any })
+          await purchaseRequestsAPI.update(businessId, sourcePRId, { status: 'CONVERTED_TO_PO' as any })
         } catch {
           // Non-critical — PO was created, just warn
           toast.error('PO created but failed to mark PR as Converted. Please update it manually.')

@@ -1527,7 +1527,7 @@ export function AppSidebar() {
 
                           {reports?.href && isMenuVisible(bType, 'Accounting & Finance', 'Reports') ? (
                             <SidebarMenuSubItem>
-                              <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/reports')}>
+                              <SidebarMenuSubButton asChild size="sm" isActive={pathname === reports.href || pathname.startsWith(reports.href + '/')}>
                                 <Link to={reports.href} className="flex items-center gap-2">
                                   <FileTextIcon className="size-4" />
                                   <span>Reports</span>
@@ -1940,8 +1940,8 @@ export function AppSidebar() {
                         </SidebarMenuSubItem>
 
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/reports/tax')}>
-                            <Link to={`${baseDashboardPath}/reports/tax`} className="flex items-center gap-2">
+                          <SidebarMenuSubButton asChild size="sm" isActive={pathname === `${baseDashboardPath}/statutory/tax` || pathname.startsWith(`${baseDashboardPath}/statutory/tax/`)}>
+                            <Link to={`${baseDashboardPath}/statutory/tax`} className="flex items-center gap-2">
                               <BarChart3 className="size-4" />
                               <span>Tax Reports</span>
                             </Link>
@@ -1949,36 +1949,31 @@ export function AppSidebar() {
                         </SidebarMenuSubItem>
 
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/reports/currency')}>
-                            <Link to={`${baseDashboardPath}/reports/currency`} className="flex items-center gap-2">
+                          <SidebarMenuSubButton asChild size="sm" isActive={pathname === `${baseDashboardPath}/statutory/currency` || pathname.startsWith(`${baseDashboardPath}/statutory/currency/`)}>
+                            <Link to={`${baseDashboardPath}/statutory/currency`} className="flex items-center gap-2">
                               <DollarSign className="size-4" />
                               <span>Currency Reports</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
 
-                        <Collapsible open={isStatutoryTaxOpen} onOpenChange={setIsStatutoryTaxOpen} className="px-2">
-                          <CollapsibleTrigger asChild>
-                            <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                              <span>Statutory Reports</span>
-                              <ChevronDownIcon className={`size-3 transition-transform ${isStatutoryTaxOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                              {statutoryReportsList.map((report) => (
-                                <SidebarMenuSubItem key={report.code}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === `${baseDashboardPath}/reports/statutory/${report.code}` || pathname.startsWith(`${baseDashboardPath}/reports/statutory/${report.code}/`)}>
-                                    <Link to={`${baseDashboardPath}/reports/statutory/${report.code}`} className="flex items-center gap-2">
-                                      <FileTextIcon className="size-4" />
-                                      <span>{report.name}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </Collapsible>
+                        {/* Statutory Reports List */}
+                        <div className="pt-2 pb-1">
+                          <div className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Returns
+                          </div>
+                        </div>
+                        {statutoryReportsList.map((report) => (
+                          <SidebarMenuSubItem key={report.code}>
+                            <SidebarMenuSubButton asChild size="sm" isActive={pathname === `${baseDashboardPath}/statutory/returns/${report.code}` || pathname.startsWith(`${baseDashboardPath}/statutory/returns/${report.code}/`)}>
+                              <Link to={`${baseDashboardPath}/statutory/returns/${report.code}`} className="flex items-center gap-2">
+                                <FileTextIcon className="size-4" />
+                                <span>{report.name}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+
 
                         <Collapsible open={isStatutoryRegistersOpen} onOpenChange={setIsStatutoryRegistersOpen} className="px-2">
                           <CollapsibleTrigger asChild>
