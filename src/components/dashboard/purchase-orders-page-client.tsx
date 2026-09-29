@@ -1,3 +1,5 @@
+import { exportPurchaseOrderToPDF } from '@/lib/utils/purchase-order-pdf';
+import { FileDown } from 'lucide-react';
 import * as React from 'react'
 import {  useNavigate  } from 'react-router-dom';
 import { purchaseOrdersAPI, PurchaseOrder } from '@/lib/api/purchase-orders'
@@ -365,6 +367,9 @@ export function PurchaseOrdersPageClient({ businessId }: PurchaseOrdersPageClien
                           <DropdownMenuItem className="cursor-pointer font-medium text-foreground dark:text-slate-300 py-2.5" onClick={() => navigate(`/dashboard/${businessId}/purchase-orders/${order.id}/edit`)}>
                             <Pencil className="mr-2 h-4 w-4" /> Edit Order
                           </DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer font-medium text-blue-600 dark:text-blue-400 py-2.5" onClick={() => exportPurchaseOrderToPDF(order)}>
+                            <FileDown className="mr-2 h-4 w-4" /> Download PDF
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator className="dark:bg-[#23272c]" />
                           <DropdownMenuItem className="cursor-pointer font-medium text-rose-600 dark:text-rose-400 focus:text-rose-700 focus:bg-rose-50 dark:focus:bg-rose-500/10 py-2.5" onClick={() => handleDelete(order.id)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete Order
@@ -382,4 +387,8 @@ export function PurchaseOrdersPageClient({ businessId }: PurchaseOrdersPageClien
     </div>
   )
 }
+
+
+
+
 
