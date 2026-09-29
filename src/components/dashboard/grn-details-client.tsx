@@ -1,3 +1,5 @@
+import { exportGRNToPDF } from '@/lib/utils/grn-pdf';
+import { FileDown } from 'lucide-react';
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, Package, Printer } from 'lucide-react'
@@ -70,6 +72,9 @@ export function GRNDetailsClient({ businessId, grnId }: { businessId: string; gr
         <div className="flex items-center gap-3">
           <Button variant="outline" className="gap-2" onClick={() => window.print()}>
             <Printer className="h-4 w-4" /> Print
+          </Button>
+          <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => exportGRNToPDF(grn)}>
+            <FileDown className="h-4 w-4" /> Download PDF
           </Button>
         </div>
       </div>
@@ -161,3 +166,4 @@ export function GRNDetailsClient({ businessId, grnId }: { businessId: string; gr
     </div>
   )
 }
+
