@@ -1,12 +1,14 @@
 import { toast } from 'sonner';
 import React, { useState } from 'react'
+import { useBusinessData } from '@/components/dashboard/business-data-provider'
+import { getTaxEngineConfig } from '@/lib/tax-engine'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { motion } from 'framer-motion'
 import { useToast } from '@/components/ui/use-toast'
-import { SearchIcon, DownloadIcon, PrinterIcon, Trash2Icon, EyeIcon, FileTextIcon, FileSpreadsheetIcon } from 'lucide-react'
+import { SearchIcon, DownloadIcon, PrinterIcon, Trash2Icon, EyeIcon, FileTextIcon, FileSpreadsheetIcon, AlertCircleIcon } from 'lucide-react'
 import { exportToExcel, exportToPdf, printPage } from '@/lib/export-utils'
 
 
@@ -45,13 +47,28 @@ export default function StatutoryGeneratedClient() {
     toast({ title: 'Report deleted', description: 'The generated report has been removed.' })
   }
 
+  const { business } = useBusinessData()
+  const taxEngine = getTaxEngineConfig(business?.country)
+
+  if (!taxEngine) {
+    return (
+      <div className="p-4 sm:p-8 max-w-7xl mx-auto flex items-center justify-center min-h-[50vh]">
+        <div className="text-center space-y-4 max-w-md">
+          <AlertCircleIcon className="size-12 text-amber-500 mx-auto" />
+          <h2 className="text-xl font-bold">Country Not Configured</h2>
+          <p className="text-muted-foreground">Please configure your business country in Settings to view statutory reports.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 bg-muted/50 dark:bg-slate-900/50 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Generated Reports</h1>
-          <p className="text-muted-foreground mt-1">{reports.length} reports available — UAE Tax Engine</p>
+          <p className="text-muted-foreground mt-1">{reports.length} reports available — {taxEngine.name}</p>
         </div>
       </div>
 
@@ -59,9 +76,9 @@ export default function StatutoryGeneratedClient() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: 'Total Reports', value: reports.length, color: 'text-foreground dark:text-slate-100' },
-          { label: 'VAT Returns', value: reports.filter(r => r.type === 'VAT_RETURN').length, color: 'text-indigo-600' },
+          { label: taxEngine.returnLabel, value: reports.filter(r => r.type === taxEngine.returnType).length, color: 'text-indigo-600' },
           { label: 'Registers', value: reports.filter(r => r.type.includes('REGISTER')).length, color: 'text-blue-600' },
-          { label: 'Summaries', value: reports.filter(r => r.type === 'VAT_SUMMARY').length, color: 'text-amber-600' },
+          { label: taxEngine.summaryLabel, value: reports.filter(r => r.type === taxEngine.summaryType).length, color: 'text-amber-600' },
         ].map((s, i) => (
           <Card key={i} className="border-none shadow-sm bg-card dark:bg-slate-900">
             <CardContent className="p-5">

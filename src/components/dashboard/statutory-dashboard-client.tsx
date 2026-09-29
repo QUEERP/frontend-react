@@ -236,7 +236,7 @@ export default function StatutoryDashboardClient() {
                                         <CardFooter className="pt-0 pb-4 px-4 gap-2 border-t border-slate-100 dark:border-slate-800 mt-4">
                                             <Button 
                                                 className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700" 
-                                                onClick={() => navigate(`/dashboard/${businessId}/reports/statutory/${report.code}`)}
+                                                onClick={() => navigate(`/dashboard/${businessId}/statutory/returns/${report.code}`)}
                                             >
                                                 Generate Return
                                             </Button>

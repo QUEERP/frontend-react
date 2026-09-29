@@ -42,9 +42,9 @@ export default function StatutorySalesRegisterClient() {
       taxId: inv.customer?.taxId || '-',
       country: inv.customer?.country || business?.country || 'N/A',
       currency: curr,
-      subtotal: Number(inv.subTotal || 0),
+      subtotal: Number(inv.subtotal || inv.subTotal || 0),
       taxPct: 5,
-      taxAmt: Number(inv.taxAmount || 0),
+      taxAmt: Number(inv.totalTax || inv.taxAmount || 0),
       total: Number(inv.grandTotal || 0),
       status: normalizeStatus(inv.status)
     }))

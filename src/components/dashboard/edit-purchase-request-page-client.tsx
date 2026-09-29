@@ -52,12 +52,26 @@ export default function EditPurchaseRequestPageClient() {
         const vData = (vRes.value as any).vendors || (vRes.value as any).data || []
         setVendors(vData)
       }
+      let fetchedProducts: Product[] = []
       if (pRes.status === 'fulfilled') {
-        const productData = (pRes.value as any).products || (pRes.value as any).data || []
-        setProducts(productData)
+        fetchedProducts = (pRes.value as any).products || (pRes.value as any).data || []
       }
+      
       if (prRes.status === 'fulfilled') {
         const pr = (prRes.value as any).request || (prRes.value as any).data
+        
+        // Merge missing products from PR items into the products list to guarantee they render correctly in the dropdown
+        if (pr?.items) {
+          const itemProducts = pr.items.map((i: any) => i.product).filter(Boolean)
+          itemProducts.forEach((ip: any) => {
+            if (!fetchedProducts.find(p => p.id === ip.id)) {
+              fetchedProducts.push(ip)
+            }
+          })
+        }
+        
+        setProducts(fetchedProducts)
+
         if (pr) {
           setTitle(pr.title || '')
           setVendorId(pr.vendorId || '')
@@ -152,7 +166,7 @@ export default function EditPurchaseRequestPageClient() {
       toast({ title: 'Purchase request updated' })
       navigate(`/dashboard/${businessId}/purchase-requests`)
     } catch (err: any) {
-      toast({ title: err?.message || 'Failed to create PR', variant: 'destructive' })
+      toast({ title: err?.message || 'Failed to update PR', variant: 'destructive' })
     } finally { setIsSubmitting(false) }
   }
 
@@ -427,4 +441,5 @@ export default function EditPurchaseRequestPageClient() {
     </div>
   )
 }
+
 

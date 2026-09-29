@@ -112,7 +112,7 @@ export function VendorForm({
       
       if (initialData.vendorType) {
         defaultVendorType = ['Supplier', 'Manufacturer', 'Service Provider', 'Contractor', 'Freelancer', 'Transporter', 'Other']
-          .find(t => t.toLowerCase() === initialData.vendorType?.toLowerCase()) || initialData.vendorType;
+          .find(t => t.toLowerCase() === initialData.vendorType?.trim().toLowerCase()) || initialData.vendorType.trim();
       }
     }
 
@@ -168,7 +168,7 @@ export function VendorForm({
 
       const matchingVendorType = initialData.vendorType ? 
         ['Supplier', 'Manufacturer', 'Service Provider', 'Contractor', 'Freelancer', 'Transporter', 'Other']
-          .find(t => t.toLowerCase() === initialData.vendorType?.toLowerCase()) || initialData.vendorType
+          .find(t => t.toLowerCase() === initialData.vendorType?.trim().toLowerCase()) || initialData.vendorType.trim()
         : '';
 
       setFormData(prev => ({ 
@@ -268,7 +268,17 @@ export function VendorForm({
     setSubmitting(true)
     try {
       const token = getCookie('token') || getCookie('accessToken')
-      const payload = { ...formData }
+      let extractedCountryCode = formData.countryCode;
+      if (formData.phone) {
+        const sortedCodes = [...COUNTRY_DIAL_CODES].sort((a, b) => b.dialCode.length - a.dialCode.length);
+        for (const country of sortedCodes) {
+          if (formData.phone.startsWith(country.dialCode)) {
+            extractedCountryCode = country.dialCode;
+            break;
+          }
+        }
+      }
+      const payload = { ...formData, countryCode: extractedCountryCode, vendorType: formData.vendorType?.trim() }
       
       const method = isEditing ? 'PUT' : 'POST'
       const url = isEditing && vendorId
@@ -603,5 +613,6 @@ export function VendorForm({
     </div>
   )
 }
+
 
 
