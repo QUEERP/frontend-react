@@ -45,22 +45,24 @@ const vendorId = id as string
           throw new Error(data.message || 'Failed to fetch vendor details')
         }
 
+        const vendor = data.data || data.vendor || {};
+        
         setVendorData({
-          name: data.data.name || '',
-          vendorType: data.data.vendorType || 'Supplier',
-          country: data.data.country || '',
-          contactPerson: data.data.contactPerson || '',
-          email: data.data.email || '',
-          countryCode: data.data.countryCode || '+971',
-          phone: data.data.phone || '',
-          taxRegistrationNumber: data.data.taxRegistrationNumber || '',
-          paymentTerms: data.data.paymentTerms || 'Immediate',
-          currency: data.data.currency || '',
-          openingBalance: data.data.openingBalance !== undefined ? String(data.data.openingBalance) : '0',
-          creditLimit: data.data.creditLimit !== null ? String(data.data.creditLimit) : '',
-          preferredVendor: data.data.preferredVendor || false,
-          status: data.data.status || 'ACTIVE',
-          notes: data.data.notes || '',
+          name: vendor.name || '',
+          vendorType: vendor.vendorType || '',
+          country: vendor.country || '',
+          contactPerson: vendor.contactPerson || '',
+          email: vendor.email || '',
+          countryCode: vendor.countryCode || '+971',
+          phone: vendor.phone || '',
+          taxRegistrationNumber: vendor.taxRegistrationNumber || vendor.vatNumber || vendor.taxNumber || '',
+          paymentTerms: vendor.paymentTerms || 'Immediate',
+          currency: vendor.currency || '',
+          openingBalance: vendor.openingBalance !== undefined ? String(vendor.openingBalance) : '0',
+          creditLimit: vendor.creditLimit !== null ? String(vendor.creditLimit) : '',
+          preferredVendor: vendor.preferredVendor || false,
+          status: vendor.status || 'ACTIVE',
+          notes: vendor.notes || '',
         })
       } catch (err: any) {
         setError(err.message)
