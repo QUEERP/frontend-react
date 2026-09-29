@@ -53,7 +53,7 @@ const orderId = id as string
     const response = await purchaseOrdersAPI.updatePurchaseOrder(businessId, orderId, data)
     if (response.success) {
       toast.success('Purchase order updated successfully')
-      navigate(`/dashboard/${businessId}/purchase-orders/${orderId}`)
+      navigate(`/dashboard/${businessId}/purchase-orders`)
     }
   }
 
@@ -68,9 +68,9 @@ const orderId = id as string
   return (
     <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-10 pt-0 sm:px-6 lg:px-8">
       <div className="flex items-center gap-4 py-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate(`/dashboard/${businessId}/purchase-orders/${orderId}`)}>
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/dashboard/${businessId}/purchase-orders`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Purchase Order
+          Back to Purchase Orders
         </Button>
         <div>
           <h1 className="text-2xl font-bold">Edit Purchase Order</h1>

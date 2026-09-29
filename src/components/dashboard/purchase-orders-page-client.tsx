@@ -335,7 +335,20 @@ export function PurchaseOrdersPageClient({ businessId }: PurchaseOrdersPageClien
                       {new Date(order.orderDate).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="py-4 text-sm font-medium text-muted-foreground dark:text-slate-400">
-                      {order.expectedDeliveryDate ? new Date(order.expectedDeliveryDate).toLocaleDateString() : '—'}
+                      <div className="flex items-center justify-between gap-3">
+                        <span>{order.expectedDeliveryDate ? new Date(order.expectedDeliveryDate).toLocaleDateString() : '—'}</span>
+                        {order.status !== 'FULLY_RECEIVED' && order.status !== 'CANCELLED' && order.status !== 'RECEIVED' && order.status !== 'COMPLETED' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 text-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
+                            onClick={(e) => { e.stopPropagation(); handleMarkReceived(order) }}
+                          >
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Received Order
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="py-4 text-right">
                       <DropdownMenu>
@@ -369,3 +382,4 @@ export function PurchaseOrdersPageClient({ businessId }: PurchaseOrdersPageClien
     </div>
   )
 }
+

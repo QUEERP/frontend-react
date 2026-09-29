@@ -177,7 +177,7 @@ export const purchaseOrdersAPI = {
     const token = getCookie('token') || getCookie('accessToken')
     if (!token) throw new Error('No authentication token found')
 
-    const response = await fetch(`${API_ROOT}/purchase-order/${orderId}/receive-all`, {
+    const response = await fetch(`${API_ROOT}/purchase/orders/${orderId}/receive-all`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
