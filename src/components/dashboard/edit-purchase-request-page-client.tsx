@@ -44,8 +44,8 @@ export default function EditPurchaseRequestPageClient() {
     try {
       setIsLoading(true)
       const [vRes, pRes, prRes] = await Promise.allSettled([
-        vendorsAPI.getAll(businessId),
-        productsAPI.getAll(businessId),
+        vendorsAPI.getAll(businessId, { limit: '1000' }),
+        productsAPI.getAll(businessId, { limit: '1000' }),
         requestId ? purchaseRequestsAPI.getById(businessId, requestId) : Promise.reject('No ID')
       ])
       if (vRes.status === 'fulfilled') {

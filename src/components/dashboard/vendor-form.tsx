@@ -33,6 +33,7 @@ import { toast } from 'sonner'
 import { CURRENCIES, Currency } from '@/lib/currencies'
 import { cn } from '@/lib/utils'
 import { CountrySelect } from '@/components/dashboard/country-select'
+import { COUNTRY_DIAL_CODES } from '@/lib/country-codes'
 
 type VendorFormData = {
   name: string
@@ -139,7 +140,23 @@ export function VendorForm({
 
   useEffect(() => {
     if (initialData) {
-      setFormData(prev => ({ ...prev, ...initialData }))
+      let fullCountry = initialData.country;
+      if (!fullCountry && initialData.countryCode) {
+        const match = COUNTRY_DIAL_CODES.find(c => c.dialCode === initialData.countryCode);
+        if (match) fullCountry = match.country;
+      }
+
+      const matchingVendorType = initialData.vendorType ? 
+        ['Supplier', 'Manufacturer', 'Service Provider', 'Contractor', 'Freelancer', 'Transporter', 'Other']
+          .find(t => t.toLowerCase() === initialData.vendorType?.toLowerCase()) || initialData.vendorType
+        : '';
+
+      setFormData(prev => ({ 
+        ...prev, 
+        ...initialData,
+        country: fullCountry || prev.country,
+        vendorType: matchingVendorType || prev.vendorType,
+      }))
     }
   }, [initialData])
 
@@ -566,3 +583,4 @@ export function VendorForm({
     </div>
   )
 }
+
