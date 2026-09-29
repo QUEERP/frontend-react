@@ -48,7 +48,7 @@ interface PurchaseOrdersPageClientProps {
 }
 
 export function PurchaseOrdersPageClient({ businessId }: PurchaseOrdersPageClientProps) {
-  const { currency: defaultCurrency, currencySymbol: defaultSymbol } = useBusinessData()
+  const { business, currency: defaultCurrency, currencySymbol: defaultSymbol } = useBusinessData()
   const navigate = useNavigate()
   const [orders, setOrders] = React.useState<PurchaseOrder[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -367,7 +367,7 @@ export function PurchaseOrdersPageClient({ businessId }: PurchaseOrdersPageClien
                           <DropdownMenuItem className="cursor-pointer font-medium text-foreground dark:text-slate-300 py-2.5" onClick={() => navigate(`/dashboard/${businessId}/purchase-orders/${order.id}/edit`)}>
                             <Pencil className="mr-2 h-4 w-4" /> Edit Order
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer font-medium text-blue-600 dark:text-blue-400 py-2.5" onClick={() => exportPurchaseOrderToPDF(order)}>
+                          <DropdownMenuItem className="cursor-pointer font-medium text-blue-600 dark:text-blue-400 py-2.5" onClick={() => exportPurchaseOrderToPDF(order, business)}>
                             <FileDown className="mr-2 h-4 w-4" /> Download PDF
                           </DropdownMenuItem>
                           <DropdownMenuSeparator className="dark:bg-[#23272c]" />
@@ -387,6 +387,8 @@ export function PurchaseOrdersPageClient({ businessId }: PurchaseOrdersPageClien
     </div>
   )
 }
+
+
 
 
 
