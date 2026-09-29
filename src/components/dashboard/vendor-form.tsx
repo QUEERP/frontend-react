@@ -97,13 +97,29 @@ export function VendorForm({
 
   const [formData, setFormData] = useState<VendorFormData>(() => {
     const isConst = business?.businessType === 'Basic'
+    
+    let defaultCountry = isConst ? 'Canada' : (business?.region || 'United Arab Emirates');
+    let defaultCountryCode = isConst ? '+1' : '+971';
+    let defaultVendorType = '';
+
+    if (initialData) {
+      if (initialData.country) {
+        defaultCountry = initialData.country;
+      } else if (initialData.countryCode) {
+         const match = COUNTRY_DIAL_CODES.find(c => c.dialCode === initialData.countryCode);
+         if (match) defaultCountry = match.country;
+      }
+      
+      if (initialData.vendorType) {
+        defaultVendorType = ['Supplier', 'Manufacturer', 'Service Provider', 'Contractor', 'Freelancer', 'Transporter', 'Other']
+          .find(t => t.toLowerCase() === initialData.vendorType?.toLowerCase()) || initialData.vendorType;
+      }
+    }
+
     return {
       name: '',
-      vendorType: '',
-      country: isConst ? 'Canada' : (business?.region || 'United Arab Emirates'),
       contactPerson: '',
       email: '',
-      countryCode: isConst ? '+1' : '+971',
       phone: '',
       taxRegistrationNumber: '',
       paymentTerms: 'Immediate',
@@ -113,6 +129,10 @@ export function VendorForm({
       preferredVendor: false,
       status: 'ACTIVE',
       notes: '',
+      ...initialData,
+      country: defaultCountry,
+      countryCode: initialData?.countryCode || defaultCountryCode,
+      vendorType: defaultVendorType,
     }
   })
 
@@ -583,4 +603,5 @@ export function VendorForm({
     </div>
   )
 }
+
 
