@@ -239,12 +239,12 @@ export function InventoryItemTable({
                         <div className="flex items-center gap-2 px-1 pt-1">
                           <Badge variant="outline" className={cn(
                             "text-[10px] py-0 h-5 gap-1 font-normal",
-                            item.lowStock ? "text-amber-600 border-amber-200 bg-amber-50" : "text-emerald-600 border-emerald-200 bg-emerald-50"
+                            (item.lowStock && mode !== 'purchase') ? "text-amber-600 border-amber-200 bg-amber-50" : "text-emerald-600 border-emerald-200 bg-emerald-50"
                           )}>
                             <Package className="size-3" />
                             {item.availableStock} available
                           </Badge>
-                          {item.lowStock && (
+                          {item.lowStock && mode !== 'purchase' && (
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
