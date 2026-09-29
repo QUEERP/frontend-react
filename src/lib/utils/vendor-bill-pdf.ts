@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export const exportPurchaseOrderToPDF = (order: any, business: any = null) => {
+export const exportVendorBillToPDF = (bill: any, business: any = null) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
 
@@ -17,12 +17,12 @@ export const exportPurchaseOrderToPDF = (order: any, business: any = null) => {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
-  doc.text('PURCHASE ORDER', 14, 25);
+  doc.text('VENDOR BILL', 14, 25);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`PO Number: ${order.poNumber}`, pageWidth - 14, 20, { align: 'right' });
-  doc.text(`Date: ${new Date(order.orderDate).toLocaleDateString()}`, pageWidth - 14, 28, { align: 'right' });
+  doc.text(`Bill Number: ${bill.billNumber}`, pageWidth - 14, 20, { align: 'right' });
+  doc.text(`Date: ${new Date(bill.billDate).toLocaleDateString()}`, pageWidth - 14, 28, { align: 'right' });
 
   // Reset Text Color
   doc.setTextColor(...textColor);
@@ -34,7 +34,7 @@ export const exportPurchaseOrderToPDF = (order: any, business: any = null) => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...mutedColor);
-  doc.text('FROM:', 14, blockY);
+  doc.text('BILLED TO:', 14, blockY);
   doc.setTextColor(...textColor);
   doc.setFontSize(12);
   doc.text(business?.name || 'Our Business', 14, blockY + 6);
@@ -64,14 +64,14 @@ export const exportPurchaseOrderToPDF = (order: any, business: any = null) => {
   doc.text('VENDOR DETAILS:', pageWidth / 2, blockY);
   doc.setTextColor(...textColor);
   doc.setFontSize(12);
-  doc.text(order.vendor?.name || '—', pageWidth / 2, blockY + 6);
+  doc.text(bill.vendor?.name || '—', pageWidth / 2, blockY + 6);
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...mutedColor);
   let vendorY = blockY + 12;
-  if (order.vendor?.email) { doc.text(order.vendor.email, pageWidth / 2, vendorY); vendorY += 5; }
-  if (order.vendor?.phone) { doc.text(order.vendor.phone, pageWidth / 2, vendorY); vendorY += 5; }
+  if (bill.vendor?.email) { doc.text(bill.vendor.email, pageWidth / 2, vendorY); vendorY += 5; }
+  if (bill.vendor?.phone) { doc.text(bill.vendor.phone, pageWidth / 2, vendorY); vendorY += 5; }
 
   // Other Details (Status, Expected Delivery)
   let detailsY = 95;
@@ -80,20 +80,20 @@ export const exportPurchaseOrderToPDF = (order: any, business: any = null) => {
   doc.setTextColor(...textColor);
   doc.text(`Status:`, 14, detailsY);
   doc.setFont('helvetica', 'normal');
-  doc.text(`${order.status}`, 30, detailsY);
+  doc.text(`${bill.status}`, 30, detailsY);
 
-  if (order.expectedDeliveryDate) {
+  if (bill.dueDate) {
     doc.setFont('helvetica', 'bold');
-    doc.text(`Expected Delivery:`, pageWidth / 2, detailsY);
+    doc.text(`Due Date:`, pageWidth / 2, detailsY);
     doc.setFont('helvetica', 'normal');
-    doc.text(`${new Date(order.expectedDeliveryDate).toLocaleDateString()}`, (pageWidth / 2) + 35, detailsY);
+    doc.text(`${new Date(bill.dueDate).toLocaleDateString()}`, (pageWidth / 2) + 25, detailsY);
   }
 
   // Currency Handling (use code instead of symbol for jsPDF compatibility)
-  const ccy = order.currency || order.currencyCode || 'INR';
+  const ccy = bill.currency || bill.currencyCode || 'INR';
 
   // Table
-  const tableData = (order.items || []).map((item: any, index: number) => [
+  const tableData = (bill.items || []).map((item: any, index: number) => [
     index + 1,
     item.product?.name || item.description || 'Item',
     item.quantity,
@@ -130,18 +130,18 @@ export const exportPurchaseOrderToPDF = (order: any, business: any = null) => {
   doc.setTextColor(...textColor);
   
   doc.text(`Subtotal:`, totalsX, currentY);
-  doc.text(`${ccy} ${parseFloat(order.subtotal || 0).toFixed(2)}`, pageWidth - 14, currentY, { align: 'right' });
+  doc.text(`${ccy} ${parseFloat(bill.subtotal || 0).toFixed(2)}`, pageWidth - 14, currentY, { align: 'right' });
   currentY += 7;
 
-  if (order.tax) {
+  if (bill.tax) {
     doc.text(`Tax:`, totalsX, currentY);
-    doc.text(`${ccy} ${parseFloat(order.tax).toFixed(2)}`, pageWidth - 14, currentY, { align: 'right' });
+    doc.text(`${ccy} ${parseFloat(bill.tax).toFixed(2)}`, pageWidth - 14, currentY, { align: 'right' });
     currentY += 7;
   }
 
-  if (order.discount) {
+  if (bill.discount) {
     doc.text(`Discount:`, totalsX, currentY);
-    doc.text(`-${ccy} ${parseFloat(order.discount).toFixed(2)}`, pageWidth - 14, currentY, { align: 'right' });
+    doc.text(`-${ccy} ${parseFloat(bill.discount).toFixed(2)}`, pageWidth - 14, currentY, { align: 'right' });
     currentY += 7;
   }
 
@@ -153,10 +153,24 @@ export const exportPurchaseOrderToPDF = (order: any, business: any = null) => {
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text(`Total:`, totalsX, currentY);
-  doc.text(`${ccy} ${parseFloat(order.totalAmount || 0).toFixed(2)}`, pageWidth - 14, currentY, { align: 'right' });
+  doc.text(`${ccy} ${parseFloat(bill.totalAmount || 0).toFixed(2)}`, pageWidth - 14, currentY, { align: 'right' });
+
+  // Outstanding Box Background
+  if (bill.outstandingAmount !== undefined) {
+    currentY += 12;
+    doc.setFillColor(254, 242, 242); // very light red
+    doc.rect(totalsX - 10, currentY - 2, 86, 12, 'F');
+
+    currentY += 6;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(220, 38, 38); // red for outstanding
+    doc.text(`Outstanding:`, totalsX, currentY);
+    doc.text(`${ccy} ${parseFloat(bill.outstandingAmount || 0).toFixed(2)}`, pageWidth - 14, currentY, { align: 'right' });
+  }
 
   // Notes
-  if (order.notes) {
+  if (bill.notes) {
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...textColor);
@@ -165,7 +179,7 @@ export const exportPurchaseOrderToPDF = (order: any, business: any = null) => {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...mutedColor);
-    const splitNotes = doc.splitTextToSize(order.notes, pageWidth / 2);
+    const splitNotes = doc.splitTextToSize(bill.notes, pageWidth / 2);
     doc.text(splitNotes, 14, finalY + 6);
   }
 
@@ -177,5 +191,5 @@ export const exportPurchaseOrderToPDF = (order: any, business: any = null) => {
   doc.setTextColor(...mutedColor);
   doc.text('Thank you for your business.', pageWidth / 2, footerY + 5, { align: 'center' });
 
-  doc.save(`PO-${order.poNumber}.pdf`);
+  doc.save(`BILL-${bill.billNumber}.pdf`);
 };

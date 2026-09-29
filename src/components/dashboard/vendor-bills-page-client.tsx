@@ -2,7 +2,9 @@ import { toast } from 'sonner';
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom';
 import {  useLocation  } from 'react-router-dom';
-import { Receipt, Plus, Search, Filter, AlertCircle, Clock, DollarSign, CheckCircle2 } from 'lucide-react'
+import { Receipt, Plus, Search, Filter, AlertCircle, Clock, DollarSign, CheckCircle2, FileDown } from 'lucide-react'
+import { useBusinessData } from '@/components/dashboard/business-data-provider'
+import { exportVendorBillToPDF } from '@/lib/utils/vendor-bill-pdf'
 import { billsAPI, Bill, BILL_STATUS } from '@/lib/api/purchase'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
@@ -50,6 +52,7 @@ function isDueOverdue(dueDate?: string | null) {
 }
 
 export default function VendorBillsPageClient() {
+  const { business } = useBusinessData();
   const pathname = useLocation().pathname
   const { toast } = useToast()
   const businessId = pathname.match(/\/dashboard\/([^/]+)/)?.[1] || ''
@@ -277,6 +280,9 @@ export default function VendorBillsPageClient() {
                               View
                             </Button>
                           </Link>
+                          <Button variant="outline" size="sm" className="h-8 rounded-lg border-border dark:border-[#23272c] hover:bg-muted dark:hover:bg-[#1c2128]" onClick={() => exportVendorBillToPDF(b, business)}>
+                            <FileDown className="h-4 w-4" />
+                          </Button>
                           {['UNPAID', 'PARTIALLY_PAID', 'OVERDUE'].includes(b.status) && (
                             <Link to={`/dashboard/${businessId}/vendor-bills/${b.id}/pay`}>
                               <Button size="sm" className="h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm">

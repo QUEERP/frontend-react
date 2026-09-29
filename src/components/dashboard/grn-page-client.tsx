@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { SidebarTrigger } from '@/components/ui/sidebar'
+import { useBusinessData } from '@/components/dashboard/business-data-provider'
 
 function GRNStatusBadge({ status }: { status: string }) {
   const s = status.toUpperCase()
@@ -34,6 +35,7 @@ function GRNStatusBadge({ status }: { status: string }) {
 }
 
 export default function GRNPageClient() {
+  const { business } = useBusinessData();
   const pathname = useLocation().pathname
   const { toast } = useToast()
   const businessId = pathname.match(/\/dashboard\/([^/]+)/)?.[1] || ''
@@ -295,7 +297,7 @@ export default function GRNPageClient() {
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="cursor-pointer font-medium text-foreground dark:text-slate-300 py-2.5"
-                              onClick={() => exportGRNToPDF(g)}
+                              onClick={() => exportGRNToPDF(g, business)}
                             >
                               <FileDown className="mr-2 h-4 w-4" /> Download PDF
                             </DropdownMenuItem>
@@ -345,6 +347,8 @@ export default function GRNPageClient() {
     </div>
   )
 }
+
+
 
 
 
