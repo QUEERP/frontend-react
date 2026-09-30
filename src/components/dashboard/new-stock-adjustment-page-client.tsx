@@ -95,7 +95,18 @@ export default function NewStockAdjustmentPageClient() {
     }
     try {
       setIsSubmitting(true)
-      const payload: any = { warehouseId, productId, adjustmentType, quantity, reason, notes }
+      const payload: any = { 
+        warehouseId, 
+        reason, 
+        notes,
+        items: [
+          {
+            productId,
+            quantity,
+            type: adjustmentType
+          }
+        ]
+      }
       if (isTrading && locationId) {
         payload.locationId = locationId
       }

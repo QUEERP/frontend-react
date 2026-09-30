@@ -52,6 +52,10 @@ export default function NewPurchaseReturnPageClient() {
         const productData = (pRes.value as any).products || (pRes.value as any).data || []
         setProducts(productData)
       }
+      if (poRes.status === 'fulfilled') {
+        const poData = (poRes.value as any).orders || (poRes.value as any).data || []
+        setPurchaseOrders(poData)
+      }
     } catch { toast({ title: 'Failed to load data', variant: 'destructive' }) }
     finally { setIsLoading(false) }
   }, [businessId])
