@@ -26,9 +26,25 @@ type ApprovalItem = {
   originalId: string
 }
 
+
+const normalizeLeaveTypes = (value: unknown) => {
+  let parsed: unknown = value
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return []
+    try { parsed = JSON.parse(trimmed) } catch { return [] }
+  }
+  if (!Array.isArray(parsed)) return []
+  return parsed.map((item: any) => {
+    const code = String(item?.code || item?.title || item?.name || '').trim()
+    const title = String(item?.title || item?.name || code).trim()
+    return { code, title }
+  }).filter((item) => item.code.length > 0)
+}
+
 export function LeaveApprovalsPageClient({ businessId }: { businessId: string }) {
   const { toast } = useToast()
-  const { loading: businessLoading } = useBusinessData()
+  const { business, loading: businessLoading } = useBusinessData()
 
   const [approvals, setApprovals] = useState<ApprovalItem[]>([])
   const [pageLoading, setPageLoading] = useState(false)
@@ -62,6 +78,14 @@ export function LeaveApprovalsPageClient({ businessId }: { businessId: string })
 
       const newApprovals: ApprovalItem[] = []
 
+            const settingsData = (business as any)?.settings
+      const settings = Array.isArray(settingsData) ? settingsData[0] || null : settingsData || null
+      const leaveTypes = normalizeLeaveTypes(settings?.leaveTypes)
+      const getLeaveTitle = (code: string) => {
+        const found = leaveTypes.find(lt => lt.code === code)
+        return found ? found.title : code
+      }
+
       // Leaves
       if (leavesRes.status === 'fulfilled' && leavesRes.value.ok) {
         const data = await leavesRes.value.json()
@@ -70,7 +94,7 @@ export function LeaveApprovalsPageClient({ businessId }: { businessId: string })
           originalId: item.id,
           type: 'LEAVE',
           requestedBy: item?.employee?.name || 'Unknown',
-          details: `Leave Type: ${item.leaveCode} | Duration: ${item.duration === 'HALF' ? 'Half Day' : 'Full Day'}`,
+          details: `Leave Type: ${getLeaveTitle(item.leaveCode)} | Duration: ${item.duration === 'HALF' ? 'Half Day' : 'Full Day'}`,
           date: item?.date ? new Date(item.date).toISOString().split('T')[0] : '',
           status: String(item?.status || 'PENDING').trim().toUpperCase() as ApprovalItem['status']
         }))
@@ -132,7 +156,7 @@ export function LeaveApprovalsPageClient({ businessId }: { businessId: string })
     } finally {
       setPageLoading(false)
     }
-  }, [API_BASE, businessId])
+  }, [API_BASE, businessId, business])
 
   useEffect(() => {
     if (!businessLoading) {
