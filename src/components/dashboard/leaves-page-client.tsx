@@ -69,9 +69,11 @@ const normalizeLeaveTypes = (value: unknown): LeaveTypeOption[] => {
   return parsed
     .map((item: any) => {
       const code = String(item?.code || item?.title || item?.name || '').trim()
+      const title = String(item?.title || item?.name || code).trim()
       const yearlyLimit = Number(item?.yearlyLimit ?? item?.count ?? item?.limit ?? 0)
       return {
         code,
+        title,
         yearlyLimit: Number.isNaN(yearlyLimit) ? 0 : yearlyLimit,
       }
     })
@@ -153,17 +155,17 @@ export function LeavesPageClient({ businessId }: { businessId: string }) {
       const hasLwp = fromSettings.some((item) => String(item.code).trim().toUpperCase() === LWP_CODE)
       return hasLwp
         ? fromSettings
-        : [{ code: LWP_CODE, yearlyLimit: Number.POSITIVE_INFINITY }, ...fromSettings]
+        : [{ code: LWP_CODE, title: LWP_CODE, yearlyLimit: Number.POSITIVE_INFINITY }, ...fromSettings]
     }
 
     const fromHistory = Array.from(
       new Set(leaves.map((item) => String(item.leaveCode || '').trim()).filter(Boolean)),
-    ).map((code) => ({ code, yearlyLimit: 0 }))
+    ).map((code) => ({ code, title: code, yearlyLimit: 0 }))
 
     const hasLwpInHistory = fromHistory.some((item) => String(item.code).trim().toUpperCase() === LWP_CODE)
     return hasLwpInHistory
       ? fromHistory
-      : [{ code: LWP_CODE, yearlyLimit: Number.POSITIVE_INFINITY }, ...fromHistory]
+      : [{ code: LWP_CODE, title: LWP_CODE, yearlyLimit: Number.POSITIVE_INFINITY }, ...fromHistory]
   }, [business, leaves])
 
   const hasConfiguredLeaveTypes = useMemo(() => {
@@ -465,7 +467,7 @@ export function LeavesPageClient({ businessId }: { businessId: string }) {
 
   const leaveCodeLabels = useMemo(() => {
     return leaveTypeOptions.reduce<Record<string, string>>((acc, item) => {
-      const displayName = (item as any).name || item.code
+      const displayName = item.title || item.code
       if (String(item.code || '').trim().toUpperCase() === LWP_CODE) {
         acc[item.code] = `${displayName} (∞/year)`
       } else {
@@ -572,7 +574,7 @@ export function LeavesPageClient({ businessId }: { businessId: string }) {
                 <SelectContent className="rounded-xl">
                   {availableLeaveTypeOptions.map((leaveType) => (
                     <SelectItem key={leaveType.code} value={leaveType.code}>
-                      {leaveType.code}
+                      {leaveType.title || leaveType.code}
                     </SelectItem>
                   ))}
                 </SelectContent>
