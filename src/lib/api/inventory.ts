@@ -171,6 +171,7 @@ export const stockAPI = {
   getTransfers: (bId: string) => apiFetch<{ success: boolean; transfers: StockTransfer[] }>(`${API_ROOT}/inventory/stock/transfers`, bId),
   getTransferById: (bId: string, id: string) => apiFetch<{ success: boolean; transfer: StockTransfer }>(`${API_ROOT}/inventory/stock/transfers/${id}`, bId),
   deleteTransfer: (bId: string, id: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/inventory/stock/transfers/${id}`, bId, { method: 'DELETE' }),
+  updateTransfer: (bId: string, id: string, data: Partial<StockTransfer>) => apiFetch<{ success: boolean; transfer: StockTransfer }>(`${API_ROOT}/inventory/stock/transfers/${id}`, bId, { method: 'PUT', body: JSON.stringify(data) }),
   updateTransferStatus: (bId: string, id: string, status: string) => apiFetch<{ success: boolean }>(`${API_ROOT}/inventory/stock/transfers/${id}/status`, bId, { method: 'PATCH', body: JSON.stringify({ status }) }),
   getBatches: (bId: string) => apiFetch<{ success: boolean; batches: Batch[] }>(`${API_ROOT}/inventory/stock/batches`, bId),
   getSerials: (bId: string) => apiFetch<{ success: boolean; serials: SerialNumber[] }>(`${API_ROOT}/inventory/stock/serials`, bId),

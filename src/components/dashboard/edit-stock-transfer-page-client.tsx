@@ -23,8 +23,8 @@ interface TransferItem {
 export default function EditStockTransferPageClient() {
   const pathname = useLocation().pathname;
   const businessId = pathname.match(/\/dashboard\/([^/]+)/)?.[1] || '';
+  const params = useParams();
   const transferId = params.id;
-  const params = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
   const { business } = useBusinessData()
