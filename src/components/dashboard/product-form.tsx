@@ -701,7 +701,7 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs font-medium text-amber-700">Warehouse</Label>
-                          <Select value={formData.openingWarehouseId} onValueChange={(val) => setFormData(prev => ({ ...prev, openingWarehouseId: val }))} disabled={!!productId || isViewMode}>
+                          <Select value={formData.openingWarehouseId} onValueChange={(val) => setFormData(prev => ({ ...prev, openingWarehouseId: val }))} disabled={isViewMode}>
                             <SelectTrigger className="h-10 border-amber-200">
                               <SelectValue placeholder="Select Warehouse" />
                             </SelectTrigger>
@@ -714,7 +714,7 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
                         {(locations.length > 0 || formData.openingLocationId) && (
                           <div className="space-y-2">
                             <Label className="text-xs font-medium text-amber-700">Location (Bin)</Label>
-                            <Select value={formData.openingLocationId} onValueChange={(val) => setFormData(prev => ({ ...prev, openingLocationId: val }))} disabled={!!productId || isViewMode}>
+                            <Select value={formData.openingLocationId} onValueChange={(val) => setFormData(prev => ({ ...prev, openingLocationId: val }))} disabled={isViewMode}>
                               <SelectTrigger className="h-10 border-amber-200">
                                 <SelectValue placeholder="Select Location" />
                               </SelectTrigger>
