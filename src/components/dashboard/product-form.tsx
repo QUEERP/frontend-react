@@ -152,7 +152,7 @@ export default function ProductForm({ productId, isViewMode }: ProductFormProps)
               taxRate: p.taxPercent || p.taxRate || 0,
               reorderLevel: p.reorderLevel || '',
               isActive: p.isActive ?? true,
-              openingStock: (p as any).stock?.[0]?.quantity || '',
+              openingStock: (p as any).stock ? (p as any).stock.reduce((acc: number, curr: any) => acc + (curr.quantity || 0), 0) : '',
               openingWarehouseId: (p as any).stock?.[0]?.warehouseId || '',
               openingLocationId: (p as any).stock?.[0]?.locationId || '',
               image: p.imageUrl || '',
