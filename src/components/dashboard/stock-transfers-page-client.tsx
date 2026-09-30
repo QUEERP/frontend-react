@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 import React, { useCallback, useEffect, useState } from 'react'
 import {  useLocation  } from 'react-router-dom';
-import { ArrowRightLeft, Search, Plus, CheckCircle, Clock, XCircle, MoreVertical, Eye, Trash2, Loader2 } from 'lucide-react'
+import { ArrowRightLeft, Search, Plus, CheckCircle, Clock, XCircle, MoreVertical, Eye, Trash2, Loader2, Edit2, CheckCircle2, Truck } from 'lucide-react'
 import { stockAPI, StockTransfer } from '@/lib/api/inventory'
 import { useToast } from '@/components/ui/use-toast'
 import { useBusinessData } from './business-data-provider'
@@ -40,6 +40,16 @@ export default function StockTransfersPageClient() {
     finally { setIsLoading(false) }
   }, [businessId])
   useEffect(() => { fetchData() }, [fetchData])
+
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      await stockAPI.updateTransferStatus(businessId, id, newStatus);
+      toast({ title: 'Transfer status updated to ' + newStatus });
+      fetchData();
+    } catch (error: any) {
+      toast({ title: 'Failed to update status', description: error?.message, variant: 'destructive' });
+    }
+  };
 
   const handleDelete = async (id: string) => {
     try {
@@ -136,6 +146,31 @@ export default function StockTransfersPageClient() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            
+                            {t.status === 'PENDING' && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleStatusChange(t.id, 'SHIPPED')} className="flex items-center gap-2 text-indigo-600">
+                                  <Truck className="h-4 w-4" />
+                                  Mark as Shipped
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStatusChange(t.id, 'COMPLETED')} className="flex items-center gap-2 text-emerald-600">
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  Approve & Receive
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link to={`/dashboard/${businessId}/stock-transfers/${t.id}/edit`} className="flex items-center gap-2">
+                                    <Edit2 className="h-4 w-4" />
+                                    Edit Transfer
+                                  </Link>
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {t.status === 'SHIPPED' && (
+                              <DropdownMenuItem onClick={() => handleStatusChange(t.id, 'COMPLETED')} className="flex items-center gap-2 text-emerald-600">
+                                <CheckCircle2 className="h-4 w-4" />
+                                Mark as Received
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem asChild>
                               <Link to={`/dashboard/${businessId}/stock-transfers/${t.id}`} className="flex items-center gap-2">
                                 <Eye className="h-4 w-4" />
