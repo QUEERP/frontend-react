@@ -46,6 +46,7 @@ interface Product {
   unit: string;
   isActive: boolean;
   createdAt: string;
+  stock?: any[];
 }
 
 export default function ProductsPageClient() {
@@ -259,6 +260,7 @@ export default function ProductsPageClient() {
                   <TableHead>Type</TableHead>
                   <TableHead>HSN/SAC</TableHead>
                   <TableHead>Unit</TableHead>
+                  <TableHead>Total Stock</TableHead>
                   <TableHead>Cost Price</TableHead>
                   <TableHead>Selling Price</TableHead>
                   <TableHead>Tax %</TableHead>
@@ -286,6 +288,7 @@ export default function ProductsPageClient() {
                     </TableCell>
                     <TableCell>{product.taxCode || '—'}</TableCell>
                     <TableCell>{product.unit}</TableCell>
+                    <TableCell>{product.type === 'GOODS' ? (product.stock?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0) : '—'}</TableCell>
                     <TableCell>${product.costPrice.toFixed(2)}</TableCell>
                     <TableCell>${product.price.toFixed(2)}</TableCell>
                     <TableCell>{product.taxPercent}%</TableCell>
