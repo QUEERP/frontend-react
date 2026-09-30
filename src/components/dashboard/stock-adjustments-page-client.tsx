@@ -99,7 +99,22 @@ export default function StockAdjustmentsPageClient() {
                         )}
                       </TableCell>
                       <TableCell><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[a.status] || 'bg-gray-100 text-gray-700'}`}>{a.status}</span></TableCell>
-                      <TableCell className="text-sm">{a.items?.length || 0} items</TableCell>
+                      <TableCell className="text-sm">
+                        {a.items && a.items.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            {a.items.map((item: any, idx: number) => (
+                              <div key={idx} className="flex items-center gap-1.5 whitespace-nowrap">
+                                <span className={item.type === 'ADD' ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold'}>
+                                  {item.type === 'ADD' ? '+' : '-'}{item.quantity}
+                                </span>
+                                <span className="text-muted-foreground">{item.product?.name || 'Unknown Product'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">0 items</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{new Date(a.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell className="pr-4 text-right">
                         <DropdownMenu>
