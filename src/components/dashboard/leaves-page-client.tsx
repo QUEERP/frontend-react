@@ -46,6 +46,7 @@ type LeaveItem = {
 
 type LeaveTypeOption = {
   code: string
+  title?: string
   yearlyLimit: number
 }
 
