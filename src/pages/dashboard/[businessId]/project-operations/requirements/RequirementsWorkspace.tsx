@@ -13,10 +13,11 @@ import * as XLSX from 'xlsx';
 import { projectOperationsAPI } from '@/lib/api/project-operations';
 import { toast } from '@/components/ui/use-toast';
 
-export default function RequirementsWorkspace({ businessId: propBusinessId }: { businessId?: string }) {
+export default function RequirementsWorkspace({ businessId: propBusinessId, id: propId }: { businessId?: string, id?: string }) {
   const navigate = useNavigate();
   const params = useParams();
   const businessId = (propBusinessId || params?.businessId) as string;
+  const requirementId = propId || params?.id;
   const [requirements, setRequirements] = useState<any[]>([]);
   const [selectedReq, setSelectedReq] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -52,7 +53,7 @@ export default function RequirementsWorkspace({ businessId: propBusinessId }: { 
       if (res.success) {
         setRequirements(res.requirements);
         if (res.requirements.length > 0 && !selectedReq) {
-          const matchingReq = params.id ? res.requirements.find((r: any) => r.id === params.id) : null;
+          const matchingReq = requirementId ? res.requirements.find((r: any) => r.id === requirementId) : null;
           setSelectedReq(matchingReq || res.requirements[0]);
         }
       }
@@ -198,7 +199,7 @@ export default function RequirementsWorkspace({ businessId: propBusinessId }: { 
       {/* LEFT PANE: Fixed Width Sidebar */}
       <div className="w-[360px] flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col h-full">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex-none space-y-3">
-          {params?.id && (
+          {requirementId && (
             <button 
               onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements`)}
               className="flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
