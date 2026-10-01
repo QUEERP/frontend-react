@@ -156,8 +156,6 @@ export function CreateInquiryClient({ businessId }: Props) {
   const { business, currencySymbol, currency } = useBusinessData();
 
   const bizCountry = String((business as any)?.country || "").toUpperCase();
-  const symbol = bizCountry === "INDIA" ? "₹" : bizCountry === "UAE" ? "AED" : currencySymbol || "$";
-  const currencyCode = bizCountry === "INDIA" ? "INR" : bizCountry === "UAE" ? "AED" : (currency || "USD");
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customersLoading, setCustomersLoading] = useState(true);
@@ -175,7 +173,7 @@ export function CreateInquiryClient({ businessId }: Props) {
     industry: "", companySize: "", preferredCommunication: "", gstVatNumber: "",
     inquiryTitle: "", inquiryType: "", source: "", priority: "", status: "", 
     assignedToId: "", department: "", businessUnit: "", 
-    budgetRange: "", expectedRevenue: undefined, probability: undefined, expectedDecisionDate: "",
+    budgetRange: "", expectedRevenue: undefined, probability: undefined, expectedDecisionDate: "", currency: "",
     projectType: "", executionType: "", expectedStartDate: "", expectedCompletionDate: "", 
     expectedDuration: "", businessRequirement: "", currentBusinessProblem: "", 
     expectedSolution: "", scopeSummary: "", deliverables: "", estimatedTeamSize: undefined,
@@ -187,6 +185,16 @@ export function CreateInquiryClient({ businessId }: Props) {
     meetingLocation: "", followUpNotes: "",
     attachments: [] as File[],
   });
+
+  const bizCurrencyCode = bizCountry === "INDIA" ? "INR" : bizCountry === "UAE" ? "AED" : (currency || "USD");
+  const currencyCode = formData?.currency || bizCurrencyCode;
+
+  let symbol = currencySymbol || "$";
+  if (currencyCode === "INR") symbol = "₹";
+  else if (currencyCode === "AED") symbol = "AED";
+  else if (currencyCode === "USD") symbol = "$";
+  else if (currencyCode === "EUR") symbol = "€";
+  else if (currencyCode === "GBP") symbol = "£";
 
   const fetchCustomers = async () => {
     try {
@@ -557,6 +565,21 @@ export function CreateInquiryClient({ businessId }: Props) {
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input type="date" value={formData.expectedDecisionDate} onChange={(e) => updateField("expectedDecisionDate", e.target.value)} className={`${inputClass} pl-10`} />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Currency</label>
+                <div className="relative">
+                  <select value={formData.currency || ""} onChange={(e) => updateField("currency", e.target.value)} className={`${inputClass} pr-10 appearance-none cursor-pointer`}>
+                    <option value="">Default ({bizCurrencyCode})</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="INR">INR (₹)</option>
+                    <option value="AED">AED (د.إ)</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 </div>
               </div>
 
