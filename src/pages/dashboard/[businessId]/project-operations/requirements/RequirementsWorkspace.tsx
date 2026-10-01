@@ -157,7 +157,7 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
   ];
 
   return (
-    <div className="flex flex-col h-full w-full bg-gray-50 dark:bg-gray-950 overflow-hidden">
+    <div className="flex flex-col h-full w-full min-w-0 bg-gray-50 dark:bg-gray-950 overflow-hidden">
       {/* Header */}
       <div className="flex-none px-6 py-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
@@ -195,7 +195,7 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
       {/* LEFT PANE: Fixed Width Sidebar */}
       <div className="w-[360px] flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col h-full">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex-none space-y-3">
