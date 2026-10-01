@@ -210,7 +210,7 @@ export default function CreateTaskPage() {
                 <Field label="Assigned Employee">
                   <UserSelect businessId={businessId as string} value={form.assigneeId} onChange={(v) => set('assigneeId', v)} />
                 </Field>
-                <Field label="Department"><Select value={form.department} onChange={(v: string) => set('department', v)}><option value="">Select Department...</option><option>Engineering</option><option>Design</option><option>Marketing</option><option>Sales</option><option>Finance</option></Select></Field>
+                <Field label="Department"><Select value={form.department} onChange={(v: string) => set('department', v)}><option value="">Select Department...</option><option>Engineering</option><option>Operations</option><option>Consulting</option><option>Sales</option><option>Finance</option></Select></Field>
                 <Field label="Sequence"><Input type="number" value={form.sequence} onChange={(v: string) => set('sequence', v)} /></Field>
               </div>
             </Section>

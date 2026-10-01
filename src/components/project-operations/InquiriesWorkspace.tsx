@@ -31,7 +31,7 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
   const fetchInquiries = async () => {
     try {
       setLoading(true);
-      const res = await leadsAPI.getAllLeads(businessId);
+      const res = await leadsAPI.getAllLeads(businessId, { type: 'INQUIRY' });
       // Backend returns { success, data: Lead[] }
       const list: Lead[] = (res as any).data || (res as any).leads || [];
       setInquiries(list);

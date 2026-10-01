@@ -124,11 +124,16 @@ export interface CreateLeadData {
 // API Functions
 export const leadsAPI = {
   // Get all leads
-  async getAllLeads(businessId: string) {
+  async getAllLeads(businessId: string, filters?: { type?: string }) {
     const token = getCookie('token') || getCookie('accessToken')
     if (!token) throw new Error('No authentication token found')
 
-    const response = await fetch(`${API_ROOT}/leads`, {
+    let url = `${API_ROOT}/leads`
+    if (filters?.type) {
+      url += `?type=${filters.type}`
+    }
+
+    const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
         'x-business-id': businessId,

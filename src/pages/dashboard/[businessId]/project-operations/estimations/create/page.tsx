@@ -727,16 +727,16 @@ function CreateEstimateContent({ businessId }: { businessId: string }) {
         </SectionCard>
 
         {/* 5, 6, 7 Generic Cost Cards */}
-        <SectionCard id="software" title="5. Software & Licensing Cost" icon={Cpu} isExpanded={expandedSections.software} onToggle={toggleSection}>
-          <GenericCostTable arrayName="software" formData={formData} updateArrayField={updateArrayField} removeRow={removeRow} addRow={addRow} title="Software" total={calculations.softwareTotal} />
+        <SectionCard id="software" title="5. Equipment, Software & Licensing" icon={Cpu} isExpanded={expandedSections.software} onToggle={toggleSection}>
+          <GenericCostTable arrayName="software" formData={formData} updateArrayField={updateArrayField} removeRow={removeRow} addRow={addRow} title="Equipment/Software" total={calculations.softwareTotal} />
         </SectionCard>
         
-        <SectionCard id="thirdParty" title="6. Third-Party Services" icon={User} isExpanded={expandedSections.thirdParty} onToggle={toggleSection}>
-          <GenericCostTable arrayName="thirdParty" formData={formData} updateArrayField={updateArrayField} removeRow={removeRow} addRow={addRow} title="Third-Party" total={calculations.thirdPartyTotal} />
+        <SectionCard id="thirdParty" title="6. Subcontractor & Vendor Services" icon={User} isExpanded={expandedSections.thirdParty} onToggle={toggleSection}>
+          <GenericCostTable arrayName="thirdParty" formData={formData} updateArrayField={updateArrayField} removeRow={removeRow} addRow={addRow} title="Subcontractor/Vendor" total={calculations.thirdPartyTotal} />
         </SectionCard>
 
-        <SectionCard id="expenses" title="7. Travel & Misc Expenses" icon={Truck} isExpanded={expandedSections.expenses} onToggle={toggleSection}>
-          <GenericCostTable arrayName="expenses" formData={formData} updateArrayField={updateArrayField} removeRow={removeRow} addRow={addRow} title="Expenses" total={calculations.expensesTotal} />
+        <SectionCard id="expenses" title="7. Logistics, Travel & Misc Expenses" icon={Truck} isExpanded={expandedSections.expenses} onToggle={toggleSection}>
+          <GenericCostTable arrayName="expenses" formData={formData} updateArrayField={updateArrayField} removeRow={removeRow} addRow={addRow} title="Expense" total={calculations.expensesTotal} />
         </SectionCard>
 
         {/* 11. Commercial Details */}

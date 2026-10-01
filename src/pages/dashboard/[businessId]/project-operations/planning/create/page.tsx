@@ -410,7 +410,7 @@ export default function CreatePlanningPage() {
                 <InputField label="Phase" value={formData.phase} onChange={(val: any) => handleChange('phase', val)} />
                 <InputField label="Sprint / Iteration" value={formData.sprint} onChange={(val: any) => handleChange('sprint', val)} />
                 
-                <SelectField label="Execution Type" value={formData.execType} onChange={(val: any) => handleChange('execType', val)} options={['Service', 'Product', 'Hybrid']} />
+                <SelectField label="Execution Type" value={formData.execType} onChange={(val: any) => handleChange('execType', val)} options={['Turnkey (End-to-End)', 'Time & Materials', 'Fixed Price / Milestone', 'Retainer / Ongoing Support']} />
                 <SelectField label="Status" value={formData.status} onChange={(val: any) => handleChange('status', val)} options={['DRAFT', 'PLANNING', 'ACTIVE', 'ON_HOLD']} />
                 <SelectField label="Priority" value={formData.priority} onChange={(val: any) => handleChange('priority', val)} options={['Low', 'Medium', 'High', 'Critical']} />
                 
@@ -450,7 +450,7 @@ export default function CreatePlanningPage() {
                   </div>
                 </div>
 
-                <SelectField label="Department" value={formData.department} onChange={(val: any) => handleChange('department', val)} options={['Engineering', 'Design', 'Marketing', 'Sales', 'Finance']} />
+                <SelectField label="Department" value={formData.department} onChange={(val: any) => handleChange('department', val)} options={['Engineering', 'Operations', 'Consulting', 'Sales', 'Finance']} />
                 
                 <InputField label="Resources (Count)" type="number" value={formData.resources} onChange={(val: any) => handleChange('resources', val)} />
                 <InputField label="Estimated Hours" type="number" value={formData.estimatedHours} onChange={(val: any) => handleChange('estimatedHours', val)} />

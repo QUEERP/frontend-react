@@ -9,6 +9,8 @@ import { projectOperationsAPI } from "@/lib/api/project-operations";
 import { CreateCustomerModal } from "@/components/dashboard/create-customer-modal";
 import { UserSelect } from "@/components/project-operations/UserSelect";
 import { useToast } from "@/components/ui/use-toast";
+import { CurrencySelect } from "@/components/dashboard/currency-select";
+import { CountrySelect } from "@/components/dashboard/country-select";
 import { 
   ArrowLeft, Save, ChevronDown, CheckCircle, Info, Briefcase, User, 
   Target, Cpu, ListChecks, Calendar, DollarSign, Users, AlertTriangle, 
@@ -34,9 +36,9 @@ type RequirementFormData = {
   businessObjective: string; currentProblem: string; businessRequirement: string;
   expectedSolution: string; scope: string; outOfScope: string;
   successCriteria: string; assumptions: string; dependencies: string;
-  // 5. Technical
-  technologyStack: string; integrations: string; apiRequirements: string;
-  database: string; security: string; performance: string; hosting: string; compliance: string;
+  // 5. Operational
+  resourceRequirements: string; complianceRequirements: string; qualityAssurance: string;
+  externalDependencies: string; logisticsLocation: string; performanceMetrics: string;
   // 6. Deliverables
   deliverables: Deliverable[];
   // 7. Timeline
@@ -60,7 +62,7 @@ const initialFormData: RequirementFormData = {
   contactPerson: '', designation: '', email: '', phone: '', company: '', industry: '', country: '', timezone: '',
   projectSize: '', estimatedBudget: '', expectedRevenue: '', expectedProfit: '', expectedMargin: '',
   businessObjective: '', currentProblem: '', businessRequirement: '', expectedSolution: '', scope: '', outOfScope: '', successCriteria: '', assumptions: '', dependencies: '',
-  technologyStack: '', integrations: '', apiRequirements: '', database: '', security: '', performance: '', hosting: '', compliance: '',
+  resourceRequirements: '', complianceRequirements: '', qualityAssurance: '', externalDependencies: '', logisticsLocation: '', performanceMetrics: '',
   deliverables: [],
   requirementDate: new Date().toISOString().split('T')[0], expectedStartDate: '', expectedEndDate: '', estimatedDuration: '', decisionDeadline: '', goLiveTarget: '',
   budgetRange: '', billingModel: '', paymentTerms: '',
@@ -88,7 +90,7 @@ const countryTimezoneMap: Record<string, string> = {
   'Australia': 'UTC+10 (AEST)'
 };
 
-const teamRoles = ['Sales Executive', 'Business Analyst', 'Project Manager', 'Solution Architect', 'Technical Lead', 'Developer', 'Designer'];
+const teamRoles = ['Account Executive', 'Project Manager', 'Business Analyst', 'Operations Lead', 'Subject Matter Expert', 'Quality Assurance', 'Consultant', 'Site Supervisor', 'Designer'];
 
 // ------------------------------------------------------------------
 // REUSABLE UI COMPONENTS (Defined outside to prevent remounting)
@@ -121,6 +123,44 @@ const SelectField = ({ label, name, value, onChange, options, required = false, 
           : <option key={opt.value} value={opt.value}>{opt.label}</option>
       )) : children}
     </select>
+  </div>
+);
+
+const CurrencyField = ({ label, name, value, onChange, required = false, className = "col-span-1", disabled = false }: any) => (
+  <div className={`space-y-1.5 ${className}`}>
+    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{label} {required && <span className="text-red-500">*</span>}</label>
+    <CurrencySelect 
+      value={value} 
+      onValueChange={(val) => onChange({ target: { name, value: val } })} 
+      disabled={disabled}
+      className="bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 h-[42px]"
+    />
+  </div>
+);
+
+const CountryField = ({ label, name, value, onChange, required = false, className = "col-span-1", disabled = false }: any) => (
+  <div className={`space-y-1.5 ${className}`}>
+    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{label} {required && <span className="text-red-500">*</span>}</label>
+    <CountrySelect 
+      value={value} 
+      onValueChange={(val) => {
+        onChange({ target: { name, value: val } });
+        // Auto-update timezone if possible
+        const tzMap: Record<string, string> = {
+          'United States': 'UTC-5 (EST)',
+          'United Kingdom': 'UTC+0 (GMT)',
+          'United Arab Emirates': 'UTC+4 (GST)',
+          'India': 'UTC+5:30 (IST)',
+          'Singapore': 'UTC+8 (SGT)',
+          'Australia': 'UTC+10 (AEST)'
+        };
+        if (tzMap[val]) {
+          onChange({ target: { name: 'timezone', value: tzMap[val] } });
+        }
+      }} 
+      disabled={disabled}
+      className="bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 h-[42px]"
+    />
   </div>
 );
 
@@ -438,12 +478,25 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
         priority: formData.priority,
         status: formData.status,
         expectedBudget: Number(formData.estimatedBudget) || null,
-        expectedTimeline: formData.expectedStartDate && formData.expectedEndDate ? `${formData.expectedStartDate} to ${formData.expectedEndDate}` : null,
+        expectedStart: formData.expectedStartDate ? new Date(formData.expectedStartDate).toISOString() : null,
+        expectedEnd: formData.expectedEndDate ? new Date(formData.expectedEndDate).toISOString() : null,
+        estimatedDuration: formData.estimatedDuration || null,
         contactPerson: formData.contactPerson,
         email: formData.email,
         phone: formData.phone,
         company: formData.company,
-        description: formData.businessObjective,
+        businessObjective: formData.businessObjective,
+        currentProblem: formData.currentProblem,
+        inScope: formData.scope,
+        outOfScope: formData.outOfScope,
+        successCriteria: formData.successCriteria,
+        assumptionsDependencies: formData.dependencies,
+        infrastructureRequirements: formData.resourceRequirements,
+        complianceRequirements: formData.complianceRequirements,
+        acceptanceCriteria: formData.qualityAssurance,
+        dependencyRisk: formData.externalDependencies,
+        location: formData.logisticsLocation,
+        performanceRequirement: formData.performanceMetrics,
         projectType: formData.projectType,
         executionType: formData.executionType,
         currency: formData.currency,
@@ -544,15 +597,15 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
               }) : undefined} 
             />
             
-            <SelectField label="Execution Type" name="executionType" value={formData.executionType} onChange={handleInputChange} required options={['Service', 'Product', 'Hybrid', 'Consulting']} />
+            <SelectField label="Execution Type" name="executionType" value={formData.executionType} onChange={handleInputChange} required options={['Turnkey (End-to-End)', 'Time & Materials', 'Fixed Price / Milestone', 'Retainer / Ongoing Support']} />
             
-            <SelectField label="Project Type" name="projectType" value={formData.projectType} onChange={handleInputChange} required options={['Implementation', 'Support', 'Migration', 'Development', 'Audit']} />
-            <SelectField label="Business Type" name="businessType" value={formData.businessType} onChange={handleInputChange} options={['B2B', 'B2C', 'B2B2C', 'Government', 'Non-Profit']} />
-            <SelectField label="Category" name="category" value={formData.category} onChange={handleInputChange} options={['Software', 'Infrastructure', 'Hardware', 'Strategy', 'Operations']} />
+            <SelectField label="Project Type" name="projectType" value={formData.projectType} onChange={handleInputChange} required options={['New Implementation', 'Upgrade / Expansion', 'Maintenance & Support', 'Consulting / Advisory', 'Audit / Research', 'Other']} />
+            <SelectField label="Business Type" name="businessType" value={formData.businessType} onChange={handleInputChange} options={['B2B', 'B2C', 'B2B2C', 'Government/Public Sector', 'Non-Profit']} />
+            <SelectField label="Category" name="category" value={formData.category} onChange={handleInputChange} options={['Construction', 'Manufacturing', 'IT & Technology', 'Professional Services', 'Marketing & Sales', 'Operations', 'Other']} />
             
             <SelectField label="Priority" name="priority" value={formData.priority} onChange={handleInputChange} required options={['Low', 'Medium', 'High', 'Critical']} />
             <SelectField label="Status" name="status" value={formData.status} onChange={handleInputChange} options={['Draft', 'Under Review', 'Approved', 'On Hold', 'Cancelled']} />
-            <SelectField label="Currency" name="currency" value={formData.currency} onChange={handleInputChange} options={['USD', 'EUR', 'GBP', 'AED', 'INR']} />
+            <CurrencyField label="Currency" name="currency" value={formData.currency} onChange={handleInputChange} />
           </div>
         </SectionCard>
 
@@ -567,7 +620,7 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
             <InputField label="Company Name" name="company" value={formData.company} onChange={handleInputChange} placeholder="e.g. Global Corp" />
             <InputField label="Industry" name="industry" value={formData.industry} onChange={handleInputChange} placeholder="e.g. Manufacturing, Finance" />
             
-            <SelectField label="Country" name="country" value={formData.country} onChange={handleInputChange} options={Object.keys(countryTimezoneMap)} />
+            <CountryField label="Country" name="country" value={formData.country} onChange={handleInputChange} />
             <SelectField label="Timezone" name="timezone" value={formData.timezone} onChange={handleInputChange} options={Object.values(countryTimezoneMap)} />
           </div>
         </SectionCard>
@@ -600,15 +653,15 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
           </div>
         </SectionCard>
 
-        {/* 5. Technical Requirements */}
-        <SectionCard id="technical" title="5. Technical Requirements" icon={Cpu} isExpanded={expandedSections.technical} onToggle={toggleSection}>
+        {/* 5. Operational & Delivery Requirements */}
+        <SectionCard id="operational" title="5. Operational & Delivery Requirements" icon={Cpu} isExpanded={expandedSections.technical} onToggle={() => toggleSection('technical')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <TextAreaField label="Technology Stack" name="technologyStack" value={formData.technologyStack} onChange={handleInputChange} rows={2} placeholder="e.g. React, Node.js, PostgreSQL, AWS" />
-            <TextAreaField label="Third-Party Integrations" name="integrations" value={formData.integrations} onChange={handleInputChange} rows={2} placeholder="e.g. Salesforce, SAP, Stripe" />
-            <TextAreaField label="API & Data Requirements" name="apiRequirements" value={formData.apiRequirements} onChange={handleInputChange} rows={2} placeholder="REST/GraphQL requirements, data migration needs." />
-            <TextAreaField label="Security & Compliance" name="security" value={formData.security} onChange={handleInputChange} rows={2} placeholder="e.g. GDPR, HIPAA, SOC2 compliance requirements." />
-            <SelectField label="Hosting Preference" name="hosting" value={formData.hosting} onChange={handleInputChange} options={['Cloud (AWS/Azure/GCP)', 'On-Premise', 'Hybrid', 'SaaS', 'Not Applicable']} />
-            <InputField label="Performance SLAs" name="performance" value={formData.performance} onChange={handleInputChange} placeholder="e.g. 99.9% uptime, <200ms latency" />
+            <TextAreaField label="Resource & Equipment Requirements" name="resourceRequirements" value={formData.resourceRequirements} onChange={handleInputChange} rows={2} placeholder="Hardware, software, materials, or equipment needed." />
+            <TextAreaField label="Compliance & Standards" name="complianceRequirements" value={formData.complianceRequirements} onChange={handleInputChange} rows={2} placeholder="ISO, OSHA, GDPR, Safety Standards, or industry regulations." />
+            <TextAreaField label="Quality Assurance & Acceptance" name="qualityAssurance" value={formData.qualityAssurance} onChange={handleInputChange} rows={2} placeholder="Inspection criteria, testing phases, or acceptance procedures." />
+            <TextAreaField label="External Dependencies" name="externalDependencies" value={formData.externalDependencies} onChange={handleInputChange} rows={2} placeholder="Subcontractors, third-party vendors, or external approvals." />
+            <TextAreaField label="Logistics & Location" name="logisticsLocation" value={formData.logisticsLocation} onChange={handleInputChange} rows={2} placeholder="Site details, delivery locations, or geographical constraints." />
+            <InputField label="Performance Metrics & SLAs" name="performanceMetrics" value={formData.performanceMetrics} onChange={handleInputChange} placeholder="KPIs, production rates, uptime, or delivery targets." />
           </div>
         </SectionCard>
 
@@ -663,7 +716,7 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
             <InputField label="Expected End Date" name="expectedEndDate" value={formData.expectedEndDate} onChange={handleInputChange} type="date" />
             <InputField label="Estimated Duration (Weeks)" name="estimatedDuration" value={formData.estimatedDuration} onChange={handleInputChange} type="number" />
             <InputField label="Decision Deadline" name="decisionDeadline" value={formData.decisionDeadline} onChange={handleInputChange} type="date" />
-            <InputField label="Target Go-Live Date" name="goLiveTarget" value={formData.goLiveTarget} onChange={handleInputChange} type="date" />
+            <InputField label="Target Completion Date" name="goLiveTarget" value={formData.goLiveTarget} onChange={handleInputChange} type="date" />
           </div>
         </SectionCard>
 
@@ -722,7 +775,7 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
             <SelectField label="Overall Risk Level" name="riskLevel" value={formData.riskLevel} onChange={handleInputChange} required options={['Low', 'Medium', 'High', 'Critical']} />
             <SelectField label="Project Complexity" name="complexity" value={formData.complexity} onChange={handleInputChange} options={['Standard', 'Moderate', 'Complex', 'Highly Complex']} />
             <SelectField label="Management Approval Required" name="approvalRequired" value={formData.approvalRequired} onChange={handleInputChange} options={['No', 'Yes - Commercial', 'Yes - Technical', 'Yes - Executive']} />
-            <TextAreaField label="Technical Risks" name="technicalRisk" value={formData.technicalRisk} onChange={handleInputChange} rows={2} className="lg:col-span-3" placeholder="Identify potential technical roadblocks..." />
+            <TextAreaField label="Operational & Execution Risks" name="technicalRisk" value={formData.technicalRisk} onChange={handleInputChange} rows={2} className="lg:col-span-3" placeholder="Identify potential execution, resource, or technical roadblocks..." />
             <TextAreaField label="Business Risks" name="businessRisk" value={formData.businessRisk} onChange={handleInputChange} rows={2} className="lg:col-span-3" placeholder="Identify potential business/market roadblocks..." />
           </div>
         </SectionCard>
@@ -789,8 +842,8 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
         {/* 12. Internal Notes */}
         <SectionCard id="notes" title="12. Internal Notes (Private)" icon={FileText} isExpanded={expandedSections.notes} onToggle={toggleSection}>
           <div className="grid grid-cols-1 gap-5">
-            <TextAreaField label="Sales Notes" name="salesNotes" value={formData.salesNotes} onChange={handleInputChange} rows={2} placeholder="Insights from sales conversations..." />
-            <TextAreaField label="Business Analyst Notes" name="baNotes" value={formData.baNotes} onChange={handleInputChange} rows={2} placeholder="Initial BA assessment and thoughts..." />
+            <TextAreaField label="Sales / Pre-Sales Notes" name="salesNotes" value={formData.salesNotes} onChange={handleInputChange} rows={2} placeholder="Insights from sales conversations..." />
+            <TextAreaField label="Analyst / Discovery Notes" name="baNotes" value={formData.baNotes} onChange={handleInputChange} rows={2} placeholder="Initial assessment and scoping thoughts..." />
             <TextAreaField label="Management Notes" name="managementNotes" value={formData.managementNotes} onChange={handleInputChange} rows={2} placeholder="Approvals, constraints, strategic notes..." />
           </div>
         </SectionCard>

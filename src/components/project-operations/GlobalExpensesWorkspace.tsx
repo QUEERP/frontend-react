@@ -549,7 +549,7 @@ export function GlobalExpensesWorkspace({ businessId }: { businessId: string }) 
                   <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Category</label>
                   <select value={expenseData.category} onChange={e => setExpenseData({...expenseData, category: e.target.value})}
                     className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none focus:border-blue-500 shadow-sm">
-                    {['Travel', 'Meals', 'Office Supplies', 'Software', 'Hardware', 'Other'].map(c => <option key={c}>{c}</option>)}
+                    {['Travel', 'Meals', 'Office Supplies', 'Equipment', 'Materials', 'Other'].map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
