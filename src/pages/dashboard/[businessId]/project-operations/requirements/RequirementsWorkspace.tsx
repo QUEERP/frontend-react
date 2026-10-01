@@ -5,7 +5,7 @@ import {
   Calendar, CheckCircle, Clock, FileText, MessageSquare, 
   Paperclip, Activity, Users, Settings2, AlertCircle, DollarSign, Download, Plus,
   Edit3, Copy, Trash2, Archive, Mail, Send, Printer,
-  X, ChevronDown, ChevronRight, ArrowDownUp, Save as SaveIcon, SlidersHorizontal, Tag
+  X, ChevronDown, ChevronRight, ArrowDownUp, Save as SaveIcon, SlidersHorizontal, Tag, ArrowLeft
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -52,7 +52,8 @@ export default function RequirementsWorkspace({ businessId: propBusinessId }: { 
       if (res.success) {
         setRequirements(res.requirements);
         if (res.requirements.length > 0 && !selectedReq) {
-          setSelectedReq(res.requirements[0]);
+          const matchingReq = params.id ? res.requirements.find((r: any) => r.id === params.id) : null;
+          setSelectedReq(matchingReq || res.requirements[0]);
         }
       }
     } catch (error: any) {
@@ -197,6 +198,14 @@ export default function RequirementsWorkspace({ businessId: propBusinessId }: { 
       {/* LEFT PANE: Fixed Width Sidebar */}
       <div className="w-[360px] flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col h-full">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex-none space-y-3">
+          {params?.id && (
+            <button 
+              onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements`)}
+              className="flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Requirements
+            </button>
+          )}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input 

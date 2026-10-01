@@ -65,6 +65,26 @@ export const projectOperationsAPI = {
     return response.json();
   },
 
+  async updateRequirement(businessId: string, requirementId: string, data: any): Promise<any> {
+    const token = getCookie('token') || getCookie('accessToken');
+    const response = await fetch(`${API_ROOT}/project-operations/requirements/${requirementId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'x-business-id': businessId
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to update requirement');
+    }
+
+    return response.json();
+  },
+
   async getRequirements(businessId: string, customerId?: string, status?: string): Promise<any> {
     const token = getCookie('token') || getCookie('accessToken');
         
