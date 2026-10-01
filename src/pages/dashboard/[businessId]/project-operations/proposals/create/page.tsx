@@ -608,7 +608,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
 
           <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">C. Payment Terms & Clauses</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <SelectField label="Payment Terms" name="paymentTerms" value={formData.paymentTerms} onChange={handleInputChange} options={['Net 15', 'Net 30', 'Net 60', 'Due on Receipt', 'Custom']} />
+            <InputField label="Payment Terms" name="paymentTerms" value={formData.paymentTerms} onChange={handleInputChange} placeholder="e.g. Net 30, Due on Receipt" />
             <InputField label="Advance (%)" name="advancePct" value={formData.advancePct} onChange={handleNumberChange} type="number" />
             <InputField label="Retention (%)" name="retentionPct" value={formData.retentionPct} onChange={handleNumberChange} type="number" />
             <TextAreaField label="Milestone Billing" name="milestoneBilling" value={formData.milestoneBilling} onChange={handleInputChange} className="md:col-span-3" />

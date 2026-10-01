@@ -82,12 +82,83 @@ const mockInquiries: Record<string, string[]> = {
 };
 
 const countryTimezoneMap: Record<string, string> = {
-  'United States': 'UTC-5 (EST)',
-  'United Kingdom': 'UTC+0 (GMT)',
-  'United Arab Emirates': 'UTC+4 (GST)',
-  'India': 'UTC+5:30 (IST)',
-  'Singapore': 'UTC+8 (SGT)',
-  'Australia': 'UTC+10 (AEST)'
+  "Afghanistan": "AFT (UTC+04:30)",
+  "Albania": "CET (UTC+01:00)",
+  "Algeria": "CET (UTC+01:00)",
+  "Argentina": "ART (UTC-03:00)",
+  "Australia": "AEST (UTC+10:00)",
+  "Austria": "CET (UTC+01:00)",
+  "Bahrain": "AST (UTC+03:00)",
+  "Bangladesh": "BST (UTC+06:00)",
+  "Belgium": "CET (UTC+01:00)",
+  "Brazil": "BRT (UTC-03:00)",
+  "Canada": "EST (UTC-05:00)",
+  "Chile": "CLT (UTC-04:00)",
+  "China": "CST (UTC+08:00)",
+  "Colombia": "COT (UTC-05:00)",
+  "Croatia": "CET (UTC+01:00)",
+  "Czech Republic": "CET (UTC+01:00)",
+  "Denmark": "CET (UTC+01:00)",
+  "Egypt": "EET (UTC+02:00)",
+  "Ethiopia": "EAT (UTC+03:00)",
+  "Finland": "EET (UTC+02:00)",
+  "France": "CET (UTC+01:00)",
+  "Germany": "CET (UTC+01:00)",
+  "Ghana": "GMT (UTC+00:00)",
+  "Greece": "EET (UTC+02:00)",
+  "Hong Kong": "HKT (UTC+08:00)",
+  "Hungary": "CET (UTC+01:00)",
+  "India": "IST (UTC+05:30)",
+  "Indonesia": "WIB (UTC+07:00)",
+  "Iran": "IRST (UTC+03:30)",
+  "Iraq": "AST (UTC+03:00)",
+  "Ireland": "GMT (UTC+00:00)",
+  "Israel": "IST (UTC+02:00)",
+  "Italy": "CET (UTC+01:00)",
+  "Japan": "JST (UTC+09:00)",
+  "Jordan": "AST (UTC+03:00)",
+  "Kazakhstan": "ALMT (UTC+06:00)",
+  "Kenya": "EAT (UTC+03:00)",
+  "Kuwait": "AST (UTC+03:00)",
+  "Lebanon": "EET (UTC+02:00)",
+  "Malaysia": "MYT (UTC+08:00)",
+  "Mexico": "CST (UTC-06:00)",
+  "Morocco": "WET (UTC+01:00)",
+  "Myanmar": "MMT (UTC+06:30)",
+  "Nepal": "NPT (UTC+05:45)",
+  "Netherlands": "CET (UTC+01:00)",
+  "New Zealand": "NZST (UTC+12:00)",
+  "Nigeria": "WAT (UTC+01:00)",
+  "Norway": "CET (UTC+01:00)",
+  "Oman": "GST (UTC+04:00)",
+  "Pakistan": "PKT (UTC+05:00)",
+  "Philippines": "PST (UTC+08:00)",
+  "Poland": "CET (UTC+01:00)",
+  "Portugal": "WET (UTC+00:00)",
+  "Qatar": "AST (UTC+03:00)",
+  "Romania": "EET (UTC+02:00)",
+  "Russia": "MSK (UTC+03:00)",
+  "Saudi Arabia": "AST (UTC+03:00)",
+  "Singapore": "SGT (UTC+08:00)",
+  "South Africa": "SAST (UTC+02:00)",
+  "South Korea": "KST (UTC+09:00)",
+  "Spain": "CET (UTC+01:00)",
+  "Sri Lanka": "SLST (UTC+05:30)",
+  "Sweden": "CET (UTC+01:00)",
+  "Switzerland": "CET (UTC+01:00)",
+  "Taiwan": "CST (UTC+08:00)",
+  "Tanzania": "EAT (UTC+03:00)",
+  "Thailand": "ICT (UTC+07:00)",
+  "Tunisia": "CET (UTC+01:00)",
+  "Turkey": "TRT (UTC+03:00)",
+  "Ukraine": "EET (UTC+02:00)",
+  "United Arab Emirates": "GST (UTC+04:00)",
+  "United Kingdom": "GMT (UTC+00:00)",
+  "United States": "EST (UTC-05:00)",
+  "Venezuela": "VET (UTC-04:00)",
+  "Vietnam": "ICT (UTC+07:00)",
+  "Zimbabwe": "CAT (UTC+02:00)",
+  "Other": "UTC (UTC+00:00)",
 };
 
 const teamRoles = ['Account Executive', 'Project Manager', 'Business Analyst', 'Operations Lead', 'Subject Matter Expert', 'Quality Assurance', 'Consultant', 'Site Supervisor', 'Designer'];
@@ -356,6 +427,9 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
           updated.phone = selectedCust.phone || '';
           updated.company = (selectedCust as any).company || selectedCust.name || '';
           updated.country = (selectedCust as any).country || prev.country;
+          if (updated.country && countryTimezoneMap[updated.country]) {
+            updated.timezone = countryTimezoneMap[updated.country];
+          }
         }
       }
       
@@ -516,7 +590,7 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
       } else if (action === 'meeting') {
         navigate(`/dashboard/${businessId}/project-operations/meetings/create?requirementId=${res.requirement?.id}`);
       } else {
-        navigate(`/dashboard/${businessId}/project-operations/requirements/${res.requirement?.id}`);
+        navigate(`/dashboard/${businessId}/project-operations/requirements`);
       }
     } catch (err: any) {
       // Step 9 - Error Handling
@@ -621,7 +695,7 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
             <InputField label="Industry" name="industry" value={formData.industry} onChange={handleInputChange} placeholder="e.g. Manufacturing, Finance" />
             
             <CountryField label="Country" name="country" value={formData.country} onChange={handleInputChange} />
-            <SelectField label="Timezone" name="timezone" value={formData.timezone} onChange={handleInputChange} options={Object.values(countryTimezoneMap)} />
+            <SelectField label="Timezone" name="timezone" value={formData.timezone} onChange={handleInputChange} options={Array.from(new Set(Object.values(countryTimezoneMap)))} />
           </div>
         </SectionCard>
 
@@ -723,9 +797,9 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
         {/* 8. Commercial */}
         <SectionCard id="commercial" title="8. Commercial Details" icon={DollarSign} isExpanded={expandedSections.commercial} onToggle={toggleSection}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <SelectField label="Budget Range" name="budgetRange" value={formData.budgetRange} onChange={handleInputChange} options={['Under $10k', '$10k - $50k', '$50k - $100k', '$100k - $500k', 'Over $500k']} />
-            <SelectField label="Billing Model" name="billingModel" value={formData.billingModel} onChange={handleInputChange} options={['Fixed Price', 'Time & Material (T&M)', 'Retainer', 'Milestone Based']} />
-            <SelectField label="Payment Terms" name="paymentTerms" value={formData.paymentTerms} onChange={handleInputChange} options={['100% Advance', '50% Advance, 50% Delivery', 'Net 30', 'Net 60', 'Custom Milestones']} />
+            <InputField label="Budget Range" name="budgetRange" value={formData.budgetRange} onChange={handleInputChange} placeholder="e.g. $10k - $50k" />
+            <InputField label="Billing Model" name="billingModel" value={formData.billingModel} onChange={handleInputChange} placeholder="e.g. Fixed Price, T&M" />
+            <InputField label="Payment Terms" name="paymentTerms" value={formData.paymentTerms} onChange={handleInputChange} placeholder="e.g. Net 30, Milestone Based" />
           </div>
         </SectionCard>
 

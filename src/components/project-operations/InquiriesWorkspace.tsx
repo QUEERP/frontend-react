@@ -7,7 +7,7 @@ import { getCookie } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { UserSelect } from './UserSelect';
 import { projectOperationsAPI } from '@/lib/api/project-operations';
@@ -68,9 +68,9 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
   const handleAction = async (inq: Lead, action: string) => {
     setOpenMenuId(null);
     if (action === 'view') {
-      navigate(`/dashboard/${businessId}/project-operations/inquiries/${inq.id}`);
+      navigate(`/dashboard/${businessId}/leads/${inq.id}`);
     } else if (action === 'edit') {
-      navigate(`/dashboard/${businessId}/project-operations/inquiries/${inq.id}/edit`);
+      navigate(`/dashboard/${businessId}/leads/${inq.id}/edit`);
     } else if (action === 'convert') {
       navigate(`/dashboard/${businessId}/project-operations/requirements/create?inquiryId=${inq.id}`);
     } else if (['schedule', 'assign', 'note', 'upload', 'status'].includes(action)) {
@@ -178,7 +178,7 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
       inq.status,
       new Date(inq.createdAt).toLocaleDateString()
     ]);
-    (doc as any).autoTable({ head: [tableColumn], body: tableRows, startY: 20 });
+    autoTable(doc, { head: [tableColumn], body: tableRows, startY: 20 });
     doc.save("Inquiries_Report.pdf");
   };
 
@@ -367,7 +367,6 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button 
-                            title="View Workspace" 
                             className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
                             onClick={(e) => { e.stopPropagation(); handleAction(inq, 'view'); }}
                             disabled={actionLoadingId === inq.id}
@@ -375,16 +374,14 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
                             <Eye className="w-4 h-4" />
                           </button>
 
-                          {['NEW', 'QUALIFIED', 'UNDER_REVIEW', 'REQUIREMENT_GATHERING'].includes(inq.status) && (
-                            <button 
-                              title="Edit Inquiry"
-                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
-                              onClick={(e) => { e.stopPropagation(); handleAction(inq, 'edit'); }}
-                              disabled={actionLoadingId === inq.id}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                          )}
+                          <button 
+                            title="Edit Inquiry"
+                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+                            onClick={(e) => { e.stopPropagation(); handleAction(inq, 'edit'); }}
+                            disabled={actionLoadingId === inq.id}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
 
                           <div className="relative">
                             <button 

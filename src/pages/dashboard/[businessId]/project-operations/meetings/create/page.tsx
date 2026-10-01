@@ -73,7 +73,7 @@ function CreateMeetingContent({ businessId }: { businessId: string }) {
       
       await projectOperationsAPI.createMeeting(businessId, payload);
       toast({ title: "Success", description: "Meeting scheduled successfully!" });
-      navigate(`/dashboard/${businessId}/project-operations/requirements/${requirementId}`);
+      navigate(`/dashboard/${businessId}/project-operations/requirements`);
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Failed to schedule meeting", variant: "destructive" });
     }
