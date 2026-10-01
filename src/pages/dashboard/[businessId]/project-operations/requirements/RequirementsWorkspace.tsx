@@ -343,34 +343,32 @@ export default function RequirementsWorkspace({ businessId: propBusinessId }: { 
                     <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 overflow-hidden text-sm animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="p-2 border-b border-gray-100 dark:border-gray-800">
                         <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">General</p>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Edit3 className="w-3.5 h-3.5 text-gray-400"/> Edit Requirement</button>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Layout className="w-3.5 h-3.5 text-gray-400"/> View Requirement</button>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Copy className="w-3.5 h-3.5 text-gray-400"/> Duplicate</button>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><CheckCircle className="w-3.5 h-3.5 text-gray-400"/> Copy Requirement ID</button>
+                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/${selectedReq?.id}/edit`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Edit3 className="w-3.5 h-3.5 text-gray-400"/> Edit Requirement</button>
+                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Layout className="w-3.5 h-3.5 text-gray-400"/> View Requirement</button>
+                        <button onClick={() => {
+                          navigator.clipboard.writeText(selectedReq?.requirementNumber || selectedReq?.id);
+                          toast({ title: "Copied!", description: "Requirement ID copied to clipboard" });
+                          setShowMoreMenu(false);
+                        }} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><CheckCircle className="w-3.5 h-3.5 text-gray-400"/> Copy Requirement ID</button>
                       </div>
                       <div className="p-2 border-b border-gray-100 dark:border-gray-800">
                         <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Workflow</p>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><DollarSign className="w-3.5 h-3.5 text-gray-400"/> Create Estimate</button>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><FileText className="w-3.5 h-3.5 text-gray-400"/> Create Proposal</button>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Calendar className="w-3.5 h-3.5 text-gray-400"/> Schedule Meeting</button>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Users className="w-3.5 h-3.5 text-gray-400"/> Assign BA / PM</button>
+                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/estimations/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><DollarSign className="w-3.5 h-3.5 text-gray-400"/> Create Estimate</button>
+                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/proposals/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><FileText className="w-3.5 h-3.5 text-gray-400"/> Create Proposal</button>
+                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/projects/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Layout className="w-3.5 h-3.5 text-gray-400"/> Convert to Project</button>
                       </div>
                       <div className="p-2 border-b border-gray-100 dark:border-gray-800">
                         <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Communication & Export</p>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Mail className="w-3.5 h-3.5 text-gray-400"/> Email Customer</button>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Send className="w-3.5 h-3.5 text-gray-400"/> Request Approval</button>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Printer className="w-3.5 h-3.5 text-gray-400"/> Print / PDF</button>
+                        <button onClick={() => {
+                          handleExportPDF();
+                          setShowMoreMenu(false);
+                        }} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Printer className="w-3.5 h-3.5 text-gray-400"/> Print / PDF</button>
                       </div>
                       <div className="p-2 border-b border-gray-100 dark:border-gray-800">
                         <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Management</p>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><AlertCircle className="w-3.5 h-3.5 text-gray-400"/> Change Status</button>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-orange-600 dark:text-orange-500"><Archive className="w-3.5 h-3.5 text-orange-500"/> Archive</button>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-2 text-red-600 dark:text-red-500"><Trash2 className="w-3.5 h-3.5 text-red-500"/> Delete</button>
-                      </div>
-                      <div className="p-2 bg-gray-50 dark:bg-gray-800/50">
-                        <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">History</p>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-white dark:hover:bg-gray-900 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Activity className="w-3.5 h-3.5 text-gray-400"/> Activity Log</button>
-                        <button className="w-full text-left px-2 py-1.5 hover:bg-white dark:hover:bg-gray-900 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Clock className="w-3.5 h-3.5 text-gray-400"/> Audit Log</button>
+                        <button onClick={() => {
+                          toast({ title: "Coming soon", description: "Delete requirement functionality is not yet available." });
+                        }} className="w-full text-left px-2 py-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-2 text-red-600 dark:text-red-500"><Trash2 className="w-3.5 h-3.5 text-red-500"/> Delete</button>
                       </div>
                     </div>
                   )}
