@@ -49,12 +49,10 @@ interface InquiryDetailsClientProps {
 
 // Pipeline stages
 const PIPELINE_STAGES = [
-  { id: '1', key: 'NEW',         label: 'New',          color: 'text-blue-700',   bg: 'bg-blue-50',    border: 'border-blue-200',   dot: 'bg-blue-500'    },
-  { id: '2', key: 'CONTACTED',   label: 'Contacted',    color: 'text-indigo-700', bg: 'bg-indigo-50',  border: 'border-indigo-200', dot: 'bg-indigo-500'  },
-  { id: '3', key: 'QUALIFIED',   label: 'Qualified',    color: 'text-cyan-700',   bg: 'bg-cyan-50',    border: 'border-cyan-200',   dot: 'bg-cyan-500'    },
-  { id: '4', key: 'PROPOSAL_PENDING',    label: 'Proposal',     color: 'text-sky-700',    bg: 'bg-sky-50',     border: 'border-sky-200',    dot: 'bg-sky-500'     },
-  { id: '5', key: 'NEGOTIATION', label: 'Negotiation',  color: 'text-blue-800',   bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600'    },
-  { id: '6', key: 'CONVERTED',   label: 'Converted',    color: 'text-emerald-700',bg: 'bg-emerald-50', border: 'border-emerald-200',dot: 'bg-emerald-500' },
+  { id: '1', key: 'NEW',           label: 'New',          color: 'text-blue-700',   bg: 'bg-blue-50',    border: 'border-blue-200',   dot: 'bg-blue-500'    },
+  { id: '2', key: 'CONTACTED',     label: 'Contacted',    color: 'text-indigo-700', bg: 'bg-indigo-50',  border: 'border-indigo-200', dot: 'bg-indigo-500'  },
+  { id: '3', key: 'QUALIFIED',     label: 'Qualified',    color: 'text-cyan-700',   bg: 'bg-cyan-50',    border: 'border-cyan-200',   dot: 'bg-cyan-500'    },
+  { id: '4', key: 'CONVERTED',     label: 'Converted',    color: 'text-emerald-700',bg: 'bg-emerald-50', border: 'border-emerald-200',dot: 'bg-emerald-500' },
 ]
 
 const STATUS_BADGE: Record<string, string> = {
@@ -99,7 +97,7 @@ export function InquiryDetailsClient({ businessId }: InquiryDetailsClientProps) 
       const response = await leadsAPI.getLeadDetails(businessId, leadId)
       if (response.success) setLead(response.data)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch lead details')
+      toast.error(error instanceof Error ? error.message : 'Failed to fetch inquiry details')
     } finally {
       setLoading(false)
     }
@@ -238,10 +236,10 @@ export function InquiryDetailsClient({ businessId }: InquiryDetailsClientProps) 
           {!isConverted && (
             <Button
               size="sm"
-              onClick={() => navigate(`/dashboard/${businessId}/project-operations/inquiries/${leadId}/convert`)}
+              onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/create?inquiryId=${leadId}`)}
               className="h-9 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm rounded-lg border-none"
             >
-              <Sparkles className="h-4 w-4" /> {isTrading ? 'Convert to Deal' : 'Convert to Customer'}
+              <Sparkles className="h-4 w-4" /> Convert to Requirement
             </Button>
           )}
           {isConverted && (
@@ -300,14 +298,14 @@ export function InquiryDetailsClient({ businessId }: InquiryDetailsClientProps) 
               <ChevronRight className="mx-3 h-5 w-5 text-slate-300" />
               <div className="flex flex-col items-center gap-2 min-w-[80px]">
                 <div className="flex items-center justify-center h-10 w-10 rounded-full border-2 border-dashed border-emerald-300 text-emerald-500 bg-emerald-50">
-                  <Users className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4" />
                 </div>
-                <span className="text-xs font-bold text-emerald-600 text-center whitespace-nowrap mt-1">Customer</span>
+                <span className="text-xs font-bold text-emerald-600 text-center whitespace-nowrap mt-1">Requirement</span>
               </div>
             </div>
 
             <p className="text-xs font-medium text-muted-foreground mt-2 text-center sm:text-left">
-              Click any stage to move this inquiry, or use <strong className="text-emerald-600 font-semibold">{isTrading ? 'Convert to Deal' : 'Convert to Customer'}</strong> to complete the workflow.
+              Click any stage to move this inquiry, or use <strong className="text-emerald-600 font-semibold">Convert to Requirement</strong> to complete the workflow.
             </p>
           </CardContent>
         </Card>
@@ -621,9 +619,9 @@ export function InquiryDetailsClient({ businessId }: InquiryDetailsClientProps) 
               {!isConverted && (
                 <Button
                   className="w-full h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm border-none font-semibold rounded-lg"
-                  onClick={() => navigate(`/dashboard/${businessId}/project-operations/inquiries/${leadId}/convert`)}
+                  onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/create?inquiryId=${leadId}`)}
                 >
-                  <Sparkles className="h-4 w-4" /> {isTrading ? 'Convert to Deal' : 'Convert to Customer'}
+                  <Sparkles className="h-4 w-4" /> Convert to Requirement
                 </Button>
               )}
               <Button
