@@ -151,7 +151,9 @@ interface Props {
   businessId: string;
 }
 
-import { useParams } from "react-router-dom";`nexport default function EditInquiryPage() {`n  const { businessId, id } = useParams() as { businessId: string, id: string };
+import { useParams } from "react-router-dom";
+export default function EditInquiryPage() {
+  const { businessId, id } = useParams() as { businessId: string, id: string };
   const navigate = useNavigate();
   const { business, currencySymbol, currency } = useBusinessData();
 
@@ -285,7 +287,29 @@ import { useParams } from "react-router-dom";`nexport default function EditInqui
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {`n    e.preventDefault();`n    setSubmitLoading(true);`n    setSubmitError("");`n    try {`n      const payload = {`n        ...formData,`n        tags: typeof formData.tags === "string" ? formData.tags.split(",").map((t: string) => t.trim()) : formData.tags,`n        type: "INQUIRY",`n        assignedTo: formData.assignedToId,`n      };`n      await leadsAPI.updateLead(businessId, id, payload as any);`n      setSubmitSuccess(true);`n      setTimeout(() => {`n        navigate(`/dashboard/${businessId}/project-operations/inquiries`);`n      }, 1200);`n    } catch (err: any) {`n      setSubmitError(err.message || "Failed to update inquiry. Please try again.");`n    } finally {`n      setSubmitLoading(false);`n    }`n  };`n  const dummySubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitLoading(true);
+    setSubmitError("");
+    try {
+      const payload = {
+        ...formData,
+        tags: typeof formData.tags === "string" ? formData.tags.split(",").map((t: string) => t.trim()) : formData.tags,
+        type: "INQUIRY",
+        assignedTo: formData.assignedToId,
+      };
+      await leadsAPI.updateLead(businessId, id, payload as any);
+      setSubmitSuccess(true);
+      setTimeout(() => {
+        navigate(`/dashboard/${businessId}/project-operations/inquiries`);
+      }, 1200);
+    } catch (err: any) {
+      setSubmitError(err.message || "Failed to update inquiry. Please try again.");
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+  const dummySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitLoading(true);
     setSubmitError("");
