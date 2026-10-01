@@ -560,11 +560,14 @@ export default function CreateProjectPage() {
                       >
                         <option value="">Select Role...</option>
                         <option value="Project Manager">Project Manager</option>
+                        <option value="Account Executive">Account Executive</option>
                         <option value="Business Analyst">Business Analyst</option>
-                        <option value="Technical Lead">Technical Lead</option>
-                        <option value="Developer">Developer</option>
-                        <option value="QA Engineer">QA Engineer</option>
-                        <option value="DevOps">DevOps</option>
+                        <option value="Operations Lead">Operations Lead</option>
+                        <option value="Subject Matter Expert">Subject Matter Expert</option>
+                        <option value="Quality Assurance">Quality Assurance</option>
+                        <option value="Consultant">Consultant</option>
+                        <option value="Site Supervisor">Site Supervisor</option>
+                        <option value="Designer">Designer</option>
                       </select>
                     </div>
                     <div className="col-span-6">

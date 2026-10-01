@@ -181,7 +181,7 @@ export default function CreateMilestonePage() {
                   </Field>
                 </div>
                 <div className="lg:col-span-2"><Field label="Milestone Name" required><Input value={form.title} onChange={(v: string) => set('title', v)} placeholder="e.g. Phase 1 Go-Live" /></Field></div>
-                <Field label="Category"><Select value={form.category} onChange={(v: string) => set('category', v)}><option value="">Select Category...</option><option value="General">General</option><option value="Design">Design</option><option value="Development">Development</option><option value="Testing">Testing</option><option value="Delivery">Delivery</option><option value="Payment">Payment</option></Select></Field>
+                <Field label="Category"><Select value={form.category} onChange={(v: string) => set('category', v)}><option value="">Select Category...</option><option value="General">General</option><option value="Planning">Planning</option><option value="Execution">Execution</option><option value="Review">Review</option><option value="Delivery">Delivery</option><option value="Payment">Payment</option></Select></Field>
                 <Field label="Phase"><Input value={form.phase} onChange={(v: string) => set('phase', v)} placeholder="e.g. Planning Phase" /></Field>
                 <Field label="Sprint"><Input value={form.sprint} onChange={(v: string) => set('sprint', v)} placeholder="e.g. Sprint 4" /></Field>
                 <Field label="Priority"><Select value={form.priority} onChange={(v: string) => set('priority', v)}><option value="">Select Priority...</option><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="CRITICAL">Critical</option></Select></Field>
@@ -213,7 +213,7 @@ export default function CreateMilestonePage() {
                 <Field label="Approver">
                   <UserSelect businessId={businessId as string} value={form.approverId} onChange={(v) => set('approverId', v)} placeholder="Select Approver" />
                 </Field>
-                <Field label="Department"><Select value={form.department} onChange={(v: string) => set('department', v)}><option value="">Select Department...</option><option>Engineering</option><option>Design</option><option>Marketing</option><option>Sales</option><option>Finance</option></Select></Field>
+                <Field label="Department"><Select value={form.department} onChange={(v: string) => set('department', v)}><option value="">Select Department...</option><option>Engineering</option><option>Operations</option><option>Consulting</option><option>Sales</option><option>Finance</option></Select></Field>
               </div>
             </Section>
 

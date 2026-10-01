@@ -76,7 +76,7 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
   const fetchLeads = async () => {
     try {
       setLoading(true)
-      const response = await leadsAPI.getAllLeads(businessId)
+      const response = await leadsAPI.getAllLeads(businessId, { type: 'LEAD' })
       if (response.success) setLeads(response.data)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to fetch leads')

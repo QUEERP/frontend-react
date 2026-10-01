@@ -197,7 +197,7 @@ export function ProposalsWorkspace({ businessId }: { businessId: string }) {
       head: [['Description', 'Amount']],
       body: [
         ['Professional Services / Base Cost', `$${(prop.totalAmount * 0.7 || 0).toLocaleString()}`],
-        ['Software & Licensing', `$${(prop.totalAmount * 0.2 || 0).toLocaleString()}`],
+        ['Equipment, Software & Licensing', `$${(prop.totalAmount * 0.2 || 0).toLocaleString()}`],
         ['Contingency / Risk Buffer', `$${(prop.totalAmount * 0.1 || 0).toLocaleString()}`],
       ],
       foot: [['Grand Total', `$${(prop.totalAmount || 0).toLocaleString()}`]],

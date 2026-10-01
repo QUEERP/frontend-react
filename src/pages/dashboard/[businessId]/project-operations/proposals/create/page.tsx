@@ -513,8 +513,8 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
               <UserSelect businessId={businessId as string} value={formData.salesOwner} onChange={(v) => handleInputChange({ target: { name: 'salesOwner', value: v } } as any)} placeholder="Select Sales Owner" />
             </div>
             
-            <SelectField label="Business Unit" name="businessUnit" value={formData.businessUnit} onChange={handleInputChange} options={['Software', 'Hardware', 'Consulting', 'Managed Services']} />
-            <SelectField label="Department" name="department" value={formData.department} onChange={handleInputChange} options={['Enterprise', 'SMB', 'Government', 'Retail']} />
+            <SelectField label="Business Unit" name="businessUnit" value={formData.businessUnit} onChange={handleInputChange} options={['Engineering', 'Operations', 'Consulting', 'Managed Services', 'Sales']} />
+            <SelectField label="Department" name="department" value={formData.department} onChange={handleInputChange} options={['Enterprise', 'Commercial', 'Government/Public', 'SMB']} />
             
             <SelectField label="Currency" name="currency" value={formData.currency} onChange={handleInputChange} options={['USD', 'EUR', 'GBP', 'INR', 'AED']} />
             <InputField label="Exchange Rate" name="exchangeRate" type="number" value={formData.exchangeRate} onChange={handleNumberChange} />

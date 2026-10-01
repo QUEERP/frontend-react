@@ -403,7 +403,7 @@ export default function CreateAllocationPage() {
                   label="Role in Project" 
                   value={formData.role} 
                   onChange={(val: any) => handleChange('role', val)}
-                  options={['Project Manager', 'Business Analyst', 'Technical Lead', 'Developer', 'QA Engineer', 'Designer', 'Consultant']}
+                  options={['Project Manager', 'Account Executive', 'Business Analyst', 'Operations Lead', 'Subject Matter Expert', 'Quality Assurance', 'Consultant', 'Site Supervisor', 'Designer']}
                   required
                 />
                 <SelectField 

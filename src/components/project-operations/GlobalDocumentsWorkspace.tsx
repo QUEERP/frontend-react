@@ -7,7 +7,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { API_ROOT } from "@/config/api";
 
-const FOLDERS = ['General', 'Projects', 'Finance', 'Contracts', 'Engineering', 'HR', 'Shared', 'Archive'];
+const FOLDERS = ['General', 'Projects', 'Finance', 'Contracts', 'Operations', 'HR', 'Shared', 'Archive'];
 const ENTITY_TYPES = ['Project', 'Task', 'Milestone', 'Issue', 'Change Request', 'Invoice', 'Expense', 'Contract', 'Customer', 'Vendor', 'Employee'];
 const FILE_ICONS: Record<string, { icon: any; color: string }> = {
   pdf: { icon: FileText, color: 'text-red-500' },
