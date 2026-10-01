@@ -105,7 +105,12 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
     try {
       setLoading(true)
       const response = await quotationsAPI.getQuotations(businessId)
-      if (response.success) setQuotations(response.quotations || [])
+      if (response.success) {
+        const standardQuotations = (response.quotations || []).filter(q => 
+          !(q.quoteNumber?.startsWith('EST-') || q.quoteNumber?.startsWith('PRP-'))
+        );
+        setQuotations(standardQuotations);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to fetch quotations')
     } finally {
