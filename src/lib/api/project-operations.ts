@@ -282,6 +282,24 @@ export const projectOperationsAPI = {
     return response.json();
   },
 
+  async getEstimationById(businessId: string, id: string): Promise<any> {
+    const token = getCookie('token') || getCookie('accessToken');
+    const response = await fetch(`${API_ROOT}/project-operations/estimations/${id}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'x-business-id': businessId
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to fetch estimation');
+    }
+
+    return response.json();
+  },
+
   async allocateResource(businessId: string, data: ResourceAllocationData): Promise<any> {
     const token = getCookie('token') || getCookie('accessToken');
         const response = await fetch(`${API_ROOT}/project-operations/resources/allocate`, {

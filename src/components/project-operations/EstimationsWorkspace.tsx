@@ -1,8 +1,9 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect, useRef } from 'react';
 import {  useNavigate  } from 'react-router-dom';
-import { Search, Filter, FileText, Calculator, FileCheck2, ArrowRight, Download, Plus, X, ChevronDown, CheckCircle, ArrowDownUp, Save as SaveIcon, SlidersHorizontal } from 'lucide-react';
+import { Search, Filter, FileText, Calculator, FileCheck2, ArrowRight, Download, Plus, X, ChevronDown, CheckCircle, ArrowDownUp, Save as SaveIcon, SlidersHorizontal, Eye, Edit2, Trash2 } from 'lucide-react';
 import { quotationsAPI, Quotation } from '@/lib/api/quotations';
+import { projectOperationsAPI } from '@/lib/api/project-operations';
 import { useToast } from "@/components/ui/use-toast";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -11,7 +12,7 @@ import * as XLSX from 'xlsx';
 export function EstimationsWorkspace({ businessId }: { businessId: string }) {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [estimations, setEstimations] = useState<Quotation[]>([]);
+  const [estimations, setEstimations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,9 +50,8 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
 
   const fetchEstimations = async () => {
     try {
-      setLoading(true);
-      const data = await quotationsAPI.getQuotations(businessId);
-      setEstimations(data.quotations || []);
+      const data = await projectOperationsAPI.getEstimations(businessId);
+      setEstimations(data.estimations || []);
     } catch (error) {
       console.error("Error fetching estimations:", error);
       toast({
@@ -68,7 +68,7 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
     const searchLower = debouncedSearch.toLowerCase();
     
     // Search
-    const matchesSearch = (est.quoteNumber || '').toLowerCase().includes(searchLower) ||
+    const matchesSearch = (est.id || '').toLowerCase().includes(searchLower) ||
       (est.title || '').toLowerCase().includes(searchLower) ||
       (est.customer?.name || est.customer?.company || '').toLowerCase().includes(searchLower);
 
@@ -107,14 +107,14 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
       }
 
       const exportData = filteredEstimations.map(est => ({
-        "Estimate Number": est.quoteNumber,
+        "Estimate Number": est.id,
         "Estimate Name": est.title || 'Standard Estimation',
         "Customer": est.customer?.name || est.customer?.company || 'N/A',
         "Requirement": (est as any).requirementId || 'N/A',
         "Status": est.status,
-        "Budget": est.totalAmount || 0,
-        "Estimated Cost": (est.totalAmount || 0) * 0.7, // Mock derived value
-        "Profit": (est.totalAmount || 0) * 0.3,
+        "Budget": est.totalCost || 0,
+        "Estimated Cost": (est.totalCost || 0) * 0.7, // Mock derived value
+        "Profit": (est.totalCost || 0) * 0.3,
         "Currency": "USD", // Default or fetch from est
         "Created Date": est.issueDate || est.createdAt || 'N/A'
       }));
@@ -144,13 +144,13 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
       doc.text(`Generated Date: ${new Date().toLocaleDateString()}`, 14, 28);
       
       const tableData = filteredEstimations.map(est => [
-        est.quoteNumber,
+        est.id,
         est.title || 'Standard Estimation',
         est.customer?.name || est.customer?.company || '-',
         est.status,
-        `$${(est.totalAmount || 0).toLocaleString()}`,
-        `$${((est.totalAmount || 0) * 0.7).toLocaleString()}`, // Mock Cost
-        `$${((est.totalAmount || 0) * 0.3).toLocaleString()}` // Mock Profit
+        `$${(est.totalCost || 0).toLocaleString()}`,
+        `$${((est.totalCost || 0) * 0.7).toLocaleString()}`, // Mock Cost
+        `$${((est.totalCost || 0) * 0.3).toLocaleString()}` // Mock Profit
       ]);
 
       autoTable(doc, {
@@ -375,7 +375,7 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
                           <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
                              <Calculator className="w-4 h-4" />
                           </div>
-                          <span className="font-medium text-gray-900 dark:text-gray-100">{est.quoteNumber}</span>
+                          <span className="font-medium text-gray-900 dark:text-gray-100">{est.id}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
@@ -390,12 +390,39 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
                         </span>
                       </td>
                       <td className="px-6 py-4 font-bold text-gray-900 dark:text-gray-100">
-                        ${(est.totalAmount || 0).toLocaleString()}
+                        ${(est.totalCost || 0).toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs font-semibold flex items-center justify-end gap-1 w-full opacity-0 group-hover:opacity-100 transition-opacity">
-                          View Details <ArrowRight className="w-3 h-3" />
-                        </button>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/project-operations/estimations/${est.id}`); }}
+                            className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
+                            title="View Estimation"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/project-operations/estimations/create?editId=${est.id}`); }}
+                            className="p-1.5 text-orange-600 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/40 rounded-lg transition-colors"
+                            title="Edit Estimation"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); /* Implement PDF download */ }}
+                            className="p-1.5 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 rounded-lg transition-colors"
+                            title="Download PDF"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); /* Implement Delete */ }}
+                            className="p-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:hover:bg-rose-900/40 rounded-lg transition-colors"
+                            title="Delete Estimation"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

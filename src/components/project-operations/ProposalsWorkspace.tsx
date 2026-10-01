@@ -56,7 +56,8 @@ export function ProposalsWorkspace({ businessId }: { businessId: string }) {
     try {
       setLoading(true);
       const data = await quotationsAPI.getQuotations(businessId);
-      setProposals(data.quotations || []);
+      const props = (data.quotations || []).filter(q => q.quoteNumber?.startsWith('PRP-'));
+      setProposals(props);
     } catch (error) {
       console.error("Error fetching proposals:", error);
       toast({
