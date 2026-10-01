@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect, useRef } from 'react';
 import {  useNavigate  } from 'react-router-dom';
-import { Search, Filter, FileText, Calculator, FileCheck2, ArrowRight, Download, Plus, X, ChevronDown, CheckCircle, ArrowDownUp, Save as SaveIcon, SlidersHorizontal, Eye, Edit2, Trash2 } from 'lucide-react';
+import { Search, Filter, FileText, Calculator, FileCheck2, ArrowRight, Download, Plus, X, ChevronDown, CheckCircle, ArrowDownUp, Save as SaveIcon, SlidersHorizontal, Eye, Edit2, Trash2, MoreVertical } from 'lucide-react';
 import { quotationsAPI, Quotation } from '@/lib/api/quotations';
 import { projectOperationsAPI } from '@/lib/api/project-operations';
 import { useToast } from "@/components/ui/use-toast";
@@ -14,6 +14,7 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
   const { toast } = useToast();
   const [estimations, setEstimations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -38,6 +39,9 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
     const handleClickOutside = (event: MouseEvent) => {
       if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
         setIsSortOpen(false);
+      }
+      if (!(event.target as Element).closest('.actions-menu')) {
+        setActiveMenuId(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -392,37 +396,26 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
                       <td className="px-6 py-4 font-bold text-gray-900 dark:text-gray-100">
                         ${(est.totalCost || 0).toLocaleString()}
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/project-operations/estimations/${est.id}`); }}
-                            className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
-                            title="View Estimation"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/project-operations/estimations/create?editId=${est.id}`); }}
-                            className="p-1.5 text-orange-600 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/40 rounded-lg transition-colors"
-                            title="Edit Estimation"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); /* Implement PDF download */ }}
-                            className="p-1.5 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 rounded-lg transition-colors"
-                            title="Download PDF"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); /* Implement Delete */ }}
-                            className="p-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:hover:bg-rose-900/40 rounded-lg transition-colors"
-                            title="Delete Estimation"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                      <td className="px-6 py-4 text-right relative actions-menu">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === est.id ? null : est.id); }}
+                          className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        >
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+                        
+                        {activeMenuId === est.id && (
+                          <div className="absolute right-6 top-10 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl z-50 overflow-hidden text-xs animate-in fade-in slide-in-from-top-2">
+                            <div className="p-1">
+                              <button onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/project-operations/estimations/${est.id}`); setActiveMenuId(null); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 text-gray-700 dark:text-gray-300"><Eye className="w-3.5 h-3.5" /> View Estimation</button>
+                              <button onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/project-operations/estimations/create?editId=${est.id}`); setActiveMenuId(null); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 text-gray-700 dark:text-gray-300"><Edit2 className="w-3.5 h-3.5" /> Edit Estimation</button>
+                              <div className="h-px bg-gray-100 dark:bg-gray-800 my-1 mx-2"></div>
+                              <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(null); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 text-gray-700 dark:text-gray-300"><Download className="w-3.5 h-3.5" /> Download PDF</button>
+                              <div className="h-px bg-gray-100 dark:bg-gray-800 my-1 mx-2"></div>
+                              <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(null); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 text-red-600 dark:text-red-400"><Trash2 className="w-3.5 h-3.5" /> Delete Estimation</button>
+                            </div>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
