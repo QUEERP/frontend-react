@@ -317,7 +317,13 @@ export default function EditInquiryPage() {
       };
 
       // Remove relational/complex fields that would crash Prisma update
-      const fieldsToRemove = ["activities", "crmTasks", "emailLogs", "assignedTo", "business", "campaign", "customer", "requirement", "stage", "leadActivities", "conversionLog", "leadNotes", "reminders", "tasks", "notes", "CustomerToLead", "attachments", "createdAt", "updatedAt", "deletedAt", "stageId"];
+      const fieldsToRemove = [
+        "activities", "crmTasks", "emailLogs", "assignedTo", "business", 
+        "campaign", "customer", "requirement", "stage", "leadActivities", 
+        "conversionLog", "leadNotes", "reminders", "tasks", "notes", 
+        "CustomerToLead", "attachments", "createdAt", "updatedAt", 
+        "deletedAt", "stageId", "businessId", "id"
+      ];
       fieldsToRemove.forEach(field => delete payload[field]);
 
       await leadsAPI.updateLead(businessId, id, payload as any);
@@ -863,7 +869,7 @@ export default function EditInquiryPage() {
               ) : (
                 <CheckSquare className="w-4 h-4" />
               )}
-              {submitLoading ? "Saving…" : submitSuccess ? "Saved! Redirecting…" : "Save Customer Inquiry"}
+              {submitLoading ? "Updating…" : submitSuccess ? "Updated! Redirecting…" : "Update Customer Inquiry"}
             </button>
           </div>
         </form>
