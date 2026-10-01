@@ -68,9 +68,9 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
   const handleAction = async (inq: Lead, action: string) => {
     setOpenMenuId(null);
     if (action === 'view') {
-      navigate(`/dashboard/${businessId}/leads/${inq.id}`);
+      navigate(`/dashboard/${businessId}/project-operations/inquiries/${inq.id}`);
     } else if (action === 'edit') {
-      navigate(`/dashboard/${businessId}/leads/${inq.id}/edit`);
+      navigate(`/dashboard/${businessId}/project-operations/inquiries/${inq.id}/edit`);
     } else if (action === 'convert') {
       navigate(`/dashboard/${businessId}/project-operations/requirements/create?inquiryId=${inq.id}`);
     } else if (['schedule', 'assign', 'note', 'upload', 'status'].includes(action)) {
@@ -168,7 +168,23 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
-    doc.text("Customer Inquiries", 14, 15);
+    const pageWidth = doc.internal.pageSize.width;
+    const primaryColor: [number, number, number] = [41, 128, 185];
+
+    // Header Banner
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CUSTOMER INQUIRIES', 14, 25);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - 14, 25, { align: 'right' });
+
+    // Table
     const tableColumn = ["Customer", "Email", "Phone", "Company", "Status", "Date"];
     const tableRows = inquiries.map(inq => [
       inq.name,
@@ -178,7 +194,14 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
       inq.status,
       new Date(inq.createdAt).toLocaleDateString()
     ]);
-    autoTable(doc, { head: [tableColumn], body: tableRows, startY: 20 });
+
+    autoTable(doc, { 
+      head: [tableColumn], 
+      body: tableRows, 
+      startY: 50,
+      theme: 'grid',
+      headStyles: { fillColor: primaryColor }
+    });
     doc.save("Inquiries_Report.pdf");
   };
 
