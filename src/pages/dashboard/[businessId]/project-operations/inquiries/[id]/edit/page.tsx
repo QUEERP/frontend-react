@@ -231,6 +231,23 @@ export default function EditInquiryPage() {
     }
   }, [businessId]);
 
+  useEffect(() => {
+    if (businessId && id) {
+      leadsAPI.getLeadDetails(businessId, id).then(res => {
+        if (res.success && res.data) {
+          const lead = res.data;
+          setFormData({
+            ...lead,
+            customerId: typeof lead.customer === "object" ? lead.customer?.id : lead.customerId || "",
+            assignedToId: typeof lead.assignedTo === "object" ? lead.assignedTo?.id : lead.assignedTo || "",
+            tags: lead.tags ? lead.tags.join(", ") : "",
+            inquiryTitle: lead.inquiryTitle || lead.title || "",
+          });
+        }
+      }).catch(console.error);
+    }
+  }, [businessId, id]);
+
   const handleCustomerSelect = (customerId: string) => {
     const selected = customers.find((c) => c.id === customerId);
     if (selected) {
