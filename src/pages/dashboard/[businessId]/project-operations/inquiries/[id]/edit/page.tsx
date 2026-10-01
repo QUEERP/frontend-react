@@ -322,7 +322,7 @@ export default function EditInquiryPage() {
         "campaign", "customer", "requirement", "stage", "leadActivities", 
         "conversionLog", "leadNotes", "reminders", "tasks", "notes", 
         "CustomerToLead", "attachments", "createdAt", "updatedAt", 
-        "deletedAt", "stageId", "businessId", "id"
+        "deletedAt", "stageId", "businessId", "id", "type"
       ];
       fieldsToRemove.forEach(field => delete payload[field]);
 
