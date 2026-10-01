@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { UserSelect } from './UserSelect';
+import { projectOperationsAPI } from '@/lib/api/project-operations';
 
 export function InquiriesWorkspace({ businessId }: { businessId: string }) {
   const navigate = useNavigate();
@@ -122,6 +124,21 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
     try {
       if (modalState.type === 'schedule') {
         await leadsAPI.addReminder(businessId, inq.id, modalInput.title || 'Meeting', modalInput.date || new Date().toISOString());
+        
+        // Also create meeting in project operations
+        await projectOperationsAPI.createMeeting(businessId, {
+          title: modalInput.title || 'Meeting with ' + inq.name,
+          date: modalInput.date || new Date().toISOString(),
+          startTime: modalInput.date ? new Date(modalInput.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "10:00",
+          endTime: modalInput.date ? new Date(new Date(modalInput.date).getTime() + 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "11:00",
+          type: "EXTERNAL",
+          status: "SCHEDULED",
+          platform: "Google Meet", // Default
+          agenda: "Discussion for " + inq.name,
+          participants: [],
+          customerId: (inq as any).customerId || null
+        });
+
         toast({ title: "Success", description: "Meeting scheduled." });
       } else if (modalState.type === 'assign') {
         await leadsAPI.updateLead(businessId, inq.id, { assignedTo: modalInput.userId });
@@ -481,8 +498,8 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
               )}
               {modalState.type === 'assign' && (
                 <div>
-                  <label className="text-sm font-semibold mb-1 block text-gray-700 dark:text-gray-300">Employee ID</label>
-                  <input className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" value={modalInput.userId || ''} onChange={e => setModalInput({...modalInput, userId: e.target.value})} placeholder="Enter User ID..." />
+                  <label className="text-sm font-semibold mb-1 block text-gray-700 dark:text-gray-300">Employee</label>
+                  <UserSelect businessId={businessId} value={modalInput.userId || ''} onChange={(val) => setModalInput({...modalInput, userId: val})} placeholder="Select Employee..." />
                 </div>
               )}
               {modalState.type === 'note' && (
