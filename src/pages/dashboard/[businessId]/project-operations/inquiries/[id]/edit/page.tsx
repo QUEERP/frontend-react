@@ -309,12 +309,17 @@ export default function EditInquiryPage() {
     setSubmitLoading(true);
     setSubmitError("");
     try {
-      const payload = {
+      const payload: any = {
         ...formData,
         tags: typeof formData.tags === "string" ? formData.tags.split(",").map((t: string) => t.trim()) : formData.tags,
         type: "INQUIRY",
         assignedTo: formData.assignedToId,
       };
+
+      // Remove relational/complex fields that would crash Prisma update
+      const fieldsToRemove = ["activities", "crmTasks", "emailLogs", "assignedTo", "business", "campaign", "customer", "requirement", "stage", "leadActivities", "conversionLog", "leadNotes", "reminders", "tasks", "notes", "CustomerToLead", "attachments", "createdAt", "updatedAt", "deletedAt", "stageId"];
+      fieldsToRemove.forEach(field => delete payload[field]);
+
       await leadsAPI.updateLead(businessId, id, payload as any);
       setSubmitSuccess(true);
       setTimeout(() => {
