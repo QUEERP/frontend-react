@@ -5,5 +5,5 @@ import RequirementsWorkspace from '../RequirementsWorkspace';
 export default function ViewRequirementPage() {
   const { businessId, id } = useParams();
   
-  return <RequirementsWorkspace businessId={businessId} />;
+  return <RequirementsWorkspace businessId={businessId} id={id} />;
 }
