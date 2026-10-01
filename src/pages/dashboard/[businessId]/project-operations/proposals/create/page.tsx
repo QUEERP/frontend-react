@@ -14,6 +14,7 @@ import {
 import { UserSelect } from "@/components/project-operations/UserSelect";
 import { useToast } from "@/components/ui/use-toast";
 import { projectOperationsAPI } from "@/lib/api/project-operations";
+import { quotationsAPI } from "@/lib/api/quotations";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -201,10 +202,30 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
     fetchUsers();
   }, [businessId]);
 
-  // Initialization logic removed, relying on dynamic cascading now
   useEffect(() => {
-    // We can seed based on estId or reqId if needed in the future
-  }, [customers, estId, reqId]);
+    if (!editId) return;
+    const fetchProposal = async () => {
+      try {
+        const res = await quotationsAPI.getQuotationById(businessId, editId);
+        if (res.success && res.quotation) {
+          const q = res.quotation;
+          setFormData(prev => ({
+            ...prev,
+            propNumber: q.quoteNumber || prev.propNumber,
+            propName: q.title || prev.propName,
+            customer: q.customerId || prev.customer,
+            status: q.status || prev.status,
+            propDate: q.issueDate ? new Date(q.issueDate).toISOString().split('T')[0] : prev.propDate,
+            validUntil: q.expiryDate ? new Date(q.expiryDate).toISOString().split('T')[0] : prev.validUntil,
+            currency: q.currency || prev.currency,
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to load proposal details for edit:", err);
+      }
+    };
+    fetchProposal();
+  }, [businessId, editId]);
 
   // Fetch requirements when customer changes
   useEffect(() => {
