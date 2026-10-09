@@ -842,7 +842,7 @@ export function UserDetailPageClient({
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <EyeIcon className="size-4 text-muted-foreground" />
-                  <span>Member ID {user.membershipId}</span>
+                  <span>Member ID: {user.membershipId?.split('-')[0].toUpperCase()}</span>
                 </div>
               </div>
             </CardContent>

@@ -8,7 +8,9 @@ import {
   Lock,
   Mail,
   User,
-  Shield
+  Shield,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
@@ -30,6 +32,8 @@ export function AddUserPageClient({ businessId }: { businessId: string }) {
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '')
 
   const getCookie = (name: string) => {
@@ -173,16 +177,25 @@ export function AddUserPageClient({ businessId }: { businessId: string }) {
                   <Lock className="h-4 w-4 text-slate-400" />
                   Password
                 </Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  minLength={6}
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="bg-muted dark:bg-slate-900/50"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={6}
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="bg-muted dark:bg-slate-900/50 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -190,16 +203,25 @@ export function AddUserPageClient({ businessId }: { businessId: string }) {
                   <Lock className="h-4 w-4 text-slate-400" />
                   Confirm Password
                 </Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  minLength={6}
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="bg-muted dark:bg-slate-900/50"
-                />
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    required
+                    minLength={6}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="bg-muted dark:bg-slate-900/50 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">

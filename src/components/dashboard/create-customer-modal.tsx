@@ -60,7 +60,7 @@ const EMPTY_FORM: CreateCustomerData = {
   crmStatus: 'ACTIVE',
 }
 
-type TabKey = 'basic' | 'address' | 'billing' | 'shipping' | 'crm'
+type TabKey = 'basic' | 'address' | 'billing' | 'shipping' | 'crm' | 'bank'
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'basic', label: 'Basic', icon: <Building2 className="h-4 w-4" /> },
@@ -68,6 +68,7 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'billing', label: 'Billing', icon: <CreditCard className="h-4 w-4" /> },
   { key: 'shipping', label: 'Shipping', icon: <MapPin className="h-4 w-4" /> },
   { key: 'crm', label: 'CRM', icon: <Briefcase className="h-4 w-4" /> },
+  { key: 'bank', label: 'Bank Details', icon: <CreditCard className="h-4 w-4" /> },
 ]
 
 export function CreateCustomerModal({ open, onClose, businessId, onCreated }: CreateCustomerModalProps) {
@@ -322,6 +323,32 @@ export function CreateCustomerModal({ open, onClose, businessId, onCreated }: Cr
                 <div className="sm:col-span-2 space-y-1.5">
                   <Label className="text-xs font-semibold text-foreground">Description</Label>
                   <Textarea className="text-sm resize-none" rows={3} value={form.description || ''} onChange={e => set('description', e.target.value)} placeholder="Brief notes about this customer..." />
+                </div>
+              </div>
+            )}
+
+            {/* ── BANK DETAILS ── */}
+            {activeTab === 'bank' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">Bank Name</Label>
+                  <Input className={fieldCls} value={form.bankName || ''} onChange={e => set('bankName', e.target.value)} placeholder="e.g. Chase Bank" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">Account Name</Label>
+                  <Input className={fieldCls} value={form.accountName || ''} onChange={e => set('accountName', e.target.value)} placeholder="e.g. Acme Corp LLC" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">Account Number</Label>
+                  <Input className={fieldCls} value={form.accountNumber || ''} onChange={e => set('accountNumber', e.target.value)} placeholder="Enter account number" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">Swift Code</Label>
+                  <Input className={fieldCls} value={form.swiftCode || ''} onChange={e => set('swiftCode', e.target.value)} placeholder="Enter Swift Code" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">IBAN</Label>
+                  <Input className={fieldCls} value={form.iban || ''} onChange={e => set('iban', e.target.value)} placeholder="Enter IBAN" />
                 </div>
               </div>
             )}

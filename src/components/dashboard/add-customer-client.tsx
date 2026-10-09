@@ -45,6 +45,33 @@ import { CurrencySelect } from '@/components/dashboard/currency-select'
 import { CountrySelect } from '@/components/dashboard/country-select'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { ALL_REGIONS, getRegionDisplayLabel } from './regions'
+import { COUNTRY_DIAL_CODES } from '@/lib/country-codes'
+
+const getCountryCodeFromRegion = (region: string) => {
+  switch (region) {
+    case 'INDIA': return 'IN'
+    case 'UAE':
+    case 'UNITED_ARAB_EMIRATES': return 'AE'
+    case 'SAUDI_ARABIA': return 'SA'
+    case 'UNITED_STATES': return 'US'
+    case 'UNITED_KINGDOM': return 'GB'
+    case 'CANADA': return 'CA'
+    case 'AUSTRALIA': return 'AU'
+    case 'SINGAPORE': return 'SG'
+    case 'OMAN': return 'OM'
+    case 'QATAR': return 'QA'
+    case 'BAHRAIN': return 'BH'
+    case 'KUWAIT': return 'KW'
+    case 'NEW_ZEALAND': return 'NZ'
+    case 'SOUTH_AFRICA': return 'ZA'
+    case 'MALAYSIA': return 'MY'
+    case 'KENYA': return 'KE'
+    case 'NIGERIA': return 'NG'
+    case 'IRELAND': return 'IE'
+    case 'PHILIPPINES': return 'PH'
+    default: return 'AE'
+  }
+}
 
 export function AddCustomerClient({ businessId }: { businessId: string }) {
   const [businessName, setBusinessName] = useState<string | null>(null)
@@ -102,6 +129,13 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
     shippingZipCode: '',
     shippingCountry: '',
     sameAsBillingAddress: false,
+    
+    // Bank Details
+    bankName: '',
+    accountName: '',
+    accountNumber: '',
+    swiftCode: '',
+    iban: '',
   })
 
   useEffect(() => {
@@ -196,6 +230,16 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
         };
         if (currencyMap[value]) {
           updates.currency = currencyMap[value];
+        }
+
+        // Automatically update phone dial code if region changes
+        const countryCode = getCountryCodeFromRegion(value);
+        const matchCountry = COUNTRY_DIAL_CODES.find(c => c.code === countryCode);
+        if (matchCountry && prev.phone) {
+          const cleanNumber = prev.phone.replace(/^\+\d+\s*/, '');
+          if (cleanNumber) {
+            updates.phone = `${matchCountry.dialCode} ${cleanNumber}`;
+          }
         }
       }
       return { ...prev, ...updates }
@@ -395,7 +439,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                   </Label>
                   <PhoneInput
                     id="phone"
-                    defaultCountry={formData.country || 'AE'}
+                    defaultCountry={(getCountryCodeFromRegion(formData.region) || formData.country || 'AE') as any}
                     value={formData.phone}
                     onChange={(val) => handleInputChange('phone', val)}
                   />
@@ -635,6 +679,33 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                   </div>
                 </div>
               )}
+            </div>
+            
+            {/* 5. Bank Details Section */}
+            <div className="space-y-6 pt-4">
+              <h3 className="text-sm font-bold text-foreground uppercase tracking-wider border-b border-border pb-2">Bank Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="bankName" className="text-sm font-semibold text-foreground">Bank Name</Label>
+                  <Input id="bankName" placeholder="Enter bank name" value={formData.bankName} onChange={(e) => handleInputChange('bankName', e.target.value)} className="rounded-xl border-border bg-muted/50 h-11 shadow-sm focus:ring-blue-500" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="accountName" className="text-sm font-semibold text-foreground">Account Name</Label>
+                  <Input id="accountName" placeholder="Enter account name" value={formData.accountName} onChange={(e) => handleInputChange('accountName', e.target.value)} className="rounded-xl border-border bg-muted/50 h-11 shadow-sm focus:ring-blue-500" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="accountNumber" className="text-sm font-semibold text-foreground">Account Number</Label>
+                  <Input id="accountNumber" placeholder="Enter account number" value={formData.accountNumber} onChange={(e) => handleInputChange('accountNumber', e.target.value)} className="rounded-xl border-border bg-muted/50 h-11 shadow-sm focus:ring-blue-500" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="swiftCode" className="text-sm font-semibold text-foreground">Swift Code</Label>
+                  <Input id="swiftCode" placeholder="Enter swift code" value={formData.swiftCode} onChange={(e) => handleInputChange('swiftCode', e.target.value)} className="rounded-xl border-border bg-muted/50 h-11 shadow-sm focus:ring-blue-500" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="iban" className="text-sm font-semibold text-foreground">IBAN</Label>
+                  <Input id="iban" placeholder="Enter IBAN" value={formData.iban} onChange={(e) => handleInputChange('iban', e.target.value)} className="rounded-xl border-border bg-muted/50 h-11 shadow-sm focus:ring-blue-500" />
+                </div>
+              </div>
             </div>
 
             {/* Action Buttons */}

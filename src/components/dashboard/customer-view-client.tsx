@@ -1079,6 +1079,48 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
               </Card>
             </div>
 
+            {/* Bank Details widget */}
+            <Card className="rounded-2xl shadow-sm border-border bg-card overflow-hidden mt-6">
+              <CardHeader className="pb-4 border-b border-border bg-muted/50">
+                <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                  <CreditCardIcon className="h-5 w-5 text-blue-600" />
+                  Bank Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6 p-4 sm:p-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="bg-muted/50 p-3 sm:p-4 rounded-xl border border-border/60">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Bank Name</span>
+                  </div>
+                  <span className="font-bold text-foreground text-sm sm:text-base pl-2">{displayCustomer?.bankName || '—'}</span>
+                </div>
+                <div className="bg-muted/50 p-3 sm:p-4 rounded-xl border border-border/60">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Account Name</span>
+                  </div>
+                  <span className="font-bold text-foreground text-sm sm:text-base pl-2">{displayCustomer?.accountName || '—'}</span>
+                </div>
+                <div className="bg-muted/50 p-3 sm:p-4 rounded-xl border border-border/60">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Account Number</span>
+                  </div>
+                  <span className="font-bold text-foreground text-sm sm:text-base pl-2">{displayCustomer?.accountNumber || '—'}</span>
+                </div>
+                <div className="bg-muted/50 p-3 sm:p-4 rounded-xl border border-border/60">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Swift Code</span>
+                  </div>
+                  <span className="font-bold text-foreground text-sm sm:text-base pl-2">{displayCustomer?.swiftCode || '—'}</span>
+                </div>
+                <div className="bg-muted/50 p-3 sm:p-4 rounded-xl border border-border/60">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">IBAN</span>
+                  </div>
+                  <span className="font-bold text-foreground text-sm sm:text-base pl-2">{displayCustomer?.iban || '—'}</span>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Contacts Column */}
             <div>
               <CustomerContacts businessId={businessId} customerId={customerId} />

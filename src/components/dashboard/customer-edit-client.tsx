@@ -16,6 +16,33 @@ import { CurrencySelect } from '@/components/dashboard/currency-select'
 import { CountrySelect } from '@/components/dashboard/country-select'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { ALL_REGIONS, getRegionDisplayLabel } from './regions'
+import { COUNTRY_DIAL_CODES } from '@/lib/country-codes'
+
+const getCountryCodeFromRegion = (region: string) => {
+  switch (region) {
+    case 'INDIA': return 'IN'
+    case 'UAE':
+    case 'UNITED_ARAB_EMIRATES': return 'AE'
+    case 'SAUDI_ARABIA': return 'SA'
+    case 'UNITED_STATES': return 'US'
+    case 'UNITED_KINGDOM': return 'GB'
+    case 'CANADA': return 'CA'
+    case 'AUSTRALIA': return 'AU'
+    case 'SINGAPORE': return 'SG'
+    case 'OMAN': return 'OM'
+    case 'QATAR': return 'QA'
+    case 'BAHRAIN': return 'BH'
+    case 'KUWAIT': return 'KW'
+    case 'NEW_ZEALAND': return 'NZ'
+    case 'SOUTH_AFRICA': return 'ZA'
+    case 'MALAYSIA': return 'MY'
+    case 'KENYA': return 'KE'
+    case 'NIGERIA': return 'NG'
+    case 'IRELAND': return 'IE'
+    case 'PHILIPPINES': return 'PH'
+    default: return 'AE'
+  }
+}
 
 export function CustomerEditClient({ businessId, customerId }: { businessId: string; customerId: string }) {
   const navigate = useNavigate()
@@ -61,6 +88,13 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
     employeeCount: '',
     linkedinUrl: '',
     tags: '',
+
+    // Bank Details
+    bankName: '',
+    accountName: '',
+    accountNumber: '',
+    swiftCode: '',
+    iban: '',
   })
   const [saving, setSaving] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -68,11 +102,25 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
 
   useEffect(() => {
     if (customer) {
+      let initialPhone = customer.phone || '';
+      
+      // Auto-correct phone prefix if it mismatches the region
+      if (customer.region && initialPhone) {
+        const countryCode = getCountryCodeFromRegion(customer.region);
+        const matchCountry = COUNTRY_DIAL_CODES.find(c => c.code === countryCode);
+        if (matchCountry) {
+          const cleanNumber = initialPhone.replace(/^\+\d+\s*/, '');
+          if (cleanNumber) {
+            initialPhone = `${matchCountry.dialCode} ${cleanNumber}`;
+          }
+        }
+      }
+
       setForm({
         company: customer.company || '',
         region: customer.region || '',
         vatNumber: customer.vatNumber || '',
-        phone: customer.phone || '',
+        phone: initialPhone,
         website: customer.website || '',
         address: customer.address || '',
         city: customer.city || '',
@@ -96,6 +144,12 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
         employeeCount: customer.employeeCount !== undefined && customer.employeeCount !== null ? String(customer.employeeCount) : '',
         linkedinUrl: customer.linkedinUrl || '',
         tags: Array.isArray(customer.tags) ? customer.tags.join(', ') : '',
+
+        bankName: customer.bankName || '',
+        accountName: customer.accountName || '',
+        accountNumber: customer.accountNumber || '',
+        swiftCode: customer.swiftCode || '',
+        iban: customer.iban || '',
       })
     }
   }, [customer])
@@ -112,6 +166,16 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
         };
         if (currencyMap[value]) {
           updates.currency = currencyMap[value];
+        }
+
+        // Automatically update phone dial code if region changes
+        const countryCode = getCountryCodeFromRegion(value);
+        const matchCountry = COUNTRY_DIAL_CODES.find(c => c.code === countryCode);
+        if (matchCountry && prev.phone) {
+          const cleanNumber = prev.phone.replace(/^\+\d+\s*/, '');
+          if (cleanNumber) {
+            updates.phone = `${matchCountry.dialCode} ${cleanNumber}`;
+          }
         }
       }
       return { ...prev, ...updates }
@@ -250,7 +314,7 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
               <Label>Phone</Label>
               <PhoneInput
                 id="phone"
-                defaultCountry={form.country || 'AE'}
+                defaultCountry={(getCountryCodeFromRegion(form.region) || 'AE') as any}
                 value={form.phone}
                 onChange={(val) => handleChange('phone', val)}
               />
@@ -376,7 +440,38 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
                 </div>
               </div>
             </div>
-            <div className="md:col-span-2 flex justify-end">
+
+            {/* Bank Details Section */}
+            <div className="md:col-span-2 pt-6 border-t border-border mt-4">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <CreditCardIcon className="size-5 text-muted-foreground" />
+                Bank Details
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <Label>Bank Name</Label>
+                  <Input value={form.bankName} onChange={e => handleChange('bankName', e.target.value)} placeholder="e.g. Chase Bank" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Account Name</Label>
+                  <Input value={form.accountName} onChange={e => handleChange('accountName', e.target.value)} placeholder="e.g. Acme Corp LLC" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Account Number</Label>
+                  <Input value={form.accountNumber} onChange={e => handleChange('accountNumber', e.target.value)} placeholder="Enter account number" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Swift Code</Label>
+                  <Input value={form.swiftCode} onChange={e => handleChange('swiftCode', e.target.value)} placeholder="Enter Swift Code" />
+                </div>
+                <div className="space-y-2">
+                  <Label>IBAN</Label>
+                  <Input value={form.iban} onChange={e => handleChange('iban', e.target.value)} placeholder="Enter IBAN" />
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 flex justify-end mt-6">
               <Button type="submit" disabled={saving} className="gap-2">
                 <SaveIcon className="size-4" />
                 Save
