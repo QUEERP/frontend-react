@@ -27,6 +27,7 @@ type PaymentItem = {
   id: string
   invoiceId: string
   invoiceNumber: string
+  paymentNumber?: string
   projectId: string
   projectName: string
   amount: number
