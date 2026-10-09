@@ -34,17 +34,17 @@ export default function StatutoryPurchaseRegisterClient() {
   const curr = business?.currency || (isIndia ? 'INR' : 'AED')
 
   const DATA = React.useMemo(() => {
-    const expenses = Array.isArray(business?.expenses) ? business.expenses : []
+    const expenses = Array.isArray(business?.bills) ? business.bills : []
     return expenses.map((exp: any) => ({
       id: exp.billNumber || exp.id,
-      date: exp.expenseDate ? new Date(exp.expenseDate).toLocaleDateString() : (exp.createdAt ? new Date(exp.createdAt).toLocaleDateString() : '-'),
-      party: exp.vendor?.companyName || 'Unknown Vendor',
-      taxId: exp.vendor?.taxId || '-',
+      date: exp.billDate ? new Date(exp.billDate).toLocaleDateString() : (exp.expenseDate ? new Date(exp.expenseDate).toLocaleDateString() : (exp.createdAt ? new Date(exp.createdAt).toLocaleDateString() : '-')),
+      vendor: exp.vendor?.companyName || exp.vendor?.name || 'Unknown Vendor',
+      trn: exp.vendor?.vatNumber || exp.vendor?.taxNumber || '-',
       country: exp.vendor?.country || business?.country || 'N/A',
-      subtotal: Number(exp.subTotal || 0),
-      taxPct: 5,
-      taxAmt: Number(exp.taxAmount || 0),
-      total: Number(exp.grandTotal || 0),
+      subtotal: Number(exp.subTotal || exp.subtotal || 0),
+      vatPct: 5,
+      vatAmt: Number(exp.tax || exp.taxAmount || 0),
+      total: Number(exp.grandTotal || exp.totalAmount || 0),
       status: normalizeStatus(exp.status)
     }))
   }, [business])
@@ -56,19 +56,19 @@ export default function StatutoryPurchaseRegisterClient() {
   const PER_PAGE = 8
 
   const filtered = DATA.filter((r: any) =>
-    r.party.toLowerCase().includes(search.toLowerCase()) ||
+    r.vendor.toLowerCase().includes(search.toLowerCase()) ||
     r.id.toLowerCase().includes(search.toLowerCase()) ||
-    r.taxId.includes(search)
+    r.trn.includes(search)
   )
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE)
   const rows = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
-  const totals = filtered.reduce((acc: { subtotal: number; taxAmt: number; total: number }, r: any) => ({
+  const totals = filtered.reduce((acc: { subtotal: number; vatAmt: number; total: number }, r: any) => ({
     subtotal: acc.subtotal + r.subtotal,
-    taxAmt: acc.taxAmt + r.taxAmt,
+    vatAmt: acc.vatAmt + r.vatAmt,
     total: acc.total + r.total,
-  }), { subtotal: 0, taxAmt: 0, total: 0 })
+  }), { subtotal: 0, vatAmt: 0, total: 0 })
 
   const headers = ['Bill #', 'Date', 'Vendor', taxIdLabel, 'Country', 'Subtotal', `${taxLabel} %`, `${taxLabel} Amt`, 'Grand Total', 'Status']
 
@@ -106,7 +106,7 @@ export default function StatutoryPurchaseRegisterClient() {
         <Card className="border-none shadow-sm bg-card dark:bg-slate-900">
           <CardContent className="p-5">
             <p className="text-sm text-muted-foreground">Total Input {taxLabel}</p>
-            <p className="text-2xl font-bold mt-1 text-emerald-600">{curr} {fmt(totals.taxAmt)}</p>
+            <p className="text-2xl font-bold mt-1 text-emerald-600">{curr} {fmt(totals.vatAmt)}</p>
           </CardContent>
         </Card>
         <Card className="border-none shadow-sm bg-card dark:bg-slate-900">
@@ -150,12 +150,12 @@ export default function StatutoryPurchaseRegisterClient() {
                     <tr key={r.id} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-muted dark:hover:bg-slate-800/30 transition-colors">
                       <td className="py-3 px-3 font-semibold text-blue-600">{r.id}</td>
                       <td className="py-3 px-3 whitespace-nowrap text-muted-foreground">{r.date}</td>
-                      <td className="py-3 px-3 font-medium whitespace-nowrap">{r.party}</td>
-                      <td className="py-3 px-3 font-mono text-xs text-muted-foreground">{r.taxId}</td>
+                      <td className="py-3 px-3 font-medium whitespace-nowrap">{r.vendor}</td>
+                      <td className="py-3 px-3 font-mono text-xs text-muted-foreground">{r.trn}</td>
                       <td className="py-3 px-3">{r.country}</td>
                       <td className="py-3 px-3 text-right font-mono">{fmt(r.subtotal)}</td>
-                      <td className="py-3 px-3 text-center"><Badge variant="outline">{r.taxPct}%</Badge></td>
-                      <td className="py-3 px-3 text-right font-mono text-emerald-600">{fmt(r.taxAmt)}</td>
+                      <td className="py-3 px-3 text-center"><Badge variant="outline">{r.vatPct}%</Badge></td>
+                      <td className="py-3 px-3 text-right font-mono text-emerald-600">{fmt(r.vatAmt)}</td>
                       <td className="py-3 px-3 text-right font-mono font-semibold">{fmt(r.total)}</td>
                       <td className="py-3 px-3"><Badge className={statusStyles[r.status]}>{r.status.replace('_', ' ')}</Badge></td>
                     </tr>
@@ -164,7 +164,7 @@ export default function StatutoryPurchaseRegisterClient() {
                     <td colSpan={5} className="py-3 px-3">Total ({filtered.length} records)</td>
                     <td className="py-3 px-3 text-right font-mono">{fmt(totals.subtotal)}</td>
                     <td className="py-3 px-3"></td>
-                    <td className="py-3 px-3 text-right font-mono text-emerald-600">{fmt(totals.taxAmt)}</td>
+                    <td className="py-3 px-3 text-right font-mono text-emerald-600">{fmt(totals.vatAmt)}</td>
                     <td className="py-3 px-3 text-right font-mono text-indigo-600">{fmt(totals.total)}</td>
                     <td></td>
                   </tr>

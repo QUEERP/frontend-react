@@ -679,13 +679,17 @@ export function DashboardPageClient({ businessId }: { businessId: string }) {
 
 
 
-    return Array.from(groups.entries()).map(([status, count]) => ({
-
-      status,
-
-      count,
-
-    }))
+    return Array.from(groups.entries()).map(([status, count]) => {
+      let fill = 'var(--color-count)'
+      switch (status) {
+        case 'PAID': fill = '#10b981'; break;
+        case 'UNPAID': fill = '#ef4444'; break;
+        case 'DRAFT': fill = '#94a3b8'; break;
+        case 'OVERDUE': fill = '#b91c1c'; break;
+        case 'PARTIALLY_PAID': fill = '#f59e0b'; break;
+      }
+      return { status, count, fill }
+    })
 
   }, [invoices])
 
@@ -1089,7 +1093,11 @@ export function DashboardPageClient({ businessId }: { businessId: string }) {
 
                   <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
 
-                  <Bar dataKey="count" fill="var(--color-count)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                    {statusChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
 
                 </BarChart>
 

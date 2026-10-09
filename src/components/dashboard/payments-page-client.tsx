@@ -182,7 +182,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
       
       const link = document.createElement('a')
       link.href = objectUrl
-      link.download = `Payment_Slip_${payment.invoiceNumber}.pdf`
+      link.download = `Payment_Receipt_${payment.paymentNumber || payment.invoiceNumber}.pdf`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -423,7 +423,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                           ) : (
                             <DownloadIcon className="size-3.5" />
                           )}
-                          Pay Slip
+                          Payment Receipt
                         </Button>
                       </div>
                     </TableCell>

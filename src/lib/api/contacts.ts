@@ -64,6 +64,11 @@ export interface Customer {
   tags?: string[];
   description?: string;
   crmStatus?: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  swiftCode?: string;
+  iban?: string;
 }
 
 export interface CreateCustomerData {
@@ -98,6 +103,11 @@ export interface CreateCustomerData {
   parentAccountId?: string;
   tags?: string[];
   description?: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  swiftCode?: string;
+  iban?: string;
   crmStatus?: string;
 }
 
