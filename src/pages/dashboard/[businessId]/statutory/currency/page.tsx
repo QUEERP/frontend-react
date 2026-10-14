@@ -133,6 +133,7 @@ export default function CurrencyReportsPage() {
   const [fxData, setFxData] = useState<CurrencyGainLossData[]>([]);
   const [fxTransactions, setFxTransactions] = useState<FxTransaction[]>([]);
   const [backendTotals, setBackendTotals] = useState<CurrencyTotals | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
@@ -248,11 +249,36 @@ export default function CurrencyReportsPage() {
     setIsFxModalOpen(true);
   };
 
-  const handleExport = (format: string) => {
-    let url = `/api/reports/currency/transactions/export/${format}?businessId=${businessId}`;
-    if (dateRange.from) url += `&fromDate=${dateRange.from.toISOString()}`;
-    if (dateRange.to) url += `&toDate=${dateRange.to.toISOString()}`;
-    window.location.href = url;
+  const handleExport = async (exportFormat: string) => {
+    try {
+      setExporting(true);
+      toast({
+        title: "Exporting...",
+        description: `Generating currency transactions ${exportFormat.toUpperCase()} export...`,
+      });
+
+      let url = `/reports/currency/transactions/export/${exportFormat}?businessId=${businessId}`;
+      if (dateRange.from) url += `&fromDate=${dateRange.from.toISOString()}`;
+      if (dateRange.to) url += `&toDate=${dateRange.to.toISOString()}`;
+
+      const ext = exportFormat === 'excel' ? 'xlsx' : exportFormat;
+      const defaultFilename = `Currency_Transactions_${format(new Date(), 'yyyy-MM-dd')}.${ext}`;
+      await api.download(url, defaultFilename);
+
+      toast({
+        title: "Export Completed",
+        description: `Currency transactions ${exportFormat.toUpperCase()} downloaded successfully.`,
+      });
+    } catch (err: any) {
+      console.error('Export error:', err);
+      toast({
+        title: "Export Failed",
+        description: err.message || `Failed to export as ${exportFormat.toUpperCase()}`,
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
   };
 
   // Combine usage and fx data
@@ -420,21 +446,26 @@ export default function CurrencyReportsPage() {
           {/* Export Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="shadow-sm">
-                <Download className="mr-2 h-4 w-4" />
-                Export
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={exporting}
+                className="shadow-sm border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                <Download className={`mr-2 h-4 w-4 ${exporting ? 'animate-bounce text-blue-600' : ''}`} />
+                {exporting ? 'Exporting...' : 'Export'}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport('pdf')} className="cursor-pointer">
+            <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+              <DropdownMenuItem onClick={() => handleExport('pdf')} className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
                 <FileText className="mr-2 h-4 w-4 text-red-500" />
                 Export as PDF
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('excel')} className="cursor-pointer">
+              <DropdownMenuItem onClick={() => handleExport('excel')} className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
                 <TableIcon className="mr-2 h-4 w-4 text-emerald-600" />
                 Export as Excel
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('json')} className="cursor-pointer">
+              <DropdownMenuItem onClick={() => handleExport('json')} className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
                 <FileJson className="mr-2 h-4 w-4 text-blue-600" />
                 Export as JSON
               </DropdownMenuItem>
