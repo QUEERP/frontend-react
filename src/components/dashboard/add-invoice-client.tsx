@@ -15,7 +15,8 @@ import {
   Calculator,
   UserPlus,
   PackagePlus,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react'
 import { CreateCustomerModal } from '@/components/dashboard/create-customer-modal'
 import { CreateProductModal } from '@/components/dashboard/create-product-modal'
@@ -986,6 +987,19 @@ export function AddInvoiceClient({
                         >
                           Different State (IGST)
                         </Button>
+                      </div>
+                    )}
+                    {summary.isIndia && !business?.state && (
+                      <div className="rounded-xl border border-amber-300 bg-amber-50/90 p-4 text-amber-950 flex items-start gap-3 shadow-xs">
+                        <AlertTriangle className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-xs text-amber-950 uppercase tracking-wide">
+                            Seller State Not Configured in Business Settings
+                          </h4>
+                          <p className="text-xs text-amber-900 leading-relaxed">
+                            Your registered business state is missing. In India, seller state is required by CBIC to determine statutory Place of Supply (Intra-State CGST+SGST vs Inter-State IGST). Invoices cannot be issued until your state is set in Settings.
+                          </p>
+                        </div>
                       </div>
                     )}
                     <div className="flex items-center justify-between">

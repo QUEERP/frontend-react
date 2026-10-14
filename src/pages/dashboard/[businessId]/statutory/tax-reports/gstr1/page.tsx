@@ -13,20 +13,29 @@ export default function GSTR1Page() {
   const [period, setPeriod] = useState('Apr 2024')
   const { business, loading } = useBusinessData()
 
+  const currSymbol = business?.currency === 'INR' || (business as any)?.country === 'INDIA' ? '₹' : `${business?.currency || 'AED'} `
+
   const liveGSTR1 = React.useMemo(() => {
     const invoices = Array.isArray(business?.invoices) ? business.invoices : []
-    return invoices.map((inv: any) => ({
-      invoice: inv.invoiceNumber || inv.id,
-      date: inv.invoiceDate || inv.createdAt,
-      customer: inv.customer?.company || 'Unknown',
-      gstin: inv.customer?.taxId || '-',
-      taxable: Number(inv.subTotal || 0),
-      cgst: Number(inv.taxAmount || 0) / 2, // Approximating CGST/SGST split if needed, or based on real tax details
-      sgst: Number(inv.taxAmount || 0) / 2,
-      igst: 0,
-      total: Number(inv.grandTotal || 0),
-      type: inv.customer?.taxId ? 'B2B' : 'B2C'
-    }))
+    return invoices.map((inv: any) => {
+      const taxable = Number(inv.subtotal || inv.subTotal || 0)
+      const totalTax = Number(inv.totalTax || inv.taxAmount || inv.tax || 0)
+      const igst = Number(inv.igst !== undefined ? inv.igst : (inv.customer?.taxId ? totalTax : 0))
+      const cgst = Number(inv.cgst !== undefined ? inv.cgst : (inv.customer?.taxId ? 0 : totalTax / 2))
+      const sgst = Number(inv.sgst !== undefined ? inv.sgst : (inv.customer?.taxId ? 0 : totalTax / 2))
+      return {
+        invoice: inv.invoiceNumber || inv.id,
+        date: inv.invoiceDate || inv.createdAt,
+        customer: inv.customer?.company || inv.customer?.name || 'Unknown',
+        gstin: inv.customer?.taxId || inv.customer?.gstin || '-',
+        taxable,
+        cgst,
+        sgst,
+        igst,
+        total: Number(inv.grandTotal || inv.totalAmount || (taxable + totalTax)),
+        type: inv.customer?.taxId ? 'B2B' : 'B2C'
+      }
+    })
   }, [business])
 
   const totals = React.useMemo(() => {
@@ -41,10 +50,10 @@ export default function GSTR1Page() {
   }, [liveGSTR1])
 
   const summaryCards = [
-    { label: 'Total Taxable Value', value: `₹${totals.taxable.toLocaleString('en-IN')}`, icon: TrendingUpIcon, color: 'blue' },
-    { label: 'Total CGST', value: `₹${totals.cgst.toLocaleString('en-IN')}`, icon: ReceiptIcon, color: 'emerald' },
-    { label: 'Total SGST', value: `₹${totals.sgst.toLocaleString('en-IN')}`, icon: ReceiptIcon, color: 'violet' },
-    { label: 'Total IGST', value: `₹${totals.igst.toLocaleString('en-IN')}`, icon: BuildingIcon, color: 'orange' },
+    { label: 'Total Taxable Value', value: `${currSymbol}${totals.taxable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: TrendingUpIcon, color: 'blue' },
+    { label: 'Total CGST', value: `${currSymbol}${totals.cgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: ReceiptIcon, color: 'emerald' },
+    { label: 'Total SGST', value: `${currSymbol}${totals.sgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: ReceiptIcon, color: 'violet' },
+    { label: 'Total IGST', value: `${currSymbol}${totals.igst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: BuildingIcon, color: 'orange' },
   ]
 
   const exportToExcel = () => {

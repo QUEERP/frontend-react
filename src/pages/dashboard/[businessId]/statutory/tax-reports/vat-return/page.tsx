@@ -15,18 +15,22 @@ export default function VATReturnPage() {
 
   const liveVatTransactions = React.useMemo(() => {
     const invoices = Array.isArray(business?.invoices) ? business.invoices : []
-    return invoices.map((inv: any) => ({
-      invoice: inv.invoiceNumber || inv.id,
-      date: inv.invoiceDate || inv.createdAt,
-      customer: inv.customer?.company || 'Unknown',
-      trn: inv.customer?.taxId || '-',
-      emirate: inv.customer?.city || 'N/A',
-      subtotal: Number(inv.subTotal || 0),
-      vatRate: 5,
-      vatAmt: Number(inv.taxAmount || 0),
-      total: Number(inv.grandTotal || 0),
-      type: Number(inv.taxAmount || 0) === 0 ? 'Zero Rated' : 'Standard Rated'
-    }))
+    return invoices.map((inv: any) => {
+      const subtotal = Number(inv.subtotal || inv.subTotal || 0)
+      const vatAmt = Number(inv.totalTax || inv.taxAmount || inv.tax || 0)
+      return {
+        invoice: inv.invoiceNumber || inv.id,
+        date: inv.invoiceDate || inv.createdAt,
+        customer: inv.customer?.company || inv.customer?.name || 'Unknown',
+        trn: inv.customer?.taxId || inv.customer?.trn || '-',
+        emirate: inv.customer?.city || inv.customer?.state || 'N/A',
+        subtotal,
+        vatRate: 5,
+        vatAmt,
+        total: Number(inv.grandTotal || inv.totalAmount || (subtotal + vatAmt)),
+        type: vatAmt === 0 ? 'Zero Rated' : 'Standard Rated'
+      }
+    })
   }, [business])
 
   const totals = React.useMemo(() => {
@@ -40,11 +44,18 @@ export default function VATReturnPage() {
     }, { subtotal: 0, vatAmt: 0, total: 0, standardRated: 0, zeroRated: 0 })
   }, [liveVatTransactions])
 
+  const inputTax = React.useMemo(() => {
+    const expenses = Array.isArray(business?.expenses) ? business.expenses : []
+    const bills = Array.isArray(business?.bills) ? business.bills : []
+    const allPurchases = [...bills, ...expenses]
+    return allPurchases.reduce((sum, p: any) => sum + Number(p.tax || p.taxAmount || 0), 0)
+  }, [business])
+
   const boxSummary = [
     { box: '1', label: 'Standard Rated Supplies', value: `AED ${totals.standardRated.toLocaleString()}`, vat: `AED ${totals.vatAmt.toLocaleString()}`, color: 'blue' },
     { box: '2', label: 'Supplies subject to zero rate', value: `AED ${totals.zeroRated.toLocaleString()}`, vat: 'AED 0', color: 'emerald' },
     { box: '3', label: 'Exempt Supplies', value: 'AED 0', vat: 'AED 0', color: 'slate' },
-    { box: '9', label: 'Input Tax (Recoverable)', value: '', vat: 'AED 0', color: 'violet' },
+    { box: '9', label: 'Input Tax (Recoverable)', value: '', vat: `AED ${inputTax.toLocaleString()}`, color: 'violet' },
   ]
 
   const exportToExcel = () => {

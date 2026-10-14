@@ -61,7 +61,7 @@ export default function Hero() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                 </span>
-                Que-ERP is now live in UAE
+                Que-ERP is now live
               </div>
               <h1 className="text-5xl lg:text-7xl font-bold leading-[1.1] tracking-tight text-slate-900 text-balance">
                 Know Exactly Where Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Money Moves.</span>

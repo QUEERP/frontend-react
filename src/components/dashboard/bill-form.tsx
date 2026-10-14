@@ -16,6 +16,8 @@ import {
 
 import { Product, productsAPI } from '@/lib/api/inventory';
 import { Warehouse, warehousesAPI } from '@/lib/api/warehouses';
+import { useBusinessData } from '@/components/dashboard/business-data-provider';
+import { CURRENCIES } from '@/lib/currencies';
 
 interface BillFormProps {
   billId?: string;
@@ -40,6 +42,9 @@ export default function BillForm({ billId }: BillFormProps) {
   const { toast } = useToast();
   const businessId = pathname.match(/\/dashboard\/([^/]+)/)?.[1] || '';
 
+  const { business } = useBusinessData();
+  const defaultCurrency = business?.currency || ((business as any)?.country === 'INDIA' ? 'INR' : 'AED');
+
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingBill, setIsLoadingBill] = useState(!!billId);
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -48,6 +53,7 @@ export default function BillForm({ billId }: BillFormProps) {
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [formData, setFormData] = useState({
     vendorId: '',
+    currency: defaultCurrency || 'INR',
     billDate: new Date().toISOString().split('T')[0],
     dueDate: '',
     tax: 0,
@@ -55,6 +61,12 @@ export default function BillForm({ billId }: BillFormProps) {
     notes: '',
     items: [{ productId: '', warehouseId: '', name: '', quantity: 1, price: 0 }] as BillItemInput[],
   });
+
+  useEffect(() => {
+    if (business?.currency && !billId) {
+      setFormData((prev) => ({ ...prev, currency: prev.currency || business.currency }));
+    }
+  }, [business, billId]);
 
   const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
   const API_ROOT = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`;
@@ -133,6 +145,7 @@ export default function BillForm({ billId }: BillFormProps) {
         const bill = data.bill;
         setFormData({
           vendorId: bill.vendorId || '',
+          currency: bill.currency || defaultCurrency || 'INR',
           billDate: bill.billDate ? bill.billDate.split('T')[0] : new Date().toISOString().split('T')[0],
           dueDate: bill.dueDate ? bill.dueDate.split('T')[0] : '',
           tax: Number(bill.tax || 0),
@@ -219,6 +232,7 @@ export default function BillForm({ billId }: BillFormProps) {
 
       const payload = {
         vendorId: formData.vendorId,
+        currency: formData.currency,
         billDate: formData.billDate,
         dueDate: formData.dueDate || undefined,
         items: cleanItems,
@@ -303,20 +317,38 @@ export default function BillForm({ billId }: BillFormProps) {
               <CardTitle>Bill Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Vendor *</label>
-                <Select value={formData.vendorId} onValueChange={(value) => setFormData({ ...formData, vendorId: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a vendor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vendors.map((vendor) => (
-                      <SelectItem key={vendor.id} value={vendor.id}>
-                        {vendor.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Vendor *</label>
+                  <Select value={formData.vendorId} onValueChange={(value) => setFormData({ ...formData, vendorId: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a vendor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vendors.map((vendor) => (
+                        <SelectItem key={vendor.id} value={vendor.id}>
+                          {vendor.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Currency</label>
+                  <Select value={formData.currency} onValueChange={(value) => setFormData({ ...formData, currency: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.flag} {c.code} - {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -519,9 +551,9 @@ export default function BillForm({ billId }: BillFormProps) {
                 </div>
               </div>
 
-              <div className="bg-blue-50 p-4 rounded border-2 border-blue-200">
+              <div className="bg-blue-50 dark:bg-blue-950/40 p-4 rounded border-2 border-blue-200 dark:border-blue-800">
                 <p className="text-sm text-muted-foreground">Total Amount</p>
-                <p className="text-2xl font-bold truncate max-w-[200px]" title={`${total.toFixed(2)}`}>${total.toFixed(2)}</p>
+                <p className="text-2xl font-bold truncate max-w-[200px]" title={`${total.toFixed(2)}`}>{formData.currency} {total.toFixed(2)}</p>
               </div>
             </CardContent>
           </Card>

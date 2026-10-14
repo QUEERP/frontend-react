@@ -19,12 +19,19 @@ export default function GSTR3BPage() {
     let zeroRated = { taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 }
     
     invoices.forEach((inv: any) => {
-      const taxAmount = Number(inv.taxAmount || 0)
-      const sub = Number(inv.subTotal || 0)
-      if (taxAmount > 0) {
+      const taxAmount = Number(inv.totalTax || inv.taxAmount || inv.tax || 0)
+      const sub = Number(inv.subtotal || inv.subTotal || 0)
+      const igstVal = Number(inv.igst || 0)
+      const cgstVal = Number(inv.cgst || 0)
+      const sgstVal = Number(inv.sgst || 0)
+
+      if (taxAmount > 0 || igstVal > 0 || cgstVal > 0 || sgstVal > 0) {
         standard.taxable += sub
-        // Simple mock split for CGST/SGST vs IGST based on presence of taxId, modify as needed
-        if (inv.customer?.taxId) {
+        if (igstVal > 0 || cgstVal > 0 || sgstVal > 0) {
+          standard.igst += igstVal
+          standard.cgst += cgstVal
+          standard.sgst += sgstVal
+        } else if (inv.customer?.taxId) {
           standard.igst += taxAmount
         } else {
           standard.cgst += taxAmount / 2
@@ -44,13 +51,19 @@ export default function GSTR3BPage() {
 
   const liveITC = React.useMemo(() => {
     const expenses = Array.isArray(business?.expenses) ? business.expenses : []
+    const bills = Array.isArray(business?.bills) ? business.bills : []
     let otherITC = { igst: 0, cgst: 0, sgst: 0, cess: 0 }
     
-    expenses.forEach((exp: any) => {
-      const taxAmount = Number(exp.taxAmount || 0)
+    const allPurchases = [...bills, ...expenses]
+    allPurchases.forEach((p: any) => {
+      const taxAmount = Number(p.tax || p.taxAmount || 0)
       if (taxAmount > 0) {
-        otherITC.cgst += taxAmount / 2
-        otherITC.sgst += taxAmount / 2
+        if (p.igst) {
+          otherITC.igst += Number(p.igst)
+        } else {
+          otherITC.cgst += taxAmount / 2
+          otherITC.sgst += taxAmount / 2
+        }
       }
     })
 
