@@ -35,19 +35,29 @@ export default function StatutoryPurchaseRegisterClient() {
 
   const DATA = React.useMemo(() => {
     const expenses = Array.isArray(business?.bills) ? business.bills : []
-    return expenses.map((exp: any) => ({
-      id: exp.billNumber || exp.id,
-      date: exp.billDate ? new Date(exp.billDate).toLocaleDateString() : (exp.expenseDate ? new Date(exp.expenseDate).toLocaleDateString() : (exp.createdAt ? new Date(exp.createdAt).toLocaleDateString() : '-')),
-      vendor: exp.vendor?.companyName || exp.vendor?.name || 'Unknown Vendor',
-      trn: exp.vendor?.vatNumber || exp.vendor?.taxNumber || '-',
-      country: exp.vendor?.country || business?.country || 'N/A',
-      subtotal: Number(exp.subTotal || exp.subtotal || 0),
-      vatPct: 5,
-      vatAmt: Number(exp.tax || exp.taxAmount || 0),
-      total: Number(exp.grandTotal || exp.totalAmount || 0),
-      status: normalizeStatus(exp.status)
-    }))
-  }, [business])
+    return expenses.map((exp: any) => {
+      const subtotal = Number(exp.subTotal || exp.subtotal || 0)
+      const vatAmt = Number(exp.tax || exp.taxAmount || exp.totalTax || 0)
+      const vatPct = exp.taxRate != null 
+        ? Number(exp.taxRate) 
+        : (subtotal > 0 && vatAmt > 0 ? Number(((vatAmt / subtotal) * 100).toFixed(2)) : 0)
+      const total = Number(exp.grandTotal || exp.totalAmount || (subtotal + vatAmt))
+
+      return {
+        id: exp.billNumber || exp.id,
+        date: exp.billDate ? new Date(exp.billDate).toLocaleDateString() : (exp.expenseDate ? new Date(exp.expenseDate).toLocaleDateString() : (exp.createdAt ? new Date(exp.createdAt).toLocaleDateString() : '-')),
+        vendor: exp.vendor?.companyName || exp.vendor?.name || 'Unknown Vendor',
+        trn: exp.vendor?.vatNumber || exp.vendor?.taxNumber || exp.vendor?.gstin || '-',
+        country: exp.vendor?.country || business?.country || 'N/A',
+        currency: exp.currency || exp.currencyCode || curr,
+        subtotal,
+        vatPct,
+        vatAmt,
+        total,
+        status: normalizeStatus(exp.status)
+      }
+    })
+  }, [business, curr])
 
   const fmt = (n: number) => new Intl.NumberFormat(isIndia ? 'en-IN' : 'en-AE', { minimumFractionDigits: 2 }).format(n)
 
@@ -70,7 +80,7 @@ export default function StatutoryPurchaseRegisterClient() {
     total: acc.total + r.total,
   }), { subtotal: 0, vatAmt: 0, total: 0 })
 
-  const headers = ['Bill #', 'Date', 'Vendor', taxIdLabel, 'Country', 'Subtotal', `${taxLabel} %`, `${taxLabel} Amt`, 'Grand Total', 'Status']
+  const headers = ['Bill #', 'Date', 'Vendor', taxIdLabel, 'Country', 'Currency', 'Subtotal', `${taxLabel} %`, `${taxLabel} Amt`, 'Grand Total', 'Status']
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 bg-muted/50 dark:bg-slate-900/50 min-h-screen">
@@ -153,6 +163,7 @@ export default function StatutoryPurchaseRegisterClient() {
                       <td className="py-3 px-3 font-medium whitespace-nowrap">{r.vendor}</td>
                       <td className="py-3 px-3 font-mono text-xs text-muted-foreground">{r.trn}</td>
                       <td className="py-3 px-3">{r.country}</td>
+                      <td className="py-3 px-3 font-medium text-slate-700 dark:text-slate-300">{r.currency}</td>
                       <td className="py-3 px-3 text-right font-mono">{fmt(r.subtotal)}</td>
                       <td className="py-3 px-3 text-center"><Badge variant="outline">{r.vatPct}%</Badge></td>
                       <td className="py-3 px-3 text-right font-mono text-emerald-600">{fmt(r.vatAmt)}</td>
@@ -161,7 +172,7 @@ export default function StatutoryPurchaseRegisterClient() {
                     </tr>
                   ))}
                   <tr className="bg-muted dark:bg-slate-800/40 font-bold">
-                    <td colSpan={5} className="py-3 px-3">Total ({filtered.length} records)</td>
+                    <td colSpan={6} className="py-3 px-3">Total ({filtered.length} records)</td>
                     <td className="py-3 px-3 text-right font-mono">{fmt(totals.subtotal)}</td>
                     <td className="py-3 px-3"></td>
                     <td className="py-3 px-3 text-right font-mono text-emerald-600">{fmt(totals.vatAmt)}</td>

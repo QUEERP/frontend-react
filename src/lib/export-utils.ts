@@ -190,7 +190,7 @@ export const exportSalesRegisterPdf = (
 export const exportPurchaseRegisterPdf = (
   rows: {
     id: string; date: string; vendor: string; trn: string;
-    country: string; subtotal: number;
+    country: string; currency?: string; subtotal: number;
     vatPct: number; vatAmt: number; total: number; status: string;
   }[],
   period: string
@@ -214,13 +214,13 @@ export const exportPurchaseRegisterPdf = (
 
   autoTable(doc, {
     startY: 62,
-    head: [['Bill #', 'Date', 'Vendor', 'TRN', 'Country', 'Subtotal', 'VAT %', 'VAT Amt', 'Grand Total', 'Status']],
+    head: [['Bill #', 'Date', 'Vendor', 'TRN', 'Country', 'Cur.', 'Subtotal', 'VAT %', 'VAT Amt', 'Grand Total', 'Status']],
     body: rows.map(r => [
-      r.id, r.date, r.vendor, r.trn, r.country,
+      r.id, r.date, r.vendor, r.trn, r.country, (r as any).currency || 'INR',
       r.subtotal.toLocaleString(), `${r.vatPct}%`,
       r.vatAmt.toLocaleString(), r.total.toLocaleString(), r.status.replace('_', ' ')
     ]),
-    foot: [['', '', '', '', 'TOTAL',
+    foot: [['', '', '', '', '', 'TOTAL',
       totalSubtotal.toLocaleString(), '',
       totalVat.toLocaleString(), totalGrand.toLocaleString(), '']],
     theme: 'plain',
@@ -236,13 +236,14 @@ export const exportPurchaseRegisterPdf = (
     alternateRowStyles: { fillColor: [248, 250, 252] },
     columnStyles: {
       0: { fontStyle: 'bold', textColor: accent },
-      5: { halign: 'right' },
-      6: { halign: 'center' },
-      7: { halign: 'right', textColor: [245, 158, 11] },
-      8: { halign: 'right', fontStyle: 'bold' },
+      5: { halign: 'center' },
+      6: { halign: 'right' },
+      7: { halign: 'center' },
+      8: { halign: 'right', textColor: [245, 158, 11] },
+      9: { halign: 'right', fontStyle: 'bold' },
     },
     didParseCell: (data) => {
-      if (data.section === 'body' && data.column.index === 9) {
+      if (data.section === 'body' && data.column.index === 10) {
         const val = String(data.cell.raw ?? '');
         const [r, g, b] = statusColor(val.replace(' ', '_'));
         data.cell.styles.textColor = [r, g, b];

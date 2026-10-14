@@ -35,19 +35,28 @@ export default function StatutorySalesRegisterClient() {
 
   const DATA = React.useMemo(() => {
     const invoices = Array.isArray(business?.invoices) ? business.invoices : []
-    return invoices.map((inv: any) => ({
-      id: inv.invoiceNumber || inv.id,
-      date: inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : (inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : '-'),
-      party: inv.customer?.company || 'Unknown',
-      taxId: inv.customer?.taxId || '-',
-      country: inv.customer?.country || business?.country || 'N/A',
-      currency: curr,
-      subtotal: Number(inv.subtotal || inv.subTotal || 0),
-      taxPct: 5,
-      taxAmt: Number(inv.totalTax || inv.taxAmount || 0),
-      total: Number(inv.grandTotal || 0),
-      status: normalizeStatus(inv.status)
-    }))
+    return invoices.map((inv: any) => {
+      const subtotal = Number(inv.subtotal || inv.subTotal || 0)
+      const taxAmt = Number(inv.totalTax || inv.taxAmount || 0)
+      const taxPct = inv.taxRate != null
+        ? Number(inv.taxRate)
+        : (subtotal > 0 && taxAmt > 0 ? Number(((taxAmt / subtotal) * 100).toFixed(2)) : 0)
+      const total = Number(inv.grandTotal || inv.totalAmount || (subtotal + taxAmt))
+
+      return {
+        id: inv.invoiceNumber || inv.id,
+        date: inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : (inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : '-'),
+        party: inv.customer?.company || inv.customer?.name || 'Unknown',
+        taxId: inv.customer?.taxId || inv.customer?.gstin || '-',
+        country: inv.customer?.country || business?.country || 'N/A',
+        currency: inv.currency || curr,
+        subtotal,
+        taxPct,
+        taxAmt,
+        total,
+        status: normalizeStatus(inv.status)
+      }
+    })
   }, [business, curr])
 
   const fmt = (n: number) => new Intl.NumberFormat(isIndia ? 'en-IN' : 'en-AE', { minimumFractionDigits: 2 }).format(n)
