@@ -22,6 +22,16 @@ export function getActiveBusinessId(): string {
   return '';
 }
 
+export function resolveUrl(url: string): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  // If url begins with /api/, strip the duplicate /api since API_ROOT already ends with /api
+  const normalized = url.startsWith('/api/') ? url.substring(4) : (url === '/api' ? '' : url);
+  const cleanPath = normalized.startsWith('/') ? normalized : `/${normalized}`;
+  return `${API_ROOT}${cleanPath}`;
+}
+
 export const api = {
   get: async (url: string, customHeaders: Record<string, string> = {}) => {
     const token = getAuthToken();
@@ -37,7 +47,7 @@ export const api = {
       headers['x-business-id'] = businessId;
     }
 
-    const fullUrl = url.startsWith('http') ? url : `${API_ROOT}${url.startsWith('/') ? url : `/${url}`}`;
+    const fullUrl = resolveUrl(url);
     const res = await fetch(fullUrl, {
       method: 'GET',
       headers
@@ -61,7 +71,7 @@ export const api = {
       headers['x-business-id'] = businessId;
     }
 
-    const fullUrl = url.startsWith('http') ? url : `${API_ROOT}${url.startsWith('/') ? url : `/${url}`}`;
+    const fullUrl = resolveUrl(url);
     const res = await fetch(fullUrl, {
       method: 'POST',
       headers,
@@ -70,6 +80,53 @@ export const api = {
     if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
     const data = await res.json();
     return { data };
+  },
+
+  download: async (url: string, fallbackFilename = 'report') => {
+    const token = getAuthToken();
+    const businessId = getActiveBusinessId();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (businessId && !headers['x-business-id'] && !headers['X-Business-Id']) {
+      headers['x-business-id'] = businessId;
+    }
+
+    const fullUrl = resolveUrl(url);
+    const res = await fetch(fullUrl, {
+      method: 'GET',
+      headers
+    });
+
+    if (!res.ok) {
+      let message = `Export failed (${res.status} ${res.statusText})`;
+      try {
+        const errJson = await res.json();
+        if (errJson.message) message = errJson.message;
+      } catch (_) {}
+      throw new Error(message);
+    }
+
+    // Extract filename from Content-Disposition header if available
+    const disposition = res.headers.get('content-disposition');
+    let filename = fallbackFilename;
+    if (disposition && disposition.includes('filename=')) {
+      const matches = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (matches && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '').trim();
+      }
+    }
+
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(blobUrl);
   }
 };
 

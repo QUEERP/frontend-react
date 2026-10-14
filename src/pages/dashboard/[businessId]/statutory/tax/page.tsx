@@ -17,9 +17,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/components/ui/use-toast';
 import {
   Calendar as CalendarIcon,
   Download,
+  Loader2,
   AlertTriangle,
   ArrowUpRight,
   ArrowDownLeft,
@@ -77,7 +79,9 @@ interface TaxReportKpis {
 export default function TaxReportsPage() {
   const { businessId } = useParams<{ businessId: string }>();
   const { business } = useBusinessData();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [summaryLines, setSummaryLines] = useState<TaxLine[]>([]);
   const [warnings, setWarnings] = useState<DataQualityWarning[]>([]);
   const [kpis, setKpis] = useState<TaxReportKpis | null>(null);
@@ -135,11 +139,36 @@ export default function TaxReportsPage() {
     }
   };
 
-  const handleExport = (exportFormat: string) => {
-    let url = `/api/reports/tax/summary/export/${exportFormat}?businessId=${businessId}`;
-    if (dateRange.from) url += `&fromDate=${dateRange.from.toISOString()}`;
-    if (dateRange.to) url += `&toDate=${dateRange.to.toISOString()}`;
-    window.location.href = url;
+  const handleExport = async (exportFormat: string) => {
+    try {
+      setExporting(true);
+      toast({
+        title: "Exporting...",
+        description: `Generating GST tax summary ${exportFormat.toUpperCase()} export...`,
+      });
+
+      let url = `/reports/tax/summary/export/${exportFormat}?businessId=${businessId}`;
+      if (dateRange.from) url += `&fromDate=${dateRange.from.toISOString()}`;
+      if (dateRange.to) url += `&toDate=${dateRange.to.toISOString()}`;
+
+      const ext = exportFormat === 'excel' ? 'xlsx' : exportFormat;
+      const defaultFilename = `Tax_Summary_${format(new Date(), 'yyyy-MM-dd')}.${ext}`;
+      await api.download(url, defaultFilename);
+
+      toast({
+        title: "Export Completed",
+        description: `Tax summary ${exportFormat.toUpperCase()} downloaded successfully.`,
+      });
+    } catch (err: any) {
+      console.error('Tax summary export error:', err);
+      toast({
+        title: "Export Failed",
+        description: err.message || `Failed to export as ${exportFormat.toUpperCase()}`,
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
   };
 
   // Grouped summary lines by statutory category
@@ -358,25 +387,28 @@ export default function TaxReportsPage() {
           {/* Export Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 shadow-xs border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
-                <Download className="mr-2 h-4 w-4 text-slate-600 dark:text-slate-400" />
-                Export
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={exporting}
+                className="shadow-sm border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                <Download className={`mr-2 h-4 w-4 ${exporting ? 'animate-bounce text-blue-600' : ''}`} />
+                {exporting ? 'Exporting...' : 'Export'}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
-              <DropdownMenuLabel>Export GST Report</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-800" />
-              <DropdownMenuItem onClick={() => handleExport('excel')} className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
-                <TableIcon className="mr-2 h-4 w-4 text-emerald-600" /> Excel (.xlsx)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('csv')} className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
-                <TableIcon className="mr-2 h-4 w-4 text-blue-600" /> CSV (.csv)
-              </DropdownMenuItem>
+            <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
               <DropdownMenuItem onClick={() => handleExport('pdf')} className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
-                <FileText className="mr-2 h-4 w-4 text-rose-600" /> PDF (.pdf)
+                <FileText className="mr-2 h-4 w-4 text-red-500" />
+                Export as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('excel')} className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
+                <TableIcon className="mr-2 h-4 w-4 text-emerald-600" />
+                Export as Excel
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport('json')} className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
-                <FileJson className="mr-2 h-4 w-4 text-amber-600" /> JSON (.json)
+                <FileJson className="mr-2 h-4 w-4 text-blue-600" />
+                Export as JSON
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
