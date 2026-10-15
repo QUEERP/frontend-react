@@ -16,8 +16,11 @@ import {
   UserPlus,
   PackagePlus,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Lock,
+  Globe
 } from 'lucide-react'
+import { taxAPI, SupplyTypeResolution } from '@/lib/api/tax'
 import { CreateCustomerModal } from '@/components/dashboard/create-customer-modal'
 import { CreateProductModal } from '@/components/dashboard/create-product-modal'
 import { salesOrdersAPI } from '@/lib/api/sales-orders'
@@ -115,7 +118,8 @@ export function AddInvoiceClient({
   const [fetchingSO, setFetchingSO] = useState(false)
   const [confirmSOOpen, setConfirmSOOpen] = useState(false)
   const [pendingSOId, setPendingSOId] = useState<string>('')
-  const [manualTaxType, setManualTaxType] = useState<'intra' | 'inter' | null>(null)
+  const [supplyTypeResolution, setSupplyTypeResolution] = useState<SupplyTypeResolution | null>(null)
+  const [isResolvingSupply, setIsResolvingSupply] = useState(false)
   const [items, setItems] = useState<any[]>([{
     id: '1',
     productId: '',
@@ -159,100 +163,190 @@ export function AddInvoiceClient({
     country: '',
     state: '',
     currency: '',
+    // Statutory Export Fields
+    exportType: 'LUT' as 'LUT' | 'WITH_PAYMENT_OF_IGST' | '',
+    lutNumber: '',
+    lutDate: '',
+    destinationCountry: '',
+    shippingBillNumber: '',
+    shippingBillDate: '',
+    portCode: '',
   })
 
-  const summary = React.useMemo(() => {
-    const customer = customers.find(c => c.id === formData.customerId)
+  const hasGoodsItem = React.useMemo(() => {
+    if (items.length === 0) return true;
+    return items.some(item => {
+      if (!item.productId) return true;
+      const p = products.find(p => p.id === item.productId);
+      return p ? p.type !== 'SERVICE' : true;
+    });
+  }, [items, products]);
 
-    // NEW ARCHITECTURE: Business Country is the source of truth
-    const businessCountry = business?.country || 'UAE'
-    const isBasic = business?.businessType === 'Basic'
-    const customerCountryName = (customer?.country || customer?.region || '').trim().toUpperCase()
-
-    // Check if a customer is selected AND their country is known to be NOT India and NOT UAE
-    const isCustomerSelected = !!customer
-    const isOtherCountry = isCustomerSelected && customerCountryName !== '' && customerCountryName !== 'INDIA' && customerCountryName !== 'UAE' && customerCountryName !== 'UNITED ARAB EMIRATES'
-
-    const isIndia = isOtherCountry ? false : (businessCountry === 'INDIA')
-    const isUAE = isOtherCountry ? false : (businessCountry === 'UAE')
-
-    const getTaxLabel = (c: string) => {
-      if (['AUSTRALIA', 'CANADA', 'NEW ZEALAND', 'SINGAPORE', 'MALAYSIA'].includes(c)) return 'GST %'
-      if (['UNITED STATES', 'USA', 'US'].includes(c)) return 'Sales Tax %'
-      if (['UNITED KINGDOM', 'UK', 'SOUTH AFRICA'].includes(c)) return 'VAT %'
-      return 'Tax %'
+  // Synchronize Statutory Supply Type from Backend Engine
+  useEffect(() => {
+    if (!formData.customerId || !businessId) {
+      setSupplyTypeResolution(null);
+      return;
     }
 
-    const customerCountry = customerCountryName
+    let isMounted = true;
+    setIsResolvingSupply(true);
+    const customer = customers.find(c => c.id === formData.customerId);
 
-    const companyState = business?.state?.trim().toUpperCase() || ''
-    const customerState = (customer?.billingState || customer?.state || '').trim().toUpperCase() || ''
-    const autoIntrastate = isIndia && companyState === customerState && companyState !== ''
-    const isIntrastate = manualTaxType === 'intra' || (manualTaxType === null && autoIntrastate)
+    taxAPI.getSupplyType(businessId, {
+      customerId: formData.customerId,
+      buyerCountry: customer?.country || customer?.billingCountry,
+      buyerState: customer?.billingState || customer?.state,
+      docDate: formData.invoiceDate,
+      isGoods: hasGoodsItem,
+      exportType: formData.exportType || 'LUT',
+      isSez: customer?.isSez,
+      sezType: customer?.sezType
+    }).then(res => {
+      if (isMounted) {
+        setSupplyTypeResolution(res);
+        setIsResolvingSupply(false);
+      }
+    }).catch(err => {
+      console.warn('Failed to resolve statutory supply type from backend:', err);
+      if (isMounted) setIsResolvingSupply(false);
+    });
 
-    let subtotal = 0
-    let taxTotal = 0
-    let cgst = 0
-    let sgst = 0
-    let igst = 0
-    let vat = 0
+    return () => { isMounted = false; };
+  }, [businessId, formData.customerId, formData.exportType, formData.invoiceDate, hasGoodsItem, customers]);
+
+  const summary = React.useMemo(() => {
+    const customer = customers.find(c => c.id === formData.customerId);
+
+    // Business country is the source of truth
+    const businessCountry = (business?.country || 'INDIA').trim().toUpperCase();
+    const isIndia = businessCountry === 'INDIA';
+    const isUAE = businessCountry === 'UAE' || businessCountry === 'UNITED ARAB EMIRATES';
+    const isBasic = business?.businessType === 'Basic';
+
+    const customerCountryName = (customer?.country || customer?.billingCountry || customer?.region || '').trim().toUpperCase();
+    const isCustomerSelected = !!customer;
+    const isOtherCountry = isCustomerSelected && customerCountryName !== '' && customerCountryName !== 'INDIA' && customerCountryName !== 'UAE' && customerCountryName !== 'UNITED ARAB EMIRATES';
+
+    const getTaxLabel = (c: string) => {
+      if (['AUSTRALIA', 'CANADA', 'NEW ZEALAND', 'SINGAPORE', 'MALAYSIA'].includes(c)) return 'GST %';
+      if (['UNITED STATES', 'USA', 'US'].includes(c)) return 'Sales Tax %';
+      if (['UNITED KINGDOM', 'UK', 'SOUTH AFRICA'].includes(c)) return 'VAT %';
+      return 'Tax %';
+    };
+
+    const companyState = (business?.state || '').trim().toUpperCase();
+    const customerState = customer ? (customer.billingState || customer.state || '').trim().toUpperCase() : '';
+    const isExport = (isCustomerSelected && customerCountryName !== '' && customerCountryName !== businessCountry) || (supplyTypeResolution?.isExport ?? false);
+
+    // Derive statutory supply type strictly without manual override
+    let supplyType = 'UNDETERMINED';
+    let supplyLabel = 'Undetermined';
+    let supplyReason = '';
+    let isMissingBuyerState = false;
+
+    if (supplyTypeResolution) {
+      supplyType = supplyTypeResolution.supplyType;
+      supplyLabel = supplyTypeResolution.label;
+      supplyReason = supplyTypeResolution.reason || '';
+      if (supplyType === 'UNDETERMINED') {
+        isMissingBuyerState = true;
+      }
+    } else {
+      // Deterministic client fallback while engine query loads
+      if (isExport) {
+        const isWithIgst = formData.exportType === 'WITH_PAYMENT_OF_IGST';
+        supplyType = isWithIgst ? 'EXPORT_WITH_IGST' : 'EXPORT_LUT';
+        supplyLabel = isWithIgst ? 'Export (With Payment of IGST)' : 'Export (Zero-rated LUT)';
+        supplyReason = `Export to ${customerCountryName || 'Foreign Destination'}`;
+      } else if (isIndia) {
+        if (!customerState) {
+          supplyType = 'UNDETERMINED';
+          supplyLabel = 'Undetermined (Missing Customer State)';
+          supplyReason = 'Customer state is required for Indian GST Place of Supply.';
+          isMissingBuyerState = isCustomerSelected;
+        } else if (companyState === customerState && companyState !== '') {
+          supplyType = 'CGST_SGST';
+          supplyLabel = 'Same State (CGST + SGST)';
+          supplyReason = `Intra-State supply within ${companyState}`;
+        } else {
+          supplyType = 'IGST';
+          supplyLabel = 'Different State (IGST)';
+          supplyReason = `Inter-State supply from ${companyState} to ${customerState}`;
+        }
+      }
+    }
+
+    const isIntrastate = supplyType === 'CGST_SGST';
+    const isExportLut = supplyType === 'EXPORT_LUT' || (isExport && (!formData.exportType || formData.exportType === 'LUT'));
+    const isExportWithIgst = supplyType === 'EXPORT_WITH_IGST' || (isExport && formData.exportType === 'WITH_PAYMENT_OF_IGST');
+
+    let subtotal = 0;
+    let taxTotal = 0;
+    let cgst = 0;
+    let sgst = 0;
+    let igst = 0;
+    let vat = 0;
 
     items.forEach(item => {
-      const lineAmount = Number(item.quantity || 0) * Number(item.price || 0)
-      let lineTax = 0
+      const lineAmount = Number(item.quantity || 0) * Number(item.price || 0);
+      let lineTax = 0;
 
       if (isIndia) {
-        if (customerCountry !== 'INDIA' && customerCountry !== '') {
-          // EXPORT
-          const lineIgst = lineAmount * (Number(item.igstPercent || 0) / 100)
-          igst += lineIgst
-          lineTax = lineIgst
-        } else {
-          // DOMESTIC
-          if (isIntrastate) {
-            const lineCgst = lineAmount * (Number(item.cgstPercent || 0) / 100)
-            const lineSgst = lineAmount * (Number(item.sgstPercent || 0) / 100)
-            cgst += lineCgst
-            sgst += lineSgst
-            lineTax = lineCgst + lineSgst
+        if (isExport) {
+          if (isExportWithIgst) {
+            const lineIgst = lineAmount * (Number(item.igstPercent || item.taxPercent || 0) / 100);
+            igst += lineIgst;
+            lineTax = lineIgst;
           } else {
-            const lineIgst = lineAmount * (Number(item.igstPercent || 0) / 100)
-            igst += lineIgst
-            lineTax = lineIgst
+            // LUT: statutory 0% IGST
+            lineTax = 0;
+          }
+        } else {
+          // Domestic India supply
+          if (isIntrastate) {
+            const halfRate = Number(item.cgstPercent || (item.taxPercent / 2) || 0);
+            const lineCgst = lineAmount * (halfRate / 100);
+            const lineSgst = lineAmount * (halfRate / 100);
+            cgst += lineCgst;
+            sgst += lineSgst;
+            lineTax = lineCgst + lineSgst;
+          } else {
+            const lineIgst = lineAmount * (Number(item.igstPercent || item.taxPercent || 0) / 100);
+            igst += lineIgst;
+            lineTax = lineIgst;
           }
         }
       } else if (isUAE) {
-        if (customerCountry !== 'UAE' && customerCountry !== 'UNITED ARAB EMIRATES' && customerCountry !== '') {
-          // EXPORT - Zero rated or export vat (0%)
-          lineTax = 0
+        if (customerCountryName !== 'UAE' && customerCountryName !== 'UNITED ARAB EMIRATES' && customerCountryName !== '') {
+          lineTax = 0;
         } else {
-          const vatRate = Number(item.taxPercent || 5)
+          const vatRate = Number(item.taxPercent || 5);
           if (formData.vatType === 'inclusive') {
-            // VAT Inclusive: Extract from total
-            const lineSub = Number((lineAmount / (1 + vatRate / 100)).toFixed(2))
-            const lineVat = Number((lineAmount - lineSub).toFixed(2))
-            vat += lineVat
-            subtotal += lineSub
-            lineTax = lineVat
-            return // Skip regular subtotal addition
+            const lineSub = Number((lineAmount / (1 + vatRate / 100)).toFixed(2));
+            const lineVat = Number((lineAmount - lineSub).toFixed(2));
+            vat += lineVat;
+            subtotal += lineSub;
+            lineTax = lineVat;
+            return;
           } else {
-            // VAT Exclusive: Add on top
-            const lineVat = lineAmount * (vatRate / 100)
-            vat += lineVat
-            lineTax = lineVat
+            const lineVat = lineAmount * (vatRate / 100);
+            vat += lineVat;
+            lineTax = lineVat;
           }
         }
       } else {
-        const lineVat = lineAmount * (Number(item.taxPercent || 0) / 100)
-        vat += lineVat
-        lineTax = lineVat
+        const lineVat = lineAmount * (Number(item.taxPercent || 0) / 100);
+        vat += lineVat;
+        lineTax = lineVat;
       }
 
-      subtotal += lineAmount
-      taxTotal += lineTax
-    })
+      subtotal += lineAmount;
+      taxTotal += lineTax;
+    });
 
-    const grandTotal = subtotal + taxTotal + Number(formData.shippingCharges || 0) - Number(formData.discount || 0) - Number(formData.tds || 0)
+    const tdsEffective = isExport ? 0 : Number(formData.tds || 0);
+    const grandTotal = subtotal + taxTotal + Number(formData.shippingCharges || 0) - Number(formData.discount || 0) - tdsEffective;
 
     return {
       subtotal,
@@ -265,22 +359,20 @@ export function AddInvoiceClient({
       customerCountryName,
       taxLabel: getTaxLabel(customerCountryName),
       isIntrastate,
+      isExport,
+      isExportLut,
+      isExportWithIgst,
+      isMissingBuyerState,
+      supplyType,
+      supplyLabel,
+      supplyReason,
       cgst,
       sgst,
       igst,
       vat,
-      tds: Number(formData.tds || 0)
-    }
-  }, [items, formData.discount, formData.shippingCharges, formData.customerId, formData.tds, formData.vatType, customers, business, manualTaxType])
-
-  const hasGoodsItem = React.useMemo(() => {
-    if (items.length === 0) return true;
-    return items.some(item => {
-      if (!item.productId) return true;
-      const p = products.find(p => p.id === item.productId);
-      return p ? p.type !== 'SERVICE' : true;
-    });
-  }, [items, products]);
+      tds: tdsEffective
+    };
+  }, [items, formData.discount, formData.shippingCharges, formData.customerId, formData.tds, formData.vatType, formData.exportType, customers, business, supplyTypeResolution]);
 
   useEffect(() => {
     if (step === 'template') {
@@ -533,6 +625,14 @@ export function AddInvoiceClient({
               country: cust?.country || '',
               state: cust?.billingState || cust?.state || '',
               currency: inv.currency || '',
+              // Export fields
+              exportType: ((inv.exportType === 'WITH_PAYMENT_OF_IGST' || inv.exportType === 'LUT') ? inv.exportType : (cust?.country && !['INDIA', 'IN'].includes(cust.country.toUpperCase()) ? 'LUT' : '')) as 'LUT' | 'WITH_PAYMENT_OF_IGST' | '',
+              lutNumber: inv.lutNumber || '',
+              lutDate: inv.lutDate ? new Date(inv.lutDate).toISOString().slice(0, 10) : '',
+              destinationCountry: inv.destinationCountry || cust?.country || '',
+              shippingBillNumber: inv.shippingBillNumber || '',
+              shippingBillDate: inv.shippingBillDate ? new Date(inv.shippingBillDate).toISOString().slice(0, 10) : '',
+              portCode: inv.portCode || '',
             })
             setItems(inv.items.map((it: any) => ({
               id: it.id,
@@ -627,6 +727,34 @@ export function AddInvoiceClient({
       toast({ title: 'Error', description: 'Customer and items are required', variant: 'destructive' })
       return
     }
+
+    if (summary.isMissingBuyerState) {
+      toast({
+        title: 'Statutory Validation Blocked',
+        description: 'Customer state is required for Indian GST Place of Supply. Please update customer profile.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    if (summary.isIndia && !business?.state) {
+      toast({
+        title: 'Statutory Validation Blocked',
+        description: 'Seller state is missing. Please configure your registered business state in Business Settings.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    if (summary.isExport && !formData.exportType) {
+      toast({
+        title: 'Statutory Validation Blocked',
+        description: 'Export invoice creation requires an explicit Export Type ("LUT" or "With Payment of IGST").',
+        variant: 'destructive'
+      })
+      return
+    }
+
     handleFinalSubmit(undefined, true)
   }
 
@@ -640,33 +768,53 @@ export function AddInvoiceClient({
         designTemplate: template,
         salesOrderId: selectedSOId === 'none' ? undefined : selectedSOId,
         projectId: formData.projectId || undefined,
-        items: validItems.map(it => ({
-          productId: it.productId || undefined,
-          itemName: it.itemName,
-          warehouseId: it.warehouseId,
-          description: it.description,
-          itemType: summary.isBasic ? 'SERVICE' : (it.itemType || 'GOODS'),
-          unit: it.unit,
-          quantity: it.quantity,
-          rate: it.price,
-          taxPercent: summary.isIndia
-            ? (summary.isIntrastate ? (Number(it.cgstPercent || 0) + Number(it.sgstPercent || 0)) : Number(it.igstPercent || 0))
-            : it.taxPercent,
-          cgstPercent: it.cgstPercent,
-          sgstPercent: it.sgstPercent,
-          igstPercent: it.igstPercent,
-          hsnSacCode: it.hsnSacCode,
-          taxDetails: summary.isIndia ? (
-            summary.isIntrastate ? [
-              { name: 'CGST', rate: Number(it.cgstPercent || 0), amount: (Number(it.quantity || 0) * Number(it.price || 0) * Number(it.cgstPercent || 0)) / 100 },
-              { name: 'SGST', rate: Number(it.sgstPercent || 0), amount: (Number(it.quantity || 0) * Number(it.price || 0) * Number(it.sgstPercent || 0)) / 100 }
-            ].filter(t => t.rate > 0) : [
-              { name: 'IGST', rate: Number(it.igstPercent || 0), amount: (Number(it.quantity || 0) * Number(it.price || 0) * Number(it.igstPercent || 0)) / 100 }
-            ].filter(t => t.rate > 0)
-          ) : [
-            { name: summary.taxLabel, rate: Number(it.taxPercent || 0), amount: (Number(it.quantity || 0) * Number(it.price || 0) * Number(it.taxPercent || 0)) / 100 }
-          ].filter(t => t.rate > 0)
-        })),
+        items: validItems.map(it => {
+          let lineTaxPercent = 0;
+          let taxDetailsArr: any[] = [];
+
+          if (summary.isIndia) {
+            if (summary.isExport) {
+              if (summary.isExportWithIgst) {
+                lineTaxPercent = Number(it.igstPercent || it.taxPercent || 0);
+                taxDetailsArr = [{ name: 'IGST', rate: lineTaxPercent, amount: (Number(it.quantity || 0) * Number(it.price || 0) * lineTaxPercent) / 100 }];
+              } else {
+                lineTaxPercent = 0;
+                taxDetailsArr = [{ name: 'IGST (LUT Zero-rated)', rate: 0, amount: 0 }];
+              }
+            } else if (summary.isIntrastate) {
+              const cgstRate = Number(it.cgstPercent || (it.taxPercent / 2) || 0);
+              const sgstRate = Number(it.sgstPercent || (it.taxPercent / 2) || 0);
+              lineTaxPercent = cgstRate + sgstRate;
+              taxDetailsArr = [
+                { name: 'CGST', rate: cgstRate, amount: (Number(it.quantity || 0) * Number(it.price || 0) * cgstRate) / 100 },
+                { name: 'SGST', rate: sgstRate, amount: (Number(it.quantity || 0) * Number(it.price || 0) * sgstRate) / 100 }
+              ].filter(t => t.rate > 0);
+            } else {
+              lineTaxPercent = Number(it.igstPercent || it.taxPercent || 0);
+              taxDetailsArr = [{ name: 'IGST', rate: lineTaxPercent, amount: (Number(it.quantity || 0) * Number(it.price || 0) * lineTaxPercent) / 100 }].filter(t => t.rate > 0);
+            }
+          } else {
+            lineTaxPercent = Number(it.taxPercent || 0);
+            taxDetailsArr = [{ name: summary.taxLabel, rate: lineTaxPercent, amount: (Number(it.quantity || 0) * Number(it.price || 0) * lineTaxPercent) / 100 }].filter(t => t.rate > 0);
+          }
+
+          return {
+            productId: it.productId || undefined,
+            itemName: it.itemName,
+            warehouseId: it.warehouseId,
+            description: it.description,
+            itemType: summary.isBasic ? 'SERVICE' : (it.itemType || 'GOODS'),
+            unit: it.unit,
+            quantity: it.quantity,
+            rate: it.price,
+            taxPercent: lineTaxPercent,
+            cgstPercent: it.cgstPercent,
+            sgstPercent: it.sgstPercent,
+            igstPercent: it.igstPercent,
+            hsnSacCode: it.hsnSacCode,
+            taxDetails: taxDetailsArr
+          };
+        }),
         subtotal: summary.subtotal,
         totalTax: summary.taxTotal,
         grandTotal: summary.total,
@@ -788,7 +936,6 @@ export function AddInvoiceClient({
                             currency: (cust?.currency && cust.currency !== 'SYSTEM') ? cust.currency : prev.currency
                           }))
                           setSelectedSOId('none')
-                          setManualTaxType(null)
                         }}
                       >
                         <SelectTrigger id="customer" className="h-10 w-full cursor-pointer">
@@ -892,17 +1039,19 @@ export function AddInvoiceClient({
                     </div>
                   </div>
 
-                  {/* Region Specific Extra Fields */}
-                  {summary.isIndia && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-4 bg-orange-50/30 rounded-xl border border-orange-100">
-                      <div className="space-y-2">
-                        <Label>E-Way Bill No</Label>
-                        <Input
-                          value={formData.ewayBillNo}
-                          onChange={e => setFormData(p => ({ ...p, ewayBillNo: e.target.value }))}
-                          placeholder="Optional"
-                        />
-                      </div>
+                  {/* Region & Export Specific Extra Fields */}
+                  {summary.isIndia && !summary.isExport && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-4 bg-orange-50/30 dark:bg-orange-950/20 rounded-xl border border-orange-200/60 dark:border-orange-800/60">
+                      {hasGoodsItem && (
+                        <div className="space-y-2">
+                          <Label>E-Way Bill No</Label>
+                          <Input
+                            value={formData.ewayBillNo}
+                            onChange={e => setFormData(p => ({ ...p, ewayBillNo: e.target.value }))}
+                            placeholder="Optional (Goods only)"
+                          />
+                        </div>
+                      )}
                       <div className="space-y-2">
                         <Label>Transport Details</Label>
                         <Input
@@ -919,10 +1068,10 @@ export function AddInvoiceClient({
                           onChange={e => setFormData(p => ({ ...p, reverseCharge: e.target.checked }))}
                           className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                         />
-                        <Label htmlFor="reverseCharge">Reverse Charge</Label>
+                        <Label htmlFor="reverseCharge">Reverse Charge (RCM)</Label>
                       </div>
                       <div className="space-y-2">
-                        <Label>TDS Amount (₹)</Label>
+                        <Label>TDS Amount ({getCurrencySymbol(formData.currency || currency)})</Label>
                         <Input
                           type="number"
                           value={formData.tds}
@@ -933,8 +1082,100 @@ export function AddInvoiceClient({
                     </div>
                   )}
 
+                  {/* Statutory Export Details Card */}
+                  {summary.isExport && (
+                    <div className="p-5 bg-purple-50/50 dark:bg-purple-950/20 rounded-xl border border-purple-200 dark:border-purple-800 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-purple-950 dark:text-purple-300 flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-purple-600" />
+                          Statutory Export Details (Rule 96 / 96A CGST Rules)
+                        </h4>
+                        <span className="text-[11px] text-purple-700 dark:text-purple-300 font-medium bg-purple-100 dark:bg-purple-900/60 px-2.5 py-0.5 rounded-full">
+                          TDS & RCM Exempt on Exports
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold">Export Type *</Label>
+                          <Select
+                            value={formData.exportType || 'LUT'}
+                            onValueChange={(val: any) => setFormData(p => ({ ...p, exportType: val }))}
+                          >
+                            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="LUT">Under LUT / Bond (Zero-rated)</SelectItem>
+                              <SelectItem value="WITH_PAYMENT_OF_IGST">With Payment of IGST</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {(!formData.exportType || formData.exportType === 'LUT') && (
+                          <>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-semibold">LUT Number</Label>
+                              <Input
+                                className="h-9 text-xs"
+                                value={formData.lutNumber}
+                                onChange={e => setFormData(p => ({ ...p, lutNumber: e.target.value }))}
+                                placeholder="e.g. AD2401240012345"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-semibold">LUT Date</Label>
+                              <Input
+                                type="date"
+                                className="h-9 text-xs"
+                                value={formData.lutDate}
+                                onChange={e => setFormData(p => ({ ...p, lutDate: e.target.value }))}
+                              />
+                            </div>
+                          </>
+                        )}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold">Destination Country</Label>
+                          <Input
+                            className="h-9 text-xs"
+                            value={formData.destinationCountry || summary.customerCountryName}
+                            onChange={e => setFormData(p => ({ ...p, destinationCountry: e.target.value }))}
+                            placeholder="e.g. United Arab Emirates"
+                          />
+                        </div>
+                        {hasGoodsItem && (
+                          <>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-semibold">Shipping Bill No</Label>
+                              <Input
+                                className="h-9 text-xs"
+                                value={formData.shippingBillNumber}
+                                onChange={e => setFormData(p => ({ ...p, shippingBillNumber: e.target.value }))}
+                                placeholder="e.g. 7894561"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-semibold">Shipping Bill Date</Label>
+                              <Input
+                                type="date"
+                                className="h-9 text-xs"
+                                value={formData.shippingBillDate}
+                                onChange={e => setFormData(p => ({ ...p, shippingBillDate: e.target.value }))}
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-semibold">Port Code</Label>
+                              <Input
+                                className="h-9 text-xs"
+                                value={formData.portCode}
+                                onChange={e => setFormData(p => ({ ...p, portCode: e.target.value }))}
+                                placeholder="e.g. INMUN1 (Mundra Port)"
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {summary.isUAE && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-4 bg-sky-50/30 rounded-xl border border-sky-100">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-4 bg-sky-50/30 dark:bg-sky-950/20 rounded-xl border border-sky-100 dark:border-sky-800">
                       <div className="space-y-2">
                         <Label>VAT Type</Label>
                         <Select
@@ -967,28 +1208,44 @@ export function AddInvoiceClient({
 
                   {/* Line Items Section */}
                   <div className="space-y-4 pt-4 border-t border-border mt-6">
-                    {summary.isIndia && (
-                      <div className="flex gap-2 mb-4 p-1 bg-muted rounded-xl w-fit border border-border">
-                        <Button
-                          type="button"
-                          variant={summary.isIntrastate ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => setManualTaxType('intra')}
-                          className={cn("text-xs h-9 px-4 rounded-lg transition-colors cursor-pointer", summary.isIntrastate ? "bg-card text-foreground shadow-sm font-semibold hover:bg-card" : "text-muted-foreground")}
-                        >
-                          Same State (CGST, SGST)
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={!summary.isIntrastate ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => setManualTaxType('inter')}
-                          className={cn("text-xs h-9 px-4 rounded-lg transition-colors cursor-pointer", !summary.isIntrastate ? "bg-card text-foreground shadow-sm font-semibold hover:bg-card" : "text-muted-foreground")}
-                        >
-                          Different State (IGST)
-                        </Button>
+                    {/* Locked Statutory Supply Type Indicator */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-muted/70 dark:bg-slate-900/70 rounded-xl border border-border">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Statutory Supply Type:</span>
+                        <Badge variant="outline" className={cn(
+                          "font-semibold text-xs px-3 py-1 flex items-center gap-1.5 shadow-2xs",
+                          summary.supplyType === 'CGST_SGST' ? "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700" :
+                          summary.supplyType === 'IGST' ? "bg-blue-50 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-700" :
+                          summary.isExport ? "bg-purple-50 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-700" :
+                          summary.supplyType === 'UNDETERMINED' ? "bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700" :
+                          "bg-secondary text-secondary-foreground"
+                        )}>
+                          <Lock className="w-3 h-3" />
+                          {summary.supplyLabel}
+                        </Badge>
+                      </div>
+                      {summary.supplyReason && (
+                        <span className="text-xs text-muted-foreground font-medium">
+                          ({summary.supplyReason})
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Blocking Warning for Missing Customer State */}
+                    {summary.isMissingBuyerState && (
+                      <div className="rounded-xl border border-red-300 bg-red-50/90 dark:bg-red-950/40 p-4 text-red-950 dark:text-red-200 flex items-start gap-3 shadow-xs">
+                        <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-xs text-red-950 dark:text-red-200 uppercase tracking-wide">
+                            Customer State Missing — Invoicing Blocked
+                          </h4>
+                          <p className="text-xs text-red-900 dark:text-red-300 leading-relaxed">
+                            The selected customer has no registered state. Under Indian GST law (Section 10 & 12 IGST Act), Place of Supply cannot be determined without a valid state. Invoices cannot be issued until the customer state is configured.
+                          </p>
+                        </div>
                       </div>
                     )}
+
                     {summary.isIndia && !business?.state && (
                       <div className="rounded-xl border border-amber-300 bg-amber-50/90 p-4 text-amber-950 flex items-start gap-3 shadow-xs">
                         <AlertTriangle className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
@@ -1348,6 +1605,18 @@ export function AddInvoiceClient({
                                 <span className="font-bold text-foreground">+{formData.currency || currency} {(summary.cgst + summary.sgst).toFixed(2)}</span>
                               </div>
                             </>
+                          ) : summary.isExport ? (
+                            summary.isExportWithIgst ? (
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground font-medium">Export IGST Total</span>
+                                <span className="font-bold text-blue-600">+{formData.currency || currency} {summary.igst.toFixed(2)}</span>
+                              </div>
+                            ) : (
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground font-medium">Export Under LUT</span>
+                                <span className="font-semibold text-emerald-600 dark:text-emerald-400">Zero-rated (0.00)</span>
+                              </div>
+                            )
                           ) : (
                             <div className="flex justify-between items-center text-sm">
                               <span className="text-muted-foreground font-medium">IGST Total</span>
@@ -1403,7 +1672,7 @@ export function AddInvoiceClient({
                         </div>
                       </div>
 
-                      {summary.isIndia && summary.tds > 0 && (
+                      {summary.isIndia && summary.tds > 0 && !summary.isExport && (
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground font-medium">TDS Deduction</span>
                           <span className="font-bold text-rose-600">-{formData.currency || currency} {summary.tds.toFixed(2)}</span>
@@ -1437,8 +1706,9 @@ export function AddInvoiceClient({
                     </Button>
                     <Button
                       type="submit"
-                      className="gap-2 cursor-pointer px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm"
-                      disabled={isSubmitting}
+                      className="gap-2 cursor-pointer px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isSubmitting || summary.isMissingBuyerState || (summary.isIndia && !business?.state)}
+                      title={summary.isMissingBuyerState ? 'Invoicing blocked: customer state is missing' : (summary.isIndia && !business?.state) ? 'Invoicing blocked: seller state is missing' : ''}
                     >
                       {isSubmitting ? (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -1715,7 +1985,6 @@ export function AddInvoiceClient({
             state: newCust.billingState || newCust.state || '',
             emirate: newCust.emirate || '',
           }))
-          setManualTaxType(null)
         }}
       />
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '@/lib/api';
+import { cn } from '@/lib/utils';
 import { useBusinessData } from '@/components/dashboard/business-data-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
@@ -66,6 +67,24 @@ interface DataQualityWarning {
   recordedRate?: number;
 }
 
+interface ExportDoc {
+  documentId: string;
+  documentNumber: string;
+  documentDate: string;
+  partyName: string;
+  gstin: string;
+  destinationCountry: string;
+  exportType: string;
+  shippingBillNumber: string;
+  shippingBillDate: string;
+  portCode: string;
+  invoiceValueTxn: number;
+  invoiceValueBase: number;
+  taxableValueBase: number;
+  igstBase: number;
+  isLut: boolean;
+}
+
 interface TaxReportKpis {
   outputTax: number;
   inputTax: number;
@@ -74,6 +93,8 @@ interface TaxReportKpis {
   netItcReceivable: number;
   taxableSales: number;
   taxablePurchases: number;
+  exportTurnover?: number;
+  exportCount?: number;
 }
 
 export default function TaxReportsPage() {
@@ -83,6 +104,7 @@ export default function TaxReportsPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [summaryLines, setSummaryLines] = useState<TaxLine[]>([]);
+  const [exportDocs, setExportDocs] = useState<ExportDoc[]>([]);
   const [warnings, setWarnings] = useState<DataQualityWarning[]>([]);
   const [kpis, setKpis] = useState<TaxReportKpis | null>(null);
   const [activePreset, setActivePreset] = useState<string>('this-fy');
@@ -109,6 +131,7 @@ export default function TaxReportsPage() {
       const res = await api.get(url);
       if (res.data?.success) {
         setSummaryLines(res.data.summary || []);
+        setExportDocs(res.data.exports || []);
         setWarnings(res.data.dataQualityWarnings || []);
         setKpis(res.data.kpis || null);
       }
@@ -176,6 +199,7 @@ export default function TaxReportsPage() {
     const outputLines: TaxLine[] = [];
     const inputLines: TaxLine[] = [];
     const reverseLines: TaxLine[] = [];
+    const undeterminedLines: TaxLine[] = [];
     const unclassifiedLines: TaxLine[] = [];
 
     summaryLines.forEach(line => {
@@ -186,6 +210,8 @@ export default function TaxReportsPage() {
         inputLines.push(line);
       } else if (cat.includes('reverse')) {
         reverseLines.push(line);
+      } else if (cat.includes('undetermined')) {
+        undeterminedLines.push(line);
       } else {
         unclassifiedLines.push(line);
       }
@@ -210,6 +236,7 @@ export default function TaxReportsPage() {
       output: { lines: outputLines, ...calcSubtotal(outputLines) },
       input: { lines: inputLines, ...calcSubtotal(inputLines) },
       reverse: { lines: reverseLines, ...calcSubtotal(reverseLines) },
+      undetermined: { lines: undeterminedLines, ...calcSubtotal(undeterminedLines) },
       unclassified: { lines: unclassifiedLines, ...calcSubtotal(unclassifiedLines) },
     };
   }, [summaryLines]);
@@ -695,6 +722,88 @@ export default function TaxReportsPage() {
               </CardContent>
             </Card>
 
+            {/* Section 1B: Statutory Exports (GSTR-1 Table 6A Basis) */}
+            {exportDocs.length > 0 && (
+              <Card className="border-purple-200 dark:border-purple-800 shadow-xs overflow-hidden bg-white dark:bg-slate-900">
+                <CardHeader className="border-b border-purple-200 dark:border-purple-800 bg-purple-50/60 dark:bg-purple-950/40 py-3.5 px-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+                      <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
+                        Zero-Rated Supplies & Exports (GSTR-1 Table 6A)
+                      </CardTitle>
+                      <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-700">
+                        {exportDocs.length} export docs
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <span className="text-slate-500 dark:text-slate-400">
+                        Export Turnover: <strong className="text-slate-900 dark:text-white font-mono">{formatTaxCurrency(kpis?.exportTurnover, baseCcy)}</strong>
+                      </span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader className="bg-slate-50/50 dark:bg-slate-800/40">
+                      <TableRow className="border-b border-slate-200 dark:border-slate-800 text-xs">
+                        <TableHead className="w-[140px] font-semibold text-slate-600 dark:text-slate-400">Invoice #</TableHead>
+                        <TableHead className="w-[100px] font-semibold text-slate-600 dark:text-slate-400">Date</TableHead>
+                        <TableHead className="font-semibold text-slate-600 dark:text-slate-400">Foreign Buyer</TableHead>
+                        <TableHead className="font-semibold text-slate-600 dark:text-slate-400">Destination</TableHead>
+                        <TableHead className="font-semibold text-slate-600 dark:text-slate-400">Export Type</TableHead>
+                        <TableHead className="font-semibold text-slate-600 dark:text-slate-400">Shipping Bill / Port</TableHead>
+                        <TableHead className="text-right font-semibold text-slate-600 dark:text-slate-400">Invoice Value ({baseCcy})</TableHead>
+                        <TableHead className="text-right font-semibold text-slate-600 dark:text-slate-400">Taxable Value ({baseCcy})</TableHead>
+                        <TableHead className="text-right font-semibold text-slate-600 dark:text-slate-400">IGST ({baseCcy})</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {exportDocs.map((exp) => (
+                        <TableRow key={exp.documentId} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors text-xs font-normal border-b border-slate-100 dark:border-slate-800/60">
+                          <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                            <Link to={`/dashboard/${businessId}/invoices/${exp.documentId}`} className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 hover:underline flex items-center gap-1">
+                              {exp.documentNumber}
+                              <ExternalLink className="h-3 w-3 opacity-60" />
+                            </Link>
+                          </TableCell>
+                          <TableCell className="text-slate-600 dark:text-slate-400">
+                            {exp.documentDate ? format(new Date(exp.documentDate), 'dd MMM yyyy') : '—'}
+                          </TableCell>
+                          <TableCell className="text-slate-800 dark:text-slate-200 font-medium">
+                            {exp.partyName}
+                          </TableCell>
+                          <TableCell className="text-slate-700 dark:text-slate-300">
+                            {exp.destinationCountry}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn(
+                              "text-[10px] font-semibold",
+                              exp.isLut ? "bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800" : "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
+                            )}>
+                              {exp.exportType}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                            {exp.shippingBillNumber !== '-' ? `${exp.shippingBillNumber} (${exp.portCode})` : 'Under LUT'}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-slate-700 dark:text-slate-300">
+                            {formatTaxCurrency(exp.invoiceValueBase, baseCcy)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-medium text-slate-900 dark:text-white">
+                            {formatTaxCurrency(exp.taxableValueBase, baseCcy)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold text-purple-600 dark:text-purple-400">
+                            {formatTaxCurrency(exp.igstBase, baseCcy)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Section 2: Input Tax Credit (Purchases) */}
             <Card className="border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden bg-white dark:bg-slate-900">
               <CardHeader className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 py-3.5 px-6">
@@ -795,6 +904,75 @@ export default function TaxReportsPage() {
                 </Table>
               </CardContent>
             </Card>
+
+            {/* Section 2B: Undetermined Supplies (Missing State) */}
+            {groupedData.undetermined.lines.length > 0 && (
+              <Card className="border-amber-400 dark:border-amber-800 shadow-xs overflow-hidden bg-white dark:bg-slate-900">
+                <CardHeader className="border-b border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/40 py-3.5 px-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                      <CardTitle className="text-base font-bold text-amber-950 dark:text-amber-100">
+                        Undetermined Place of Supply Bucket
+                      </CardTitle>
+                      <Badge variant="outline" className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800 text-xs">
+                        {groupedData.undetermined.lines.length} docs held
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-amber-800 dark:text-amber-300 font-medium">
+                      Held without CGST+SGST guessing due to missing counterparty or seller state.
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader className="bg-slate-50/50 dark:bg-slate-800/40">
+                      <TableRow className="border-b border-slate-200 dark:border-slate-800 text-xs">
+                        <TableHead className="text-slate-600 dark:text-slate-400">Doc #</TableHead>
+                        <TableHead className="text-slate-600 dark:text-slate-400">Type</TableHead>
+                        <TableHead className="text-slate-600 dark:text-slate-400">Party</TableHead>
+                        <TableHead className="text-slate-600 dark:text-slate-400">Tax Type</TableHead>
+                        <TableHead className="text-right text-slate-600 dark:text-slate-400">Rate (%)</TableHead>
+                        <TableHead className="text-right text-slate-600 dark:text-slate-400">Taxable Amount ({baseCcy})</TableHead>
+                        <TableHead className="text-right text-slate-600 dark:text-slate-400">Tax Amount ({baseCcy})</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {groupedData.undetermined.lines.map((l) => (
+                        <TableRow key={l.id} className="text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800/60">
+                          <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                            {l.documentNumber}
+                          </TableCell>
+                          <TableCell className="text-slate-600 dark:text-slate-400">{l.transactionType}</TableCell>
+                          <TableCell className="text-slate-800 dark:text-slate-200">{l.partyName}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-800 border-amber-300">
+                              {l.taxType}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-mono">{l.taxRate}%</TableCell>
+                          <TableCell className="text-right font-mono">{formatTaxCurrency(l.taxableAmountBaseCcy, baseCcy)}</TableCell>
+                          <TableCell className="text-right font-mono font-bold text-amber-700 dark:text-amber-300">{formatTaxCurrency(l.totalTaxBaseCcy, baseCcy)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                    <TableFooter className="bg-slate-50/90 dark:bg-slate-800/70 font-semibold text-xs border-t border-slate-200 dark:border-slate-800">
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-right text-slate-600 dark:text-slate-400">
+                          Total Undetermined Taxes:
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-slate-900 dark:text-white">
+                          {formatTaxCurrency(groupedData.undetermined.taxableTotal, baseCcy)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-bold text-amber-700 dark:text-amber-300">
+                          {formatTaxCurrency(groupedData.undetermined.totalTax, baseCcy)}
+                        </TableCell>
+                      </TableRow>
+                    </TableFooter>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Section 3: Unclassified Lines (If Any Encountered) */}
             {groupedData.unclassified.lines.length > 0 && (

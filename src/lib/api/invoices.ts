@@ -65,6 +65,13 @@ export interface Invoice {
   vatType?: string
   emirate?: string
   currency?: string
+  exportType?: string
+  lutNumber?: string
+  lutDate?: string | Date
+  destinationCountry?: string
+  shippingBillNumber?: string
+  shippingBillDate?: string | Date
+  portCode?: string
   customer?: {
     id: string
     name: string
