@@ -80,6 +80,40 @@ import { EditableTaxSelect } from '@/components/dashboard/editable-tax-select'
 import { CurrencySelect } from '@/components/dashboard/currency-select'
 import { getCurrencySymbol } from '@/lib/currencies'
 
+export const ICEGATE_PORT_CODES = [
+  { code: 'INMUN1', name: 'INMUN1 - Mundra Sea Port (Gujarat)' },
+  { code: 'INKDL4', name: 'INKDL4 - Kandla Sea Port (Gujarat)' },
+  { code: 'INHZA1', name: 'INHZA1 - Hazira Port (Gujarat)' },
+  { code: 'INPAV1', name: 'INPAV1 - Pipavav Port (Gujarat)' },
+  { code: 'INNSA1', name: 'INNSA1 - Nhava Sheva / JNPT (Maharashtra)' },
+  { code: 'INBOM1', name: 'INBOM1 - Mumbai Sea Port (Maharashtra)' },
+  { code: 'INBOM4', name: 'INBOM4 - Mumbai Air Cargo (Maharashtra)' },
+  { code: 'INDEL4', name: 'INDEL4 - Delhi Air Cargo (IGIA, New Delhi)' },
+  { code: 'INMAA1', name: 'INMAA1 - Chennai Sea Port (Tamil Nadu)' },
+  { code: 'INMAA4', name: 'Chennai Air Cargo (Tamil Nadu)' },
+  { code: 'INCCU1', name: 'INCCU1 - Kolkata Sea Port (West Bengal)' },
+  { code: 'INCCU4', name: 'INCCU4 - Kolkata Air Cargo (West Bengal)' },
+  { code: 'INCOK1', name: 'INCOK1 - Cochin Sea Port (Kerala)' },
+  { code: 'INBLR4', name: 'INBLR4 - Bengaluru Air Cargo (Karnataka)' },
+  { code: 'INHYD4', name: 'INHYD4 - Hyderabad Air Cargo (Telangana)' },
+  { code: 'INAMD4', name: 'INAMD4 - Ahmedabad Air Cargo (Gujarat)' },
+  { code: 'INVTZ1', name: 'INVTZ1 - Visakhapatnam Port (Andhra Pradesh)' },
+  { code: 'INTUT1', name: 'INTUT1 - Tuticorin Port (Tamil Nadu)' },
+  { code: 'INGOI1', name: 'INGOI1 - Marmagao Port (Goa)' },
+  { code: 'INIXY1', name: 'INIXY1 - Kandla SEZ (Gujarat)' }
+];
+
+export function getGstRatesForDate(dateInput?: string | Date): number[] {
+  const d = dateInput ? new Date(dateInput) : new Date();
+  const cutoff = new Date('2025-09-22T00:00:00.000Z');
+  // Base rates valid across all dates: 0, 0.1, 0.25, 1.5, 3, 5, 18 (2.5 strictly removed)
+  if (d < cutoff) {
+    return [0, 0.1, 0.25, 1.5, 3, 5, 12, 18, 28];
+  } else {
+    return [0, 0.1, 0.25, 1.5, 3, 5, 18, 40];
+  }
+}
+
 export function AddInvoiceClient({
   businessId,
   invoiceId,
@@ -163,6 +197,7 @@ export function AddInvoiceClient({
     country: '',
     state: '',
     currency: '',
+    exchangeRate: 1,
     // Statutory Export Fields
     exportType: 'LUT' as 'LUT' | 'WITH_PAYMENT_OF_IGST' | '',
     lutNumber: '',
@@ -374,6 +409,64 @@ export function AddInvoiceClient({
     };
   }, [items, formData.discount, formData.shippingCharges, formData.customerId, formData.tds, formData.vatType, formData.exportType, customers, business, supplyTypeResolution]);
 
+  const dateAwareGstRates = React.useMemo(() => {
+    return getGstRatesForDate(formData.invoiceDate);
+  }, [formData.invoiceDate]);
+
+  const intraCgstRates = React.useMemo(() => {
+    return dateAwareGstRates.map(r => Number((r / 2).toFixed(4)));
+  }, [dateAwareGstRates]);
+
+  const lutFy = React.useMemo(() => {
+    if (!formData.lutDate) return null;
+    const d = new Date(formData.lutDate);
+    if (isNaN(d.getTime())) return null;
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const start = month >= 3 ? year : year - 1;
+    return `FY ${start}-${String(start + 1).slice(2)}`;
+  }, [formData.lutDate]);
+
+  const invoiceFy = React.useMemo(() => {
+    if (!formData.invoiceDate) return null;
+    const d = new Date(formData.invoiceDate);
+    if (isNaN(d.getTime())) return null;
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const start = month >= 3 ? year : year - 1;
+    return `FY ${start}-${String(start + 1).slice(2)}`;
+  }, [formData.invoiceDate]);
+
+  const isLutDateAfterInvoice = Boolean(
+    summary.isExport &&
+    (!formData.exportType || formData.exportType === 'LUT') &&
+    formData.lutDate &&
+    formData.invoiceDate &&
+    formData.lutDate > formData.invoiceDate
+  );
+
+  const isLutFyMismatch = Boolean(
+    summary.isExport &&
+    (!formData.exportType || formData.exportType === 'LUT') &&
+    lutFy &&
+    invoiceFy &&
+    lutFy !== invoiceFy
+  );
+
+  const isLutNumberInvalid = Boolean(
+    summary.isExport &&
+    (!formData.exportType || formData.exportType === 'LUT') &&
+    formData.lutNumber &&
+    !/^AD[0-9]{12,14}[A-Z0-9]?$/i.test(formData.lutNumber.trim())
+  );
+
+  const isShippingBillDateInvalid = Boolean(
+    hasGoodsItem &&
+    formData.shippingBillDate &&
+    formData.invoiceDate &&
+    formData.shippingBillDate > formData.invoiceDate
+  );
+
   useEffect(() => {
     if (step === 'template') {
       const fetchPreviews = async () => {
@@ -498,6 +591,13 @@ export function AddInvoiceClient({
   }
 
   const updateItem = (index: number, field: string, value: any) => {
+    // If supply type is EXPORT_LUT, force every line's tax/IGST% to 0
+    if (summary.isExport && (!formData.exportType || formData.exportType === 'LUT')) {
+      if (['taxPercent', 'cgstPercent', 'sgstPercent', 'igstPercent'].includes(field)) {
+        return; // strictly immutable 0% for LUT
+      }
+    }
+
     setItems((prev) =>
       prev.map((item, i) => {
         if (i !== index) return item
@@ -540,6 +640,9 @@ export function AddInvoiceClient({
       unitName = typeof product.unit === 'object' ? (product.unit as any).name || (product.unit as any).abbreviation || 'pcs' : product.unit
     }
 
+    const isLut = summary.isExport && (!formData.exportType || formData.exportType === 'LUT');
+    const initialTax = isLut ? 0 : (product.taxPercent ?? product.taxRate ?? 0);
+
     setItems((prev) =>
       prev.map((item, i) =>
         i === index
@@ -548,10 +651,10 @@ export function AddInvoiceClient({
             productId,
             description: product.name,
             price: product.price ?? product.sellingPrice ?? 0,
-            taxPercent: product.taxPercent ?? product.taxRate ?? 0,
-            cgstPercent: ((product.taxPercent ?? product.taxRate ?? 0) / 2),
-            sgstPercent: ((product.taxPercent ?? product.taxRate ?? 0) / 2),
-            igstPercent: product.taxPercent ?? product.taxRate ?? 0,
+            taxPercent: initialTax,
+            cgstPercent: isLut ? 0 : (initialTax / 2),
+            sgstPercent: isLut ? 0 : (initialTax / 2),
+            igstPercent: isLut ? 0 : initialTax,
             hsnSacCode: product.taxCode || '',
             itemType: (product.type as any) || 'GOODS',
             unit: unitName,
@@ -625,6 +728,7 @@ export function AddInvoiceClient({
               country: cust?.country || '',
               state: cust?.billingState || cust?.state || '',
               currency: inv.currency || '',
+              exchangeRate: Number((inv as any).exchangeRate || 1),
               // Export fields
               exportType: ((inv.exportType === 'WITH_PAYMENT_OF_IGST' || inv.exportType === 'LUT') ? inv.exportType : (cust?.country && !['INDIA', 'IN'].includes(cust.country.toUpperCase()) ? 'LUT' : '')) as 'LUT' | 'WITH_PAYMENT_OF_IGST' | '',
               lutNumber: inv.lutNumber || '',
@@ -1037,6 +1141,20 @@ export function AddInvoiceClient({
                         onValueChange={(v) => setFormData(p => ({ ...p, currency: v }))}
                       />
                     </div>
+                    {((formData.currency || currency) && (formData.currency || currency) !== 'INR') && (
+                      <div className="space-y-2">
+                        <Label>Exchange Rate (1 {formData.currency || currency} to INR)</Label>
+                        <Input
+                          type="number"
+                          step="0.0001"
+                          min="0.0001"
+                          className="h-10 text-sm"
+                          value={formData.exchangeRate || 1}
+                          onChange={e => setFormData(p => ({ ...p, exchangeRate: Number(e.target.value || 1) }))}
+                          placeholder="e.g. 83.50"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Region & Export Specific Extra Fields */}
@@ -1099,7 +1217,18 @@ export function AddInvoiceClient({
                           <Label className="text-xs font-semibold">Export Type *</Label>
                           <Select
                             value={formData.exportType || 'LUT'}
-                            onValueChange={(val: any) => setFormData(p => ({ ...p, exportType: val }))}
+                            onValueChange={(val: any) => {
+                              setFormData(p => ({ ...p, exportType: val }));
+                              if (val === 'LUT') {
+                                setItems(prev => prev.map(it => ({
+                                  ...it,
+                                  taxPercent: 0,
+                                  cgstPercent: 0,
+                                  sgstPercent: 0,
+                                  igstPercent: 0
+                                })));
+                              }
+                            }}
                           >
                             <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -1113,20 +1242,29 @@ export function AddInvoiceClient({
                             <div className="space-y-1.5">
                               <Label className="text-xs font-semibold">LUT Number</Label>
                               <Input
-                                className="h-9 text-xs"
+                                className={cn("h-9 text-xs", isLutNumberInvalid && "border-destructive text-destructive")}
                                 value={formData.lutNumber}
                                 onChange={e => setFormData(p => ({ ...p, lutNumber: e.target.value }))}
                                 placeholder="e.g. AD2401240012345"
                               />
+                              {isLutNumberInvalid && (
+                                <p className="text-[10px] text-destructive font-medium">Invalid ARN format (AD followed by 12-14 digits)</p>
+                              )}
                             </div>
                             <div className="space-y-1.5">
                               <Label className="text-xs font-semibold">LUT Date</Label>
                               <Input
                                 type="date"
-                                className="h-9 text-xs"
+                                className={cn("h-9 text-xs", (isLutDateAfterInvoice || isLutFyMismatch) && "border-destructive text-destructive")}
                                 value={formData.lutDate}
                                 onChange={e => setFormData(p => ({ ...p, lutDate: e.target.value }))}
                               />
+                              {isLutDateAfterInvoice && (
+                                <p className="text-[10px] text-destructive font-medium">LUT Date cannot be after Invoice Date</p>
+                              )}
+                              {isLutFyMismatch && (
+                                <p className="text-[10px] text-destructive font-medium">LUT FY ({lutFy}) does not match Invoice FY ({invoiceFy})</p>
+                              )}
                             </div>
                           </>
                         )}
@@ -1147,26 +1285,35 @@ export function AddInvoiceClient({
                                 className="h-9 text-xs"
                                 value={formData.shippingBillNumber}
                                 onChange={e => setFormData(p => ({ ...p, shippingBillNumber: e.target.value }))}
-                                placeholder="e.g. 7894561"
+                                placeholder="e.g. 7894561 (Leave blank if to be filed)"
                               />
                             </div>
                             <div className="space-y-1.5">
                               <Label className="text-xs font-semibold">Shipping Bill Date</Label>
                               <Input
                                 type="date"
-                                className="h-9 text-xs"
+                                className={cn("h-9 text-xs", isShippingBillDateInvalid && "border-destructive text-destructive")}
                                 value={formData.shippingBillDate}
                                 onChange={e => setFormData(p => ({ ...p, shippingBillDate: e.target.value }))}
                               />
+                              {isShippingBillDateInvalid && (
+                                <p className="text-[10px] text-destructive font-medium">Shipping Bill Date cannot be after Invoice Date</p>
+                              )}
                             </div>
                             <div className="space-y-1.5">
-                              <Label className="text-xs font-semibold">Port Code</Label>
-                              <Input
-                                className="h-9 text-xs"
-                                value={formData.portCode}
-                                onChange={e => setFormData(p => ({ ...p, portCode: e.target.value }))}
-                                placeholder="e.g. INMUN1 (Mundra Port)"
-                              />
+                              <Label className="text-xs font-semibold">Port Code (ICEGATE)</Label>
+                              <Select
+                                value={formData.portCode || 'none'}
+                                onValueChange={v => setFormData(p => ({ ...p, portCode: v === 'none' ? '' : v }))}
+                              >
+                                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select Port Code" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">— Select ICEGATE Port Code —</SelectItem>
+                                  {ICEGATE_PORT_CODES.map(port => (
+                                    <SelectItem key={port.code} value={port.code}>{port.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                           </>
                         )}
@@ -1297,7 +1444,9 @@ export function AddInvoiceClient({
                                     <TableHead className="w-[80px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">SGST%</TableHead>
                                   </>
                                 ) : (
-                                  <TableHead className="w-[80px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">IGST%</TableHead>
+                                  <TableHead className="w-[80px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">
+                                    {summary.isExport && (!formData.exportType || formData.exportType === 'LUT') ? 'IGST% (LUT)' : 'IGST%'}
+                                  </TableHead>
                                 )
                               ) : (
                                 <TableHead className="w-[80px] h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">VAT%</TableHead>
@@ -1483,7 +1632,7 @@ export function AddInvoiceClient({
                                               updateItem(index, 'sgstPercent', val)
                                               updateItem(index, 'taxPercent', Number(val) * 2)
                                             }}
-                                            options={[0, 2.5, 6, 7.5, 9, 14]}
+                                            options={intraCgstRates}
                                             size="sm"
                                           />
                                         </TableCell>
@@ -1496,21 +1645,27 @@ export function AddInvoiceClient({
                                               updateItem(index, 'cgstPercent', val)
                                               updateItem(index, 'taxPercent', Number(val) * 2)
                                             }}
-                                            options={[0, 2.5, 6, 7.5, 9, 14]}
+                                            options={intraCgstRates}
                                             size="sm"
                                           />
                                         </TableCell>
                                       </>
+                                    ) : summary.isExport && (!formData.exportType || formData.exportType === 'LUT') ? (
+                                      <TableCell className="align-top py-4">
+                                        <div className="h-9 px-2 flex items-center justify-center rounded-md bg-muted/60 border border-muted text-xs font-semibold text-emerald-600 dark:text-emerald-400 select-none cursor-not-allowed" title="Zero-rated under Letter of Undertaking">
+                                          0% (LUT)
+                                        </div>
+                                      </TableCell>
                                     ) : (
                                       <TableCell className="align-top py-4">
-                                        {/* IGST% — India, Different State */}
+                                        {/* IGST% — India, Different State or Export With Payment of IGST */}
                                         <EditableTaxSelect
                                           value={item.igstPercent ?? 0}
                                           onChange={(val) => {
                                             updateItem(index, 'igstPercent', val)
                                             updateItem(index, 'taxPercent', val)
                                           }}
-                                          options={[0, 5, 12, 18, 28]}
+                                          options={dateAwareGstRates}
                                           size="sm"
                                         />
                                       </TableCell>
@@ -1685,6 +1840,27 @@ export function AddInvoiceClient({
                           {formData.currency || currency} {summary.total.toFixed(2)}
                         </span>
                       </div>
+
+                      {((formData.currency || currency) && (formData.currency || currency) !== 'INR') && (
+                        <div className="mt-4 p-3 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 space-y-1.5 text-xs">
+                          <div className="font-bold text-blue-900 dark:text-blue-200 flex items-center justify-between">
+                            <span>INR Equivalent (@ ₹{Number(formData.exchangeRate || 1).toFixed(2)})</span>
+                            <span className="text-[10px] bg-blue-200/60 dark:bg-blue-800/60 px-2 py-0.5 rounded-full font-medium">FX Converted</span>
+                          </div>
+                          <div className="flex justify-between items-center text-muted-foreground">
+                            <span>Taxable Value (INR)</span>
+                            <span className="font-semibold text-foreground">
+                              ₹ {(summary.subtotal * Number(formData.exchangeRate || 1)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-muted-foreground border-t border-blue-200/60 dark:border-blue-800/60 pt-1">
+                            <span className="font-medium">Total Amount (INR)</span>
+                            <span className="font-bold text-blue-700 dark:text-blue-300">
+                              ₹ {(summary.total * Number(formData.exchangeRate || 1)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1707,8 +1883,30 @@ export function AddInvoiceClient({
                     <Button
                       type="submit"
                       className="gap-2 cursor-pointer px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={isSubmitting || summary.isMissingBuyerState || (summary.isIndia && !business?.state)}
-                      title={summary.isMissingBuyerState ? 'Invoicing blocked: customer state is missing' : (summary.isIndia && !business?.state) ? 'Invoicing blocked: seller state is missing' : ''}
+                      disabled={
+                        isSubmitting ||
+                        summary.isMissingBuyerState ||
+                        (summary.isIndia && !business?.state) ||
+                        isLutDateAfterInvoice ||
+                        isLutFyMismatch ||
+                        isLutNumberInvalid ||
+                        isShippingBillDateInvalid
+                      }
+                      title={
+                        isLutDateAfterInvoice
+                          ? 'LUT date cannot be after invoice date'
+                          : isLutFyMismatch
+                          ? 'LUT financial year does not match invoice financial year'
+                          : isLutNumberInvalid
+                          ? 'LUT ARN format is invalid'
+                          : isShippingBillDateInvalid
+                          ? 'Shipping bill date cannot be after invoice date'
+                          : summary.isMissingBuyerState
+                          ? 'Invoicing blocked: customer state is missing'
+                          : (summary.isIndia && !business?.state)
+                          ? 'Invoicing blocked: seller state is missing'
+                          : ''
+                      }
                     >
                       {isSubmitting ? (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />

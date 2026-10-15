@@ -40,8 +40,10 @@ import { CountrySelect } from '@/components/dashboard/country-select';
 import { 
   getBankConfigForCountry, 
   INDIAN_GST_STATES, 
-  CountryBankConfig 
+  CountryBankConfig,
+  getPhoneRulesForCountry
 } from '@/lib/bank-configs';
+import { COUNTRY_TO_CURRENCY } from '@/lib/country_to_currency';
 import { 
   DynamicBankAccountsSection, 
   BankAccountItem 
@@ -59,9 +61,10 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
   const [businessName, setBusinessName] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [draftAccount, setDraftAccount] = useState<Record<string, string> | null>(null);
   const navigate = useNavigate();
   const { toast: uiToast } = useToast();
-  const { business } = useBusinessData();
+  const { business, refresh } = useBusinessData();
 
   const API_BASE = import.meta.env.VITE_API_BASE || '';
   const getCookie = (name: string) => {
@@ -70,9 +73,33 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
     return match ? decodeURIComponent(match[1]) : '';
   };
 
-  // Country is the single source of truth (Default: Business country or INDIA)
-  const defaultCountry = (business?.country === 'UAE' ? 'UAE' : 'INDIA');
+  const getToken = () => {
+    const fromCookie = getCookie('token') || getCookie('accessToken');
+    if (fromCookie) return fromCookie;
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token') || localStorage.getItem('accessToken') || '';
+    }
+    return '';
+  };
+
+  const getActiveBusinessId = () => {
+    if (businessId && String(businessId).trim()) return businessId;
+    if (business?.id) return business.id;
+    const cookieBiz = getCookie('activeBusinessId') || getCookie('businessId');
+    if (cookieBiz) return cookieBiz;
+    if (typeof window !== 'undefined') {
+      const match = window.location.pathname.match(/\/dashboard\/([^/]+)/);
+      if (match && match[1]) return decodeURIComponent(match[1]);
+      const stored = localStorage.getItem('businessId') || localStorage.getItem('activeBusinessId') || localStorage.getItem('last_business_id');
+      if (stored) return stored;
+    }
+    return '';
+  };
+
+  // Country is the single source of truth (Default: Business country or India)
+  const defaultCountry = business?.country || 'India';
   const initialConfig = getBankConfigForCountry(defaultCountry);
+  const initialCurrency = COUNTRY_TO_CURRENCY[defaultCountry] || initialConfig.currency || 'INR';
 
   const [formData, setFormData] = useState({
     company: '',
@@ -82,7 +109,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
     phone: '',
     website: '',
     group: '',
-    currency: initialConfig.currency,
+    currency: initialCurrency,
     defaultLanguage: 'SYSTEM',
 
     // Upgraded CRM Fields
@@ -95,13 +122,13 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
     // Main Address
     address: '',
     city: '',
-    state: defaultCountry === 'INDIA' ? 'Gujarat' : '',
+    state: (defaultCountry.toUpperCase() === 'INDIA' || defaultCountry.toUpperCase() === 'IN') ? 'Gujarat' : '',
     zipCode: '',
 
     // Billing Address
     billingStreet: '',
     billingCity: '',
-    billingState: defaultCountry === 'INDIA' ? 'Gujarat' : '',
+    billingState: (defaultCountry.toUpperCase() === 'INDIA' || defaultCountry.toUpperCase() === 'IN') ? 'Gujarat' : '',
     billingZipCode: '',
     billingCountry: defaultCountry,
     sameAsMainAddress: true,
@@ -109,7 +136,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
     // Shipping Address
     shippingStreet: '',
     shippingCity: '',
-    shippingState: defaultCountry === 'INDIA' ? 'Gujarat' : '',
+    shippingState: (defaultCountry.toUpperCase() === 'INDIA' || defaultCountry.toUpperCase() === 'IN') ? 'Gujarat' : '',
     shippingZipCode: '',
     shippingCountry: defaultCountry,
     sameAsBillingAddress: true,
@@ -121,6 +148,10 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
 
   const bankConfig: CountryBankConfig = useMemo(() => {
     return getBankConfigForCountry(formData.country);
+  }, [formData.country]);
+
+  const phoneRules = useMemo(() => {
+    return getPhoneRulesForCountry(formData.country);
   }, [formData.country]);
 
   useEffect(() => {
@@ -137,7 +168,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
     const hasData = Boolean(
       formData.vatNumber ||
       bankAccounts.length > 0 ||
-      (formData.country === 'INDIA' && formData.state)
+      ((formData.country.toUpperCase() === 'INDIA' || formData.country.toUpperCase() === 'IN') && formData.state)
     );
 
     if (hasData) {
@@ -150,19 +181,23 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
 
   const applyCountryChange = (newCountry: string) => {
     const config = getBankConfigForCountry(newCountry);
+    const newCurrency = COUNTRY_TO_CURRENCY[newCountry] || config.currency || 'USD';
+    const newPhoneRules = getPhoneRulesForCountry(newCountry);
+    const isIndia = newCountry.toUpperCase() === 'INDIA' || newCountry.toUpperCase() === 'IN';
+    const defaultState = isIndia ? 'Gujarat' : '';
+
     setFormData(prev => {
-      const defaultState = newCountry === 'INDIA' ? 'Gujarat' : '';
       return {
         ...prev,
         country: newCountry,
         region: newCountry,
-        currency: config.currency,
-        phone: prev.phone ? `${config.phoneCode} ${prev.phone.replace(/^\+\d+\s*/, '')}` : '',
+        currency: newCurrency,
+        phone: prev.phone.slice(0, newPhoneRules.maxDigits),
         state: defaultState,
         billingState: prev.sameAsMainAddress ? defaultState : prev.billingState,
         shippingState: prev.sameAsBillingAddress ? defaultState : prev.shippingState,
-        billingCountry: newCountry,
-        shippingCountry: newCountry,
+        billingCountry: prev.sameAsMainAddress ? newCountry : prev.billingCountry,
+        shippingCountry: prev.sameAsBillingAddress ? newCountry : prev.shippingCountry,
         vatNumber: '' // Clear tax number since format changes
       };
     });
@@ -252,18 +287,83 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       }
     }
 
+    const activeBusinessId = getActiveBusinessId();
+    if (!activeBusinessId) {
+      uiToast({
+        title: "Configuration Error",
+        description: "Active business identifier not found. Please refresh or select a business.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Auto-save pending bank account if user entered details in the subform without clicking "Save Account"
+    let finalBankAccounts = [...bankAccounts];
+    if (draftAccount && (draftAccount.bankName?.trim() || draftAccount.accountHolderName?.trim() || draftAccount.accountNumber?.trim() || draftAccount.bsb?.trim() || draftAccount.iban?.trim())) {
+      let draftError: string | null = null;
+      for (const field of bankConfig.fields) {
+        const val = (draftAccount[field.key] || '').trim();
+        if (field.required && !val) {
+          draftError = `${field.label} is required for the pending ${bankConfig.countryName} bank account.`;
+          break;
+        }
+        if (val && field.validator) {
+          const res = field.validator(val);
+          if (typeof res === 'string') {
+            draftError = res;
+            break;
+          } else if (res === false) {
+            draftError = `Invalid ${field.label} in bank account.`;
+            break;
+          }
+        }
+      }
+
+      if (draftError) {
+        uiToast({
+          title: "Incomplete Bank Account",
+          description: draftError,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const rawNum = draftAccount.accountNumber || draftAccount.iban || '';
+      const masked = rawNum.length > 4 ? `••••••••${rawNum.slice(-4)}` : (rawNum ? `••••${rawNum}` : '••••');
+      finalBankAccounts.push({
+        accountHolderName: (draftAccount.accountHolderName || '').trim(),
+        bankName: (draftAccount.bankName || '').trim(),
+        accountNumber: draftAccount.accountNumber?.trim(),
+        accountNumberMasked: masked,
+        country: bankConfig.countryName,
+        currency: formData.currency || bankConfig.currency,
+        ifsc: draftAccount.ifsc?.trim(),
+        iban: draftAccount.iban?.trim(),
+        swift: draftAccount.swift?.trim(),
+        routingNumber: draftAccount.routingNumber?.trim(),
+        branchName: draftAccount.branchName?.trim(),
+        upiId: draftAccount.upiId?.trim(),
+        sortCode: draftAccount.sortCode?.trim(),
+        transitNumber: draftAccount.transitNumber?.trim(),
+        institutionNumber: draftAccount.institutionNumber?.trim(),
+        bsb: draftAccount.bsb?.trim(),
+        isPrimary: finalBankAccounts.length === 0
+      });
+    }
+
     setIsSubmitting(true);
     setSaveStatus('saving');
 
     try {
-      const token = getCookie('token');
+      const token = getToken();
       const payload = {
+        businessId: activeBusinessId,
         company: formData.company,
         country: formData.country,
         region: formData.country,
         currency: formData.currency,
         vatNumber: formData.vatNumber || undefined,
-        phone: formData.phone || undefined,
+        phone: formData.phone ? `${phoneRules.phoneCode} ${formData.phone}` : undefined,
         website: formData.website || undefined,
         group: formData.group || undefined,
         defaultLanguage: formData.defaultLanguage,
@@ -277,13 +377,13 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
         billingCity: formData.sameAsMainAddress ? formData.city : formData.billingCity,
         billingState: formData.sameAsMainAddress ? formData.state : formData.billingState,
         billingZipCode: formData.sameAsMainAddress ? formData.zipCode : formData.billingZipCode,
-        billingCountry: formData.country,
+        billingCountry: formData.sameAsMainAddress ? formData.country : (formData.billingCountry || formData.country),
 
         shippingStreet: formData.sameAsBillingAddress ? (formData.sameAsMainAddress ? formData.address : formData.billingStreet) : formData.shippingStreet,
         shippingCity: formData.sameAsBillingAddress ? (formData.sameAsMainAddress ? formData.city : formData.billingCity) : formData.shippingCity,
         shippingState: formData.sameAsBillingAddress ? (formData.sameAsMainAddress ? formData.state : formData.billingState) : formData.shippingState,
         shippingZipCode: formData.sameAsBillingAddress ? (formData.sameAsMainAddress ? formData.zipCode : formData.billingZipCode) : formData.shippingZipCode,
-        shippingCountry: formData.country,
+        shippingCountry: formData.sameAsBillingAddress ? (formData.sameAsMainAddress ? formData.country : (formData.billingCountry || formData.country)) : (formData.shippingCountry || formData.country),
 
         industry: formData.industry || undefined,
         annualRevenue: formData.annualRevenue || undefined,
@@ -291,7 +391,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
         linkedinUrl: formData.linkedinUrl || undefined,
         tags: formData.tags || undefined,
 
-        bankAccounts: bankAccounts.map(acc => ({
+        bankAccounts: finalBankAccounts.map(acc => ({
           accountHolderName: acc.accountHolderName,
           bankName: acc.bankName,
           accountNumber: acc.accountNumber,
@@ -311,11 +411,12 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
         }))
       };
 
-      const response = await fetch(`${API_BASE}/api/customers`, {
+      const response = await fetch(`${API_BASE}/api/customers?businessId=${encodeURIComponent(activeBusinessId)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'x-business-id': activeBusinessId,
         },
         body: JSON.stringify(payload),
       });
@@ -330,7 +431,10 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
         title: "Success",
         description: `Customer "${formData.company}" created successfully!`,
       });
-      navigate(`/dashboard/${businessId}/customers`);
+      try {
+        if (refresh) await refresh();
+      } catch {}
+      navigate(`/dashboard/${activeBusinessId}/customers`);
     } catch (err: any) {
       console.error('Error creating customer:', err);
       uiToast({
@@ -411,31 +515,18 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                     <Label htmlFor="country" className="text-sm font-semibold text-foreground">
                       Country (Single Source of Truth) <span className="text-destructive">*</span>
                     </Label>
-                    <Select value={formData.country} onValueChange={handleCountrySelection}>
-                      <SelectTrigger className="w-full rounded-xl border-border bg-background h-11 text-sm shadow-sm font-medium">
-                        <SelectValue placeholder="Select Country" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-border shadow-lg">
-                        <SelectItem value="INDIA" className="cursor-pointer">🇮🇳 India (GSTIN, INR)</SelectItem>
-                        <SelectItem value="UAE" className="cursor-pointer">🇦🇪 United Arab Emirates (TRN, AED)</SelectItem>
-                        <SelectItem value="USA" className="cursor-pointer">🇺🇸 United States (EIN, USD)</SelectItem>
-                        <SelectItem value="UK" className="cursor-pointer">🇬🇧 United Kingdom (VAT, GBP)</SelectItem>
-                        <SelectItem value="CANADA" className="cursor-pointer">🇨🇦 Canada (BN, CAD)</SelectItem>
-                        <SelectItem value="AUSTRALIA" className="cursor-pointer">🇦🇺 Australia (ABN, AUD)</SelectItem>
-                        <SelectItem value="EU" className="cursor-pointer">🇪🇺 European Union (VAT, EUR)</SelectItem>
-                        <SelectItem value="OTHER" className="cursor-pointer">🌐 Other / International</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <CountrySelect
+                      value={formData.country}
+                      onValueChange={handleCountrySelection}
+                    />
                   </div>
 
-                  {/* Currency */}
+                  {/* Settlement Currency */}
                   <div className="space-y-2">
                     <Label htmlFor="currency" className="text-sm font-semibold text-foreground">Settlement Currency</Label>
-                    <Input
-                      id="currency"
+                    <CurrencySelect
                       value={formData.currency}
-                      onChange={(e) => handleInputChange('currency', e.target.value.toUpperCase())}
-                      className="rounded-xl border-border bg-background h-11 text-sm shadow-sm uppercase font-mono"
+                      onValueChange={(val) => handleInputChange('currency', val)}
                     />
                   </div>
                 </div>
@@ -458,17 +549,36 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
 
                   {/* Phone */}
                   <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                      <PhoneIcon className="size-3.5 text-blue-600" />
-                      Phone Number ({bankConfig.phoneCode})
-                    </Label>
-                    <Input
-                      id="phone"
-                      placeholder={`${bankConfig.phoneCode} 9876543210`}
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="rounded-xl border-border bg-background h-11 text-sm shadow-sm"
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="phone" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                        <PhoneIcon className="size-3.5 text-blue-600" />
+                        Phone Number
+                      </Label>
+                      <span className="text-[11px] text-muted-foreground font-mono">
+                        {formData.phone.length}/{phoneRules.maxDigits} digits
+                      </span>
+                    </div>
+                    <div className="flex rounded-xl border border-border overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:border-primary bg-background shadow-sm h-11">
+                      <div className="inline-flex items-center px-3.5 bg-muted/50 text-muted-foreground text-xs font-mono font-medium border-r border-border select-none shrink-0">
+                        {phoneRules.phoneCode}
+                      </div>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder={`Up to ${phoneRules.maxDigits} digits`}
+                        value={formData.phone}
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, phoneRules.maxDigits);
+                          handleInputChange('phone', digitsOnly);
+                        }}
+                        maxLength={phoneRules.maxDigits}
+                        className="rounded-none border-0 h-full shadow-none focus-visible:ring-0 text-sm font-mono tracking-wider w-full"
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Numeric digits only. Dynamic max {phoneRules.maxDigits} digits for {formData.country || 'selected country'}.
+                    </p>
                   </div>
 
                   {/* Website */}
@@ -519,9 +629,9 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                     {/* State - Dropdown with GST Codes for India, Text for Others */}
                     <div className="space-y-2">
                       <Label htmlFor="state" className="text-sm font-semibold text-foreground">
-                        State {formData.country === 'INDIA' && <span className="text-destructive">* (Statutory GST Code)</span>}
+                        State {(formData.country.toUpperCase() === 'INDIA' || formData.country.toUpperCase() === 'IN') && <span className="text-destructive">* (Statutory GST Code)</span>}
                       </Label>
-                      {formData.country === 'INDIA' ? (
+                      {(formData.country.toUpperCase() === 'INDIA' || formData.country.toUpperCase() === 'IN') ? (
                         <Select value={formData.state} onValueChange={(val) => handleInputChange('state', val)}>
                           <SelectTrigger className="w-full rounded-xl border-border bg-background h-11 text-sm shadow-sm font-medium">
                             <SelectValue placeholder="Select Indian State" />
@@ -587,6 +697,202 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                     </Label>
                   </div>
                 </div>
+
+                {/* Editable Billing Address Section when unchecked */}
+                {!formData.sameAsMainAddress && (
+                  <div className="p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5 dark:bg-blue-950/10 space-y-4">
+                    <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                      <div className="flex items-center gap-2">
+                        <MapPinIcon className="size-4 text-blue-600" />
+                        <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                          Billing Address
+                        </h4>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Custom billing destination</span>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="billingStreet" className="text-sm font-semibold text-foreground">
+                          Billing Street Address
+                        </Label>
+                        <Input
+                          id="billingStreet"
+                          placeholder="Enter billing street address"
+                          value={formData.billingStreet}
+                          onChange={(e) => handleInputChange('billingStreet', e.target.value)}
+                          className="rounded-xl border-border bg-background h-11 text-sm shadow-sm"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="billingCity" className="text-sm font-semibold text-foreground">City</Label>
+                          <Input
+                            id="billingCity"
+                            placeholder="e.g. Mumbai, New York"
+                            value={formData.billingCity}
+                            onChange={(e) => handleInputChange('billingCity', e.target.value)}
+                            className="rounded-xl border-border bg-background h-11 text-sm shadow-sm"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="billingState" className="text-sm font-semibold text-foreground">
+                            State / Province
+                          </Label>
+                          {(formData.billingCountry.toUpperCase() === 'INDIA' || formData.billingCountry.toUpperCase() === 'IN') ? (
+                            <Select
+                              value={formData.billingState}
+                              onValueChange={(val) => handleInputChange('billingState', val)}
+                            >
+                              <SelectTrigger className="w-full rounded-xl border-border bg-background h-11 text-sm shadow-sm font-medium">
+                                <SelectValue placeholder="Select State" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl border-border shadow-lg max-h-72">
+                                {INDIAN_GST_STATES.map((s) => (
+                                  <SelectItem key={s.code} value={s.name} className="cursor-pointer">
+                                    <span className="font-mono text-xs text-blue-600 mr-2">[{s.code}]</span>
+                                    {s.name} ({s.short})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              id="billingState"
+                              placeholder="e.g. California, Ontario"
+                              value={formData.billingState}
+                              onChange={(e) => handleInputChange('billingState', e.target.value)}
+                              className="rounded-xl border-border bg-background h-11 text-sm shadow-sm"
+                            />
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="billingZipCode" className="text-sm font-semibold text-foreground">
+                            Postal / Zip Code
+                          </Label>
+                          <Input
+                            id="billingZipCode"
+                            placeholder="e.g. 400001, 10001"
+                            value={formData.billingZipCode}
+                            onChange={(e) => handleInputChange('billingZipCode', e.target.value)}
+                            className="rounded-xl border-border bg-background h-11 text-sm shadow-sm"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="billingCountry" className="text-sm font-semibold text-foreground">
+                            Billing Country
+                          </Label>
+                          <CountrySelect
+                            value={formData.billingCountry}
+                            onValueChange={(val) => handleInputChange('billingCountry', val)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Editable Shipping Address Section when unchecked */}
+                {!formData.sameAsBillingAddress && (
+                  <div className="p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5 dark:bg-blue-950/10 space-y-4">
+                    <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                      <div className="flex items-center gap-2">
+                        <MapPinIcon className="size-4 text-blue-600" />
+                        <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                          Shipping Address
+                        </h4>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Custom shipping destination</span>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="shippingStreet" className="text-sm font-semibold text-foreground">
+                          Shipping Street Address
+                        </Label>
+                        <Input
+                          id="shippingStreet"
+                          placeholder="Enter shipping street address"
+                          value={formData.shippingStreet}
+                          onChange={(e) => handleInputChange('shippingStreet', e.target.value)}
+                          className="rounded-xl border-border bg-background h-11 text-sm shadow-sm"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="shippingCity" className="text-sm font-semibold text-foreground">City</Label>
+                          <Input
+                            id="shippingCity"
+                            placeholder="e.g. Delhi, London"
+                            value={formData.shippingCity}
+                            onChange={(e) => handleInputChange('shippingCity', e.target.value)}
+                            className="rounded-xl border-border bg-background h-11 text-sm shadow-sm"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="shippingState" className="text-sm font-semibold text-foreground">
+                            State / Province
+                          </Label>
+                          {(formData.shippingCountry.toUpperCase() === 'INDIA' || formData.shippingCountry.toUpperCase() === 'IN') ? (
+                            <Select
+                              value={formData.shippingState}
+                              onValueChange={(val) => handleInputChange('shippingState', val)}
+                            >
+                              <SelectTrigger className="w-full rounded-xl border-border bg-background h-11 text-sm shadow-sm font-medium">
+                                <SelectValue placeholder="Select State" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl border-border shadow-lg max-h-72">
+                                {INDIAN_GST_STATES.map((s) => (
+                                  <SelectItem key={s.code} value={s.name} className="cursor-pointer">
+                                    <span className="font-mono text-xs text-blue-600 mr-2">[{s.code}]</span>
+                                    {s.name} ({s.short})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              id="shippingState"
+                              placeholder="e.g. Victoria, Dubai"
+                              value={formData.shippingState}
+                              onChange={(e) => handleInputChange('shippingState', e.target.value)}
+                              className="rounded-xl border-border bg-background h-11 text-sm shadow-sm"
+                            />
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="shippingZipCode" className="text-sm font-semibold text-foreground">
+                            Postal / Zip Code
+                          </Label>
+                          <Input
+                            id="shippingZipCode"
+                            placeholder="e.g. 110001, SW1A 1AA"
+                            value={formData.shippingZipCode}
+                            onChange={(e) => handleInputChange('shippingZipCode', e.target.value)}
+                            className="rounded-xl border-border bg-background h-11 text-sm shadow-sm"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="shippingCountry" className="text-sm font-semibold text-foreground">
+                            Shipping Country
+                          </Label>
+                          <CountrySelect
+                            value={formData.shippingCountry}
+                            onValueChange={(val) => handleInputChange('shippingCountry', val)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 3. Config-Driven Dynamic Bank Accounts */}
@@ -595,6 +901,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                 currency={formData.currency}
                 accounts={bankAccounts}
                 onChange={setBankAccounts}
+                onDraftChange={setDraftAccount}
               />
 
               {/* Action Buttons */}
@@ -629,14 +936,16 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
               <AlertTriangleIcon className="size-5" />
               Country Change Warning
             </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground pt-2">
-              Changing country from <strong>{formData.country}</strong> to <strong>{pendingCountryChange}</strong> will:
-              <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-foreground">
-                <li>Reset statutory tax ID ({bankConfig.taxLabel}) as validation rules differ.</li>
-                <li>Clear entered bank accounts to match {pendingCountryChange}&apos;s settlement format.</li>
-                <li>Update state and Place of Supply options.</li>
-              </ul>
-              Do you want to proceed?
+            <DialogDescription asChild className="text-sm text-muted-foreground pt-2">
+              <div>
+                Changing country from <strong>{formData.country}</strong> to <strong>{pendingCountryChange}</strong> will:
+                <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-foreground">
+                  <li>Reset statutory tax ID ({bankConfig.taxLabel}) as validation rules differ.</li>
+                  <li>Clear entered bank accounts to match {pendingCountryChange}&apos;s settlement format.</li>
+                  <li>Update state and Place of Supply options.</li>
+                </ul>
+                <p className="mt-2">Do you want to proceed?</p>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 pt-4">
