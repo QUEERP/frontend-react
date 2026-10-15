@@ -43,6 +43,31 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+export interface BillReconciliationItem {
+  id: string;
+  billNumber: string;
+  billDate: string;
+  vendorName: string;
+  status: string;
+  currency: string;
+  exchangeRate: number;
+  subtotal: number;
+  tax: number;
+  total: number;
+  baseCurrencyAmount: number;
+}
+
+export interface ReconciliationSummary {
+  count: number;
+  totalSubtotalBase: number;
+  totalTaxBase: number;
+  totalPurchasesVolumeBase: number;
+  taxReportSum: number;
+  variance: number;
+  isReconciled: boolean;
+}
 
 interface CurrencyUsageData {
   currency: string;
@@ -53,6 +78,8 @@ interface CurrencyUsageData {
     effectiveDate?: string | null;
     source?: string;
     rateType?: string;
+    isStale?: boolean;
+    staleWarning?: string | null;
   };
   isTaxInclusive?: boolean;
   summary: {
@@ -135,6 +162,10 @@ export default function CurrencyReportsPage() {
   const [backendTotals, setBackendTotals] = useState<CurrencyTotals | null>(null);
   const [exporting, setExporting] = useState(false);
 
+  const [billsReconciliation, setBillsReconciliation] = useState<BillReconciliationItem[]>([]);
+  const [reconciliationSummary, setReconciliationSummary] = useState<ReconciliationSummary | null>(null);
+  const [activeTab, setActiveTab] = useState<'currencies' | 'reconciliation'>('currencies');
+
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
     to: undefined,
@@ -172,6 +203,12 @@ export default function CurrencyReportsPage() {
         setUsageData(usageRes.data.usage || []);
         if (usageRes.data.totals) {
           setBackendTotals(usageRes.data.totals);
+        }
+        if (usageRes.data.billsReconciliation) {
+          setBillsReconciliation(usageRes.data.billsReconciliation);
+        }
+        if (usageRes.data.billsReconciliationSummary) {
+          setReconciliationSummary(usageRes.data.billsReconciliationSummary);
         }
       }
 
@@ -313,6 +350,12 @@ export default function CurrencyReportsPage() {
   const consolidatedNetFx = backendTotals?.realizedFx?.netFx ?? (consolidatedGains - consolidatedLosses);
   const consolidatedUnrealizedNet = backendTotals?.unrealizedFx?.netFx ?? combinedData.reduce((acc, c) => acc + (c.unrealizedFx?.net || 0), 0);
   const consolidatedGrossVolume = consolidatedSalesBase + consolidatedPurchasesBase;
+
+  const periodLabel = dateRange.from
+    ? (dateRange.to
+        ? `${format(dateRange.from, 'dd MMM yyyy')} - ${format(dateRange.to, 'dd MMM yyyy')}`
+        : `From ${format(dateRange.from, 'dd MMM yyyy')}`)
+    : 'All Time (No date filter)';
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 max-w-7xl mx-auto">
@@ -495,6 +538,10 @@ export default function CurrencyReportsPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
               <span>All currency sales converted to {baseLabel}</span>
             </p>
+            <div className="mt-2.5 text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1 border border-slate-200/60 dark:border-slate-700/60">
+              <CalendarIcon className="size-3 text-slate-400" />
+              <span>Period: <strong className="text-slate-700 dark:text-slate-300 font-medium">{periodLabel}</strong></span>
+            </div>
           </CardContent>
         </Card>
 
@@ -517,6 +564,10 @@ export default function CurrencyReportsPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
               <span>All bills & vendor orders converted to {baseLabel}</span>
             </p>
+            <div className="mt-2.5 text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1 border border-slate-200/60 dark:border-slate-700/60">
+              <CalendarIcon className="size-3 text-slate-400" />
+              <span>Period: <strong className="text-slate-700 dark:text-slate-300 font-medium">{periodLabel}</strong></span>
+            </div>
           </CardContent>
         </Card>
 
@@ -539,6 +590,10 @@ export default function CurrencyReportsPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Gains: <span className="font-medium text-emerald-600 dark:text-emerald-400">+{baseSymbol}{consolidatedGains.toFixed(2)}</span> | Losses: <span className="font-medium text-rose-600 dark:text-rose-400">-{baseSymbol}{consolidatedLosses.toFixed(2)}</span>
             </p>
+            <div className="mt-2.5 text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1 border border-slate-200/60 dark:border-slate-700/60">
+              <CalendarIcon className="size-3 text-slate-400" />
+              <span>Period: <strong className="text-slate-700 dark:text-slate-300 font-medium">{periodLabel}</strong></span>
+            </div>
           </CardContent>
         </Card>
 
@@ -561,6 +616,10 @@ export default function CurrencyReportsPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Revalued open balances at latest market rate
             </p>
+            <div className="mt-2.5 text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1 border border-slate-200/60 dark:border-slate-700/60">
+              <CalendarIcon className="size-3 text-slate-400" />
+              <span>Period: <strong className="text-slate-700 dark:text-slate-300 font-medium">{periodLabel}</strong></span>
+            </div>
           </CardContent>
         </Card>
 
@@ -583,291 +642,511 @@ export default function CurrencyReportsPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Total converted business volume in {baseCode}
             </p>
+            <div className="mt-2.5 text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1 border border-slate-200/60 dark:border-slate-700/60">
+              <CalendarIcon className="size-3 text-slate-400" />
+              <span>Period: <strong className="text-slate-700 dark:text-slate-300 font-medium">{periodLabel}</strong></span>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* CURRENCY CARDS GRID */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-            <Coins className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            Currencies Breakdown & Base Valuation
-          </h3>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            {combinedData.length} active currenc{combinedData.length === 1 ? 'y' : 'ies'} detected
-          </span>
-        </div>
+      {/* TABS: CURRENCIES BREAKDOWN & PURCHASES RECONCILIATION */}
+      <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="space-y-4">
+        <TabsList className="bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+          <TabsTrigger
+            value="currencies"
+            className="rounded-lg font-medium text-xs sm:text-sm px-4 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-xs"
+          >
+            <Coins className="size-4 mr-2 text-blue-600 dark:text-blue-400" />
+            Currencies Breakdown ({combinedData.length})
+          </TabsTrigger>
+          <TabsTrigger
+            value="reconciliation"
+            className="rounded-lg font-medium text-xs sm:text-sm px-4 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-xs"
+          >
+            <FileText className="size-4 mr-2 text-amber-600 dark:text-amber-400" />
+            Purchases Reconciliation ({billsReconciliation.length} Bills)
+          </TabsTrigger>
+        </TabsList>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loading ? (
-            <>
-              <Skeleton className="h-[320px] w-full rounded-xl" />
-              <Skeleton className="h-[320px] w-full rounded-xl" />
-              <Skeleton className="h-[320px] w-full rounded-xl" />
-            </>
-          ) : combinedData.length === 0 ? (
-            <div className="col-span-full">
-              <Card className="flex h-[300px] items-center justify-center border-dashed bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
-                <div className="text-center">
-                  <Coins className="h-10 w-10 text-slate-400 mx-auto mb-2" />
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white">No currency data</h3>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">No multi-currency transactions found for this period.</p>
-                </div>
-              </Card>
-            </div>
-          ) : (
-            combinedData.map((item) => {
-              const isBase = item.currency === baseCode;
-              const rate = item.exchangeRate || 1;
+        {/* TAB 1: CURRENCY CARDS GRID */}
+        <TabsContent value="currencies" className="space-y-4 pt-1">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <Coins className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              Currencies Breakdown & Base Valuation
+            </h3>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {combinedData.length} active currenc{combinedData.length === 1 ? 'y' : 'ies'} detected
+            </span>
+          </div>
 
-              return (
-                <Card
-                  key={item.currency}
-                  className={`overflow-hidden shadow-sm transition-all hover:shadow-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-t-4 ${
-                    isBase ? 'border-t-emerald-600 ring-1 ring-emerald-500/20' : 'border-t-blue-600'
-                  }`}
-                >
-                  <CardHeader className="bg-slate-50/70 dark:bg-slate-800/60 pb-3 pt-4 border-b border-slate-200 dark:border-slate-800">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`flex items-center justify-center w-11 h-11 rounded-xl font-black text-sm tracking-wide shadow-xs ${
-                            isBase
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                              : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                          }`}
-                        >
-                          {item.currency}
-                        </div>
-                        <div>
-                          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loading ? (
+              <>
+                <Skeleton className="h-[320px] w-full rounded-xl" />
+                <Skeleton className="h-[320px] w-full rounded-xl" />
+                <Skeleton className="h-[320px] w-full rounded-xl" />
+              </>
+            ) : combinedData.length === 0 ? (
+              <div className="col-span-full">
+                <Card className="flex h-[300px] items-center justify-center border-dashed bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
+                  <div className="text-center">
+                    <Coins className="h-10 w-10 text-slate-400 mx-auto mb-2" />
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">No currency data</h3>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">No multi-currency transactions found for this period.</p>
+                  </div>
+                </Card>
+              </div>
+            ) : (
+              combinedData.map((item) => {
+                const isBase = item.currency === baseCode;
+                const rate = item.exchangeRate || 1;
+
+                return (
+                  <Card
+                    key={item.currency}
+                    className={`overflow-hidden shadow-sm transition-all hover:shadow-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-t-4 ${
+                      isBase ? 'border-t-emerald-600 ring-1 ring-emerald-500/20' : 'border-t-blue-600'
+                    }`}
+                  >
+                    <CardHeader className="bg-slate-50/70 dark:bg-slate-800/60 pb-3 pt-4 border-b border-slate-200 dark:border-slate-800">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex items-center justify-center w-11 h-11 rounded-xl font-black text-sm tracking-wide shadow-xs ${
+                              isBase
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                            }`}
+                          >
                             {item.currency}
-                          </CardTitle>
-                          {isBase ? (
-                            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
-                              <CheckCircle2 className="size-3" /> Business Currency
-                            </span>
-                          ) : (
-                            <span className="text-xs text-slate-500 dark:text-slate-400">Foreign Currency</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Currency Rate Badge / Base Badge */}
-                      {isBase ? (
-                        <div className="flex flex-col items-end gap-1">
-                          <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 uppercase font-semibold text-xs px-2.5 py-1">
-                            Base: {baseCode} ({baseSymbol})
-                          </Badge>
-                          <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-                            1:1 Invariant Ratio
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 shadow-2xs">
-                            1 {item.currency} = {rate.toLocaleString(undefined, { maximumFractionDigits: 6 })} {baseCode} ({baseSymbol})
-                          </span>
-                          <div className="flex flex-wrap items-center justify-end gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                            <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                              Source: {item.rateDetails?.source || 'Commercial Bank / Market Rate'}
-                            </span>
-                            {item.rateDetails?.effectiveDate && (
-                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                                Eff: {format(new Date(item.rateDetails.effectiveDate), 'dd MMM yyyy')}
+                          </div>
+                          <div>
+                            <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                              {item.currency}
+                            </CardTitle>
+                            {isBase ? (
+                              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
+                                <CheckCircle2 className="size-3" /> Business Currency
                               </span>
+                            ) : (
+                              <span className="text-xs text-slate-500 dark:text-slate-400">Foreign Currency</span>
                             )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </CardHeader>
 
-                  <CardContent className="pt-5 space-y-5">
-                    {/* VOLUMES WITH CALCULATED BASE CURRENCY TOTAL FIELDS */}
-                    <div className="space-y-4">
-                      {/* Sales Volume Section */}
-                      <div className="bg-slate-50/80 dark:bg-slate-800/40 rounded-xl p-3.5 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-                            Sales Volume (Tax-Inclusive)
-                          </span>
-                          <span className="text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                            In {item.currency}
-                          </span>
-                        </div>
-                        <div className="text-lg font-bold text-slate-900 dark:text-white">
-                          {item.summary.sales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}
-                        </div>
-
-                        {/* Calculated Total in Base Currency Field */}
-                        <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-1">
-                          <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
-                            <span>Total in {baseLabel}:</span>
-                            <span className="text-sm font-bold text-blue-700 dark:text-blue-400">
-                              {baseSymbol} {item.computedSalesBase.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
+                        {/* Currency Rate Badge / Base Badge */}
+                        {isBase ? (
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 uppercase font-semibold text-xs px-2.5 py-1">
+                              Base: {baseCode} ({baseSymbol})
+                            </Badge>
+                            <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
+                              1:1 Invariant Ratio
                             </span>
                           </div>
-                          {!isBase && (
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 text-right font-mono">
-                              {item.summary.sales.toLocaleString()} × {rate} = {baseSymbol}{item.computedSalesBase.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Purchases Volume Section */}
-                      <div className="bg-slate-50/80 dark:bg-slate-800/40 rounded-xl p-3.5 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-                            Purchases Volume (Tax-Inclusive)
-                          </span>
-                          <span className="text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                            In {item.currency}
-                          </span>
-                        </div>
-                        <div className="text-lg font-bold text-slate-900 dark:text-white">
-                          {item.summary.purchases.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}
-                        </div>
-
-                        {/* Calculated Total in Base Currency Field */}
-                        <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-1">
-                          <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
-                            <span>Total in {baseLabel}:</span>
-                            <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
-                              {baseSymbol} {item.computedPurchasesBase.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
+                        ) : (
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 shadow-2xs">
+                              1 {item.currency} = {rate.toLocaleString(undefined, { maximumFractionDigits: 6 })} {baseCode} ({baseSymbol})
                             </span>
-                          </div>
-                          {!isBase && (
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 text-right font-mono">
-                              {item.summary.purchases.toLocaleString()} × {rate} = {baseSymbol}{item.computedPurchasesBase.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            <div className="flex flex-wrap items-center justify-end gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                Source: {item.rateDetails?.source || 'Commercial Bank / Market Rate'}
+                              </span>
+                              {item.rateDetails?.effectiveDate && (
+                                <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                  Eff: {format(new Date(item.rateDetails.effectiveDate), 'dd MMM yyyy')}
+                                </span>
+                              )}
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    </CardHeader>
 
-                    {/* REALIZED & UNREALIZED FX IMPACT SECTIONS FOR FOREIGN CURRENCY */}
-                    {!isBase && (
-                      <div className="space-y-4 pt-2">
-                        {/* 1. REALIZED FX IMPACT (SETTLED TRANSACTIONS) */}
-                        <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 bg-white dark:bg-slate-900/60 space-y-3 shadow-2xs">
+                    <CardContent className="pt-5 space-y-5">
+                      {/* VOLUMES WITH CALCULATED BASE CURRENCY TOTAL FIELDS */}
+                      <div className="space-y-4">
+                        {/* Sales Volume Section */}
+                        <div className="bg-slate-50/80 dark:bg-slate-800/40 rounded-xl p-3.5 border border-slate-200/80 dark:border-slate-800 space-y-2">
                           <div className="flex items-center justify-between">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenFxModal(item)}
-                              className="group flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                              title="Click to view settled FX transactions and recalculate impact"
-                            >
-                              <div className={`p-1 rounded-md bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all ${recalculating ? 'animate-spin' : ''}`}>
-                                <RefreshCcw className="size-3" />
+                            <span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+                              Sales Volume (Tax-Inclusive)
+                            </span>
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                              In {item.currency}
+                            </span>
+                          </div>
+                          <div className="text-lg font-bold text-slate-900 dark:text-white">
+                            {item.summary.sales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}
+                          </div>
+
+                          {/* Calculated Total in Base Currency Field */}
+                          <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-1">
+                            <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+                              <span>Total in {baseLabel}:</span>
+                              <span className="text-sm font-bold text-blue-700 dark:text-blue-400">
+                                {baseSymbol} {item.computedSalesBase.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
+                              </span>
+                            </div>
+                            {!isBase && (
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400 text-right font-mono">
+                                {item.summary.sales.toLocaleString()} × {rate} = {baseSymbol}{item.computedSalesBase.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                               </div>
-                              <span className="underline decoration-dotted underline-offset-4 decoration-slate-300 dark:decoration-slate-600 group-hover:decoration-blue-500">
-                                Realized FX Impact (Settled)
-                              </span>
-                            </button>
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenFxModal(item)}
-                              className="h-6 px-2 text-[11px] text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-800"
-                            >
-                              Audit Details
-                            </Button>
-                          </div>
-
-                          {/* Realized Gains & Losses Grid */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-emerald-50/70 dark:bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/50">
-                              <p className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 mb-0.5 flex items-center gap-1">
-                                <TrendingUp className="size-3" /> Gains ({baseCode})
-                              </p>
-                              <p className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
-                                {baseSymbol} {item.fx.realizedGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </p>
-                            </div>
-                            <div className="bg-rose-50/70 dark:bg-rose-950/30 p-2.5 rounded-lg border border-rose-100 dark:border-rose-900/50">
-                              <p className="text-[11px] font-semibold text-rose-800 dark:text-rose-300 mb-0.5 flex items-center gap-1">
-                                <TrendingDown className="size-3" /> Losses ({baseCode})
-                              </p>
-                              <p className="text-sm font-bold text-rose-900 dark:text-rose-100">
-                                {baseSymbol} {item.fx.realizedLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Net Realized FX Position */}
-                          <div className="pt-1 flex items-center justify-between text-xs">
-                            <span className="font-semibold text-slate-600 dark:text-slate-300">Net Realized FX:</span>
-                            <span
-                              className={`font-bold text-xs ${
-                                item.fx.netGainLoss > 0
-                                  ? 'text-emerald-700 dark:text-emerald-400'
-                                  : item.fx.netGainLoss < 0
-                                  ? 'text-rose-700 dark:text-rose-400'
-                                  : 'text-slate-700 dark:text-slate-300'
-                              }`}
-                            >
-                              {item.fx.netGainLoss > 0 ? '+' : ''}
-                              {baseSymbol} {item.fx.netGainLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
-                            </span>
+                            )}
                           </div>
                         </div>
 
-                        {/* 2. UNREALIZED FX IMPACT (OPEN BALANCES) */}
-                        <div className="border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-3.5 bg-amber-50/30 dark:bg-amber-950/20 space-y-2.5 shadow-2xs">
+                        {/* Purchases Volume Section */}
+                        <div className="bg-slate-50/80 dark:bg-slate-800/40 rounded-xl p-3.5 border border-slate-200/80 dark:border-slate-800 space-y-2">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900 dark:text-amber-200">
-                              <Coins className="size-3.5 text-amber-600 dark:text-amber-400" />
-                              <span>Unrealized FX (Open Balances)</span>
-                            </div>
-                            <span className="text-[10px] bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 px-1.5 py-0.5 rounded font-medium border border-amber-200 dark:border-amber-800">
-                              Revalued @ {rate} {baseCode}
+                            <span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+                              Purchases Volume (Tax-Inclusive)
+                            </span>
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                              In {item.currency}
                             </span>
                           </div>
-
-                          <div className="grid grid-cols-2 gap-2 text-[11px] bg-white/80 dark:bg-slate-900/80 p-2 rounded-lg border border-amber-100 dark:border-amber-900/40">
-                            <div>
-                              <span className="text-slate-500 dark:text-slate-400 block">Open Receivables:</span>
-                              <span className="font-bold text-slate-800 dark:text-slate-100">
-                                {(item.unrealizedFx?.openReceivables || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-slate-500 dark:text-slate-400 block">Open Payables:</span>
-                              <span className="font-bold text-slate-800 dark:text-slate-100">
-                                {(item.unrealizedFx?.openPayables || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}
-                              </span>
-                            </div>
+                          <div className="text-lg font-bold text-slate-900 dark:text-white">
+                            {item.summary.purchases.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}
                           </div>
 
-                          <div className="pt-1 flex items-center justify-between text-xs">
-                            <span className="font-semibold text-amber-900 dark:text-amber-300">Net Unrealized FX ({baseCode}):</span>
-                            <span
-                              className={`font-bold text-xs ${
-                                (item.unrealizedFx?.net || 0) > 0
-                                  ? 'text-emerald-700 dark:text-emerald-400'
-                                  : (item.unrealizedFx?.net || 0) < 0
-                                  ? 'text-rose-700 dark:text-rose-400'
-                                  : 'text-slate-700 dark:text-slate-300'
-                              }`}
-                            >
-                              {(item.unrealizedFx?.net || 0) > 0 ? '+' : ''}
-                              {baseSymbol} {(item.unrealizedFx?.net || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
-                            </span>
+                          {/* Calculated Total in Base Currency Field */}
+                          <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-1">
+                            <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+                              <span>Total in {baseLabel}:</span>
+                              <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                                {baseSymbol} {item.computedPurchasesBase.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
+                              </span>
+                            </div>
+                            {!isBase && (
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400 text-right font-mono">
+                                {item.summary.purchases.toLocaleString()} × {rate} = {baseSymbol}{item.computedPurchasesBase.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
-      </div>
+
+                      {/* Card Period & Stale Warning Footer */}
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2.5">
+                        <span className="flex items-center gap-1">
+                          <CalendarIcon className="size-3 text-slate-400" />
+                          Period: {periodLabel}
+                        </span>
+                        {item.rateDetails?.isStale && (
+                          <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800 text-[10px] px-1.5 py-0 font-medium">
+                            Rate &gt;30d old
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* REALIZED & UNREALIZED FX IMPACT SECTIONS FOR FOREIGN CURRENCY */}
+                      {!isBase && (
+                        <div className="space-y-4 pt-2">
+                          {/* 1. REALIZED FX IMPACT (SETTLED TRANSACTIONS) */}
+                          <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 bg-white dark:bg-slate-900/60 space-y-3 shadow-2xs">
+                            <div className="flex items-center justify-between">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenFxModal(item)}
+                                className="group flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                title="Click to view settled FX transactions and recalculate impact"
+                              >
+                                <div className={`p-1 rounded-md bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all ${recalculating ? 'animate-spin' : ''}`}>
+                                  <RefreshCcw className="size-3" />
+                                </div>
+                                <span className="underline decoration-dotted underline-offset-4 decoration-slate-300 dark:decoration-slate-600 group-hover:decoration-blue-500">
+                                  Realized FX Impact (Settled)
+                                </span>
+                              </button>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenFxModal(item)}
+                                className="h-6 px-2 text-[11px] text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-800"
+                              >
+                                Audit Details
+                              </Button>
+                            </div>
+
+                            {/* Realized Gains & Losses Grid */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="bg-emerald-50/70 dark:bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/50">
+                                <p className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 mb-0.5 flex items-center gap-1">
+                                  <TrendingUp className="size-3" /> Gains ({baseCode})
+                                </p>
+                                <p className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
+                                  {baseSymbol} {item.fx.realizedGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                              </div>
+                              <div className="bg-rose-50/70 dark:bg-rose-950/30 p-2.5 rounded-lg border border-rose-100 dark:border-rose-900/50">
+                                <p className="text-[11px] font-semibold text-rose-800 dark:text-rose-300 mb-0.5 flex items-center gap-1">
+                                  <TrendingDown className="size-3" /> Losses ({baseCode})
+                                </p>
+                                <p className="text-sm font-bold text-rose-900 dark:text-rose-100">
+                                  {baseSymbol} {item.fx.realizedLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Net Realized FX Position */}
+                            <div className="pt-1 flex items-center justify-between text-xs">
+                              <span className="font-semibold text-slate-600 dark:text-slate-300">Net Realized FX:</span>
+                              <span
+                                className={`font-bold text-xs ${
+                                  item.fx.netGainLoss > 0
+                                    ? 'text-emerald-700 dark:text-emerald-400'
+                                    : item.fx.netGainLoss < 0
+                                    ? 'text-rose-700 dark:text-rose-400'
+                                    : 'text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                {item.fx.netGainLoss > 0 ? '+' : ''}
+                                {baseSymbol} {item.fx.netGainLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 2. UNREALIZED FX IMPACT (OPEN BALANCES) */}
+                          <div className="border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-3.5 bg-amber-50/30 dark:bg-amber-950/20 space-y-2.5 shadow-2xs">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900 dark:text-amber-200">
+                                <Coins className="size-3.5 text-amber-600 dark:text-amber-400" />
+                                <span>Unrealized FX (Open Balances)</span>
+                              </div>
+                              <span className="text-[10px] bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 px-1.5 py-0.5 rounded font-medium border border-amber-200 dark:border-amber-800">
+                                Revalued @ {rate} {baseCode}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-[11px] bg-white/80 dark:bg-slate-900/80 p-2 rounded-lg border border-amber-100 dark:border-amber-900/40">
+                              <div>
+                                <span className="text-slate-500 dark:text-slate-400 block">Open Receivables:</span>
+                                <span className="font-bold text-slate-800 dark:text-slate-100">
+                                  {(item.unrealizedFx?.openReceivables || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500 dark:text-slate-400 block">Open Payables:</span>
+                                <span className="font-bold text-slate-800 dark:text-slate-100">
+                                  {(item.unrealizedFx?.openPayables || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="pt-1 flex items-center justify-between text-xs">
+                              <span className="font-semibold text-amber-900 dark:text-amber-300">Net Unrealized FX ({baseCode}):</span>
+                              <span
+                                className={`font-bold text-xs ${
+                                  (item.unrealizedFx?.net || 0) > 0
+                                    ? 'text-emerald-700 dark:text-emerald-400'
+                                    : (item.unrealizedFx?.net || 0) < 0
+                                    ? 'text-rose-700 dark:text-rose-400'
+                                    : 'text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                {(item.unrealizedFx?.net || 0) > 0 ? '+' : ''}
+                                {baseSymbol} {(item.unrealizedFx?.net || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
+        </TabsContent>
+
+        {/* TAB 2: PURCHASES RECONCILIATION */}
+        <TabsContent value="reconciliation" className="space-y-4 pt-1">
+          {/* Statutory Reconciliation Summary Card */}
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+            <CardHeader className="bg-slate-50/70 dark:bg-slate-800/60 pb-3 pt-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <FileText className="size-5 text-amber-600 dark:text-amber-400" />
+                    Purchases Reconciliation: Currency Report vs Tax Report ({baseLabel})
+                  </CardTitle>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Itemized audit verifying that Tax-Inclusive Purchases Volume strictly matches the sum of Taxable Value and Input Tax Credit recorded in statutory tax reports.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 self-start sm:self-center">
+                  {reconciliationSummary?.isReconciled ? (
+                    <Badge className="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 px-3 py-1 text-xs font-semibold flex items-center gap-1.5">
+                      <CheckCircle2 className="size-3.5" />
+                      Reconciled (0.00 Variance)
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="px-3 py-1 text-xs font-semibold">
+                      Variance Detected
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="text-xs text-slate-600 dark:text-slate-300">
+                    Period: {periodLabel}
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="pt-4 space-y-4">
+              {/* Reconciliation KPI Metrics */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Total Bills</span>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                    {reconciliationSummary?.count || billsReconciliation.length}
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Taxable Base (Subtotal)</span>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                    {baseSymbol} {(reconciliationSummary?.totalSubtotalBase || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Input Tax Base (ITC)</span>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                    {baseSymbol} {(reconciliationSummary?.totalTaxBase || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                <div className="bg-amber-50/80 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200 dark:border-amber-800/60">
+                  <span className="text-[11px] text-amber-800 dark:text-amber-300 uppercase font-semibold">Tax Report Purchases</span>
+                  <div className="text-lg font-bold text-amber-900 dark:text-amber-100 mt-0.5">
+                    {baseSymbol} {(reconciliationSummary?.taxReportSum || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400">Taxable + Tax</span>
+                </div>
+
+                <div className="bg-blue-50/80 dark:bg-blue-950/40 p-3 rounded-xl border border-blue-200 dark:border-blue-800/60">
+                  <span className="text-[11px] text-blue-800 dark:text-blue-300 uppercase font-semibold">Currency Purchases Vol</span>
+                  <div className="text-lg font-bold text-blue-900 dark:text-blue-100 mt-0.5">
+                    {baseSymbol} {(reconciliationSummary?.totalPurchasesVolumeBase || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <span className="text-[10px] text-blue-700 dark:text-blue-400">Tax-Inclusive Base</span>
+                </div>
+
+                <div className={`p-3 rounded-xl border ${
+                  (reconciliationSummary?.variance || 0) === 0
+                    ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-100'
+                    : 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-100'
+                }`}>
+                  <span className="text-[11px] uppercase font-semibold opacity-80">Variance</span>
+                  <div className="text-lg font-bold mt-0.5">
+                    {baseSymbol} {(reconciliationSummary?.variance || 0).toFixed(2)}
+                  </div>
+                  <span className="text-[10px] font-medium">
+                    {(reconciliationSummary?.variance || 0) === 0 ? '✓ Balanced' : 'Check Entries'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Itemized Bills Table */}
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
+                      <tr>
+                        <th className="p-3">Bill Number</th>
+                        <th className="p-3">Date</th>
+                        <th className="p-3">Vendor</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3">Currency & Rate</th>
+                        <th className="p-3 text-right">Subtotal</th>
+                        <th className="p-3 text-right">Tax</th>
+                        <th className="p-3 text-right">Total (Txn Ccy)</th>
+                        <th className="p-3 text-right">Base Amount ({baseCode})</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {billsReconciliation.length === 0 ? (
+                        <tr>
+                          <td colSpan={9} className="p-8 text-center text-slate-500 dark:text-slate-400">
+                            No posted bills found for this period.
+                          </td>
+                        </tr>
+                      ) : (
+                        billsReconciliation.map((bill) => (
+                          <tr key={bill.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition-colors">
+                            <td className="p-3 font-semibold text-slate-900 dark:text-white font-mono">
+                              {bill.billNumber}
+                            </td>
+                            <td className="p-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                              {bill.billDate ? format(new Date(bill.billDate), 'dd MMM yyyy') : '-'}
+                            </td>
+                            <td className="p-3 text-slate-800 dark:text-slate-200 font-medium">
+                              {bill.vendorName}
+                            </td>
+                            <td className="p-3">
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] font-semibold uppercase ${
+                                  bill.status === 'PAID'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300'
+                                    : bill.status === 'PARTIALLY_PAID' || bill.status === 'PARTIAL_PAID'
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300'
+                                    : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300'
+                                }`}
+                              >
+                                {bill.status}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-slate-600 dark:text-slate-400 font-mono">
+                              {bill.currency} {bill.currency !== baseCode ? `@ ${bill.exchangeRate}` : '(1:1)'}
+                            </td>
+                            <td className="p-3 text-right text-slate-700 dark:text-slate-300 font-mono">
+                              {bill.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                            <td className="p-3 text-right text-slate-700 dark:text-slate-300 font-mono">
+                              {bill.tax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                            <td className="p-3 text-right font-medium text-slate-900 dark:text-white font-mono">
+                              {bill.currency} {bill.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                            <td className="p-3 text-right font-bold text-amber-700 dark:text-amber-400 font-mono">
+                              {baseSymbol} {bill.baseCurrencyAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                    <tfoot className="bg-slate-50 dark:bg-slate-800/80 font-bold border-t border-slate-200 dark:border-slate-700">
+                      <tr>
+                        <td colSpan={5} className="p-3 text-slate-900 dark:text-white uppercase tracking-wider text-[11px]">
+                          Grand Total ({billsReconciliation.length} Bills)
+                        </td>
+                        <td className="p-3 text-right font-mono text-slate-900 dark:text-white">
+                          {baseSymbol} {(reconciliationSummary?.totalSubtotalBase || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="p-3 text-right font-mono text-slate-900 dark:text-white">
+                          {baseSymbol} {(reconciliationSummary?.totalTaxBase || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="p-3 text-right font-mono text-slate-500 dark:text-slate-400 text-[11px]">
+                          (Txn Sum)
+                        </td>
+                        <td className="p-3 text-right font-mono text-amber-700 dark:text-amber-400 text-sm">
+                          {baseSymbol} {(reconciliationSummary?.totalPurchasesVolumeBase || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* REALIZED FX IMPACT MODAL DIALOG */}
       <Dialog open={isFxModalOpen} onOpenChange={setIsFxModalOpen}>
