@@ -457,31 +457,37 @@ export function QuotationPaymentPageClient({
                 ) : null}
 
                 <div className="grid gap-2">
-                  <Label htmlFor="amountReceived" className="text-sm font-semibold text-foreground">
-                    Amount Received
-                  </Label>
-                  <div className="flex gap-2">
-                    <div className="w-[140px] md:w-[180px] shrink-0">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="amountReceived" className="text-sm font-semibold text-foreground">
+                      Amount Received
+                    </Label>
+                    {remainingAmount > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        Remaining balance: <strong className="text-foreground">{quotationCurrencySymbol || paymentForm.currency} {remainingAmount.toFixed(2)}</strong>
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex h-11 w-full rounded-xl border border-border bg-background shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                    <div className="w-[140px] sm:w-[160px] shrink-0 border-r border-border bg-muted/30">
                       <CurrencySelect
-                        value={paymentForm.currency}
+                        value={paymentForm.currency || quotationCurrency || 'USD'}
                         onChange={(value) => setPaymentForm(prev => ({ ...prev, currency: value }))}
+                        disabled={isLoadingPaymentSummary || quotationPaymentStatus === 'PAID'}
+                        className="h-full rounded-none border-0 shadow-none bg-transparent hover:bg-muted/50 focus:ring-0 px-3"
+                        compact
                       />
                     </div>
-                    <div className="relative flex-1">
-                      {getCurrencySymbol(paymentForm.currency) && (
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground pointer-events-none">
-                          {getCurrencySymbol(paymentForm.currency)}
-                        </span>
-                      )}
+                    <div className="flex-1 min-w-0">
                       <Input
                         id="amountReceived"
                         type="number"
-                        step="0.01"
+                        step="any"
                         min="0"
+                        placeholder="0.00"
                         value={paymentForm.amountReceived}
                         onChange={(e) => setPaymentForm((prev) => ({ ...prev, amountReceived: e.target.value }))}
                         disabled={isLoadingPaymentSummary || quotationPaymentStatus === 'PAID'}
-                        className={`h-10 rounded-xl border-border focus-visible:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${getCurrencySymbol(paymentForm.currency) ? 'pl-8' : ''}`}
+                        className="h-full rounded-none border-0 shadow-none focus-visible:ring-0 text-base font-semibold px-4 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </div>

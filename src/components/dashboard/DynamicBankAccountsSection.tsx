@@ -32,13 +32,15 @@ interface DynamicBankAccountsSectionProps {
   currency: string;
   accounts: BankAccountItem[];
   onChange: (accounts: BankAccountItem[]) => void;
+  onDraftChange?: (draft: Record<string, string> | null) => void;
 }
 
 export function DynamicBankAccountsSection({
   country,
   currency,
   accounts,
-  onChange
+  onChange,
+  onDraftChange
 }: DynamicBankAccountsSectionProps) {
   const bankConfig: CountryBankConfig = getBankConfigForCountry(country);
   const [isAdding, setIsAdding] = useState(accounts.length === 0);
@@ -59,8 +61,33 @@ export function DynamicBankAccountsSection({
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const handleFieldChange = (key: string, value: string) => {
-    setNewAccount(prev => ({ ...prev, [key]: value }));
+  const handleFieldChange = (key: string, rawValue: string) => {
+    const fieldDef = bankConfig.fields.find(f => f.key === key);
+    let value = rawValue;
+
+    if (key === 'bsb') {
+      // BSB must never exceed 6 digits. Format as XXX-XXX (max 7 chars)
+      const digits = value.replace(/\D/g, '').slice(0, 6);
+      if (digits.length > 3) {
+        value = `${digits.slice(0, 3)}-${digits.slice(3)}`;
+      } else {
+        value = digits;
+      }
+    } else if (fieldDef?.digitsOnly) {
+      value = value.replace(/\D/g, '');
+      if (fieldDef.maxLength) {
+        value = value.slice(0, fieldDef.maxLength);
+      }
+    } else if (fieldDef?.maxLength) {
+      value = value.slice(0, fieldDef.maxLength);
+    }
+
+    setNewAccount(prev => {
+      const next = { ...prev, [key]: value };
+      const hasAnyValue = Object.values(next).some(v => Boolean(v && v.trim()));
+      onDraftChange?.(hasAnyValue ? next : null);
+      return next;
+    });
     if (fieldErrors[key]) {
       setFieldErrors(prev => {
         const next = { ...prev };
@@ -136,6 +163,7 @@ export function DynamicBankAccountsSection({
     });
     setFieldErrors({});
     setIsAdding(false);
+    onDraftChange?.(null);
   };
 
   const handleDeleteAccount = (index: number) => {
@@ -248,17 +276,19 @@ export function DynamicBankAccountsSection({
             <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
               New {bankConfig.countryName} Bank Account
             </span>
-            {accounts.length > 0 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => { setIsAdding(false); setFieldErrors({}); }}
-                className="text-xs h-7 cursor-pointer"
-              >
-                Cancel
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setIsAdding(false);
+                setFieldErrors({});
+                onDraftChange?.(null);
+              }}
+              className="text-xs h-7 cursor-pointer text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -272,6 +302,7 @@ export function DynamicBankAccountsSection({
                   placeholder={field.placeholder}
                   value={newAccount[field.key] || ''}
                   onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                  maxLength={field.key === 'bsb' ? 7 : (field.maxLength || undefined)}
                   className={`rounded-xl border-border bg-background h-10 text-sm shadow-sm ${
                     fieldErrors[field.key] ? 'border-destructive focus-visible:ring-destructive' : ''
                   }`}

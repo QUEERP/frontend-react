@@ -10,6 +10,8 @@ export interface BankFieldDef {
   required: boolean;
   type?: 'text' | 'number';
   helperText?: string;
+  maxLength?: number;
+  digitsOnly?: boolean;
   validator?: (val: string) => boolean | string;
 }
 
@@ -18,6 +20,7 @@ export interface CountryBankConfig {
   countryName: string;
   currency: string;
   phoneCode: string;
+  phoneMaxLength: number;
   taxLabel: string;
   taxPlaceholder: string;
   taxValidator?: (val: string) => boolean | string;
@@ -118,6 +121,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
     countryName: 'India',
     currency: 'INR',
     phoneCode: '+91',
+    phoneMaxLength: 10,
     taxLabel: 'GSTIN',
     taxPlaceholder: '24AAAAA0000A1Z5',
     taxValidator: validateIndianGstin,
@@ -129,6 +133,8 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'Account Number (9-18 digits)', 
         placeholder: 'e.g. 123456789012', 
         required: true,
+        maxLength: 18,
+        digitsOnly: true,
         validator: val => /^\d{9,18}$/.test(val) || 'Account number must be 9 to 18 digits'
       },
       { 
@@ -136,6 +142,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'IFSC Code', 
         placeholder: 'e.g. SBIN0001234', 
         required: true,
+        maxLength: 11,
         validator: val => validateIfscCode(val) || 'Format: 4 letters, 0, 6 characters (e.g. SBIN0001234)'
       },
       { key: 'branchName', label: 'Branch Name', placeholder: 'e.g. Nariman Point, Mumbai', required: false },
@@ -147,6 +154,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
     countryName: 'United Arab Emirates',
     currency: 'AED',
     phoneCode: '+971',
+    phoneMaxLength: 9,
     taxLabel: 'TRN',
     taxPlaceholder: '100XXXXXXXXXXXX',
     taxValidator: validateUaeTrnNumber,
@@ -158,6 +166,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'IBAN (23 chars)', 
         placeholder: 'AE070331234567890123456', 
         required: true,
+        maxLength: 23,
         validator: val => {
           const clean = val.replace(/\s/g, '').toUpperCase();
           if (!clean.startsWith('AE') || clean.length !== 23) return 'Must start with AE and be 23 characters';
@@ -170,6 +179,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'SWIFT / BIC Code', 
         placeholder: 'e.g. EBILAEAD', 
         required: true,
+        maxLength: 11,
         validator: val => validateSwiftBic(val) || 'Must be 8 or 11 alphanumeric characters'
       }
     ]
@@ -179,6 +189,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
     countryName: 'United States',
     currency: 'USD',
     phoneCode: '+1',
+    phoneMaxLength: 10,
     taxLabel: 'EIN / SSN',
     taxPlaceholder: 'XX-XXXXXXX',
     fields: [
@@ -189,6 +200,8 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'Routing Number (ABA 9 digits)', 
         placeholder: 'e.g. 021000021', 
         required: true,
+        maxLength: 9,
+        digitsOnly: true,
         validator: val => validateAbaRouting(val) || 'Invalid 9-digit ABA routing number checksum'
       },
       { 
@@ -196,6 +209,8 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'Account Number', 
         placeholder: 'e.g. 123456789', 
         required: true,
+        maxLength: 17,
+        digitsOnly: true,
         validator: val => /^\d{4,17}$/.test(val) || 'Account number must be 4 to 17 digits'
       },
       { 
@@ -203,6 +218,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'SWIFT / BIC (Optional for Domestic)', 
         placeholder: 'e.g. CHASUS33', 
         required: false,
+        maxLength: 11,
         validator: val => !val || validateSwiftBic(val) || 'Must be 8 or 11 characters'
       }
     ]
@@ -212,6 +228,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
     countryName: 'United Kingdom',
     currency: 'GBP',
     phoneCode: '+44',
+    phoneMaxLength: 11,
     taxLabel: 'VAT Number',
     taxPlaceholder: 'GB123456789',
     fields: [
@@ -222,6 +239,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'Sort Code (6 digits)', 
         placeholder: 'e.g. 20-00-00 or 200000', 
         required: true,
+        maxLength: 8,
         validator: val => /^\d{6}$/.test(val.replace(/[^0-9]/g, '')) || 'Sort code must be 6 digits'
       },
       { 
@@ -229,6 +247,8 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'Account Number (8 digits)', 
         placeholder: 'e.g. 12345678', 
         required: true,
+        maxLength: 8,
+        digitsOnly: true,
         validator: val => /^\d{8}$/.test(val.trim()) || 'Account number must be exactly 8 digits'
       },
       { 
@@ -236,6 +256,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'IBAN (Optional)', 
         placeholder: 'e.g. GB29NWBK60161331926819', 
         required: false,
+        maxLength: 34,
         validator: val => !val || validateIbanMod97(val) || 'Invalid IBAN checksum'
       }
     ]
@@ -245,6 +266,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
     countryName: 'European Union / SEPA',
     currency: 'EUR',
     phoneCode: '+49',
+    phoneMaxLength: 11,
     taxLabel: 'EU VAT ID',
     taxPlaceholder: 'DE123456789',
     fields: [
@@ -255,6 +277,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'IBAN', 
         placeholder: 'e.g. DE89370400440532013000', 
         required: true,
+        maxLength: 34,
         validator: val => validateIbanMod97(val) || 'Invalid SEPA IBAN (Mod-97 failed)'
       },
       { 
@@ -262,6 +285,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'BIC / SWIFT', 
         placeholder: 'e.g. DEUTDEDBFXX', 
         required: true,
+        maxLength: 11,
         validator: val => validateSwiftBic(val) || 'Must be 8 or 11 alphanumeric characters'
       }
     ]
@@ -271,6 +295,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
     countryName: 'Canada',
     currency: 'CAD',
     phoneCode: '+1',
+    phoneMaxLength: 10,
     taxLabel: 'Business Number (BN / GST)',
     taxPlaceholder: '123456789RT0001',
     fields: [
@@ -281,6 +306,8 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'Institution Number (3 digits)', 
         placeholder: 'e.g. 003', 
         required: true,
+        maxLength: 3,
+        digitsOnly: true,
         validator: val => /^\d{3}$/.test(val.trim()) || 'Must be 3 digits'
       },
       { 
@@ -288,6 +315,8 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'Transit Number (5 digits)', 
         placeholder: 'e.g. 12345', 
         required: true,
+        maxLength: 5,
+        digitsOnly: true,
         validator: val => /^\d{5}$/.test(val.trim()) || 'Must be 5 digits'
       },
       { 
@@ -295,6 +324,8 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'Account Number (7-12 digits)', 
         placeholder: 'e.g. 1234567', 
         required: true,
+        maxLength: 12,
+        digitsOnly: true,
         validator: val => /^\d{7,12}$/.test(val.trim()) || 'Must be 7 to 12 digits'
       }
     ]
@@ -304,6 +335,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
     countryName: 'Australia',
     currency: 'AUD',
     phoneCode: '+61',
+    phoneMaxLength: 10,
     taxLabel: 'ABN',
     taxPlaceholder: '51 824 753 556',
     fields: [
@@ -314,6 +346,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'BSB Number (6 digits)', 
         placeholder: 'e.g. 062-000 or 062000', 
         required: true,
+        maxLength: 7,
         validator: val => /^\d{6}$/.test(val.replace(/[^0-9]/g, '')) || 'BSB must be 6 digits'
       },
       { 
@@ -321,6 +354,8 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'Account Number (5-9 digits)', 
         placeholder: 'e.g. 12345678', 
         required: true,
+        maxLength: 9,
+        digitsOnly: true,
         validator: val => /^\d{5,9}$/.test(val.trim()) || 'Must be 5 to 9 digits'
       }
     ]
@@ -330,17 +365,19 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
     countryName: 'Other / International',
     currency: 'USD',
     phoneCode: '+1',
+    phoneMaxLength: 15,
     taxLabel: 'Tax ID / VAT Number',
     taxPlaceholder: 'Tax Registration Number',
     fields: [
       { key: 'accountHolderName', label: 'Account Holder Name', placeholder: 'Account Holder Name', required: true },
       { key: 'bankName', label: 'Bank Name', placeholder: 'Bank Name', required: true },
-      { key: 'accountNumber', label: 'Account Number / IBAN', placeholder: 'Account Number or IBAN', required: true },
+      { key: 'accountNumber', label: 'Account Number / IBAN', placeholder: 'Account Number or IBAN', required: true, maxLength: 34 },
       { 
         key: 'swift', 
         label: 'SWIFT / BIC Code', 
         placeholder: 'SWIFT / BIC', 
         required: true,
+        maxLength: 11,
         validator: val => validateSwiftBic(val) || 'Must be 8 or 11 characters'
       },
       { 
@@ -348,6 +385,7 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         label: 'IBAN (Optional)', 
         placeholder: 'IBAN if applicable', 
         required: false,
+        maxLength: 34,
         validator: val => !val || validateIbanMod97(val) || 'Invalid IBAN checksum'
       }
     ]
@@ -406,6 +444,102 @@ export function getBankConfigForCountry(countryNameOrCode: string): CountryBankC
   if (c === 'GB' || c === 'UK' || c.includes('KINGDOM')) return BANK_CONFIGS.UK;
   if (c === 'CA' || c === 'CAN' || c === 'CANADA') return BANK_CONFIGS.CANADA;
   if (c === 'AU' || c === 'AUS' || c === 'AUSTRALIA') return BANK_CONFIGS.AUSTRALIA;
-  if (['DE', 'FR', 'ES', 'IT', 'NL', 'BE', 'AT', 'SE', 'NO', 'DK', 'FI', 'PT', 'IE', 'EUROPE', 'EU'].includes(c)) return BANK_CONFIGS.EU;
+  if (['DE', 'FR', 'ES', 'IT', 'NL', 'BE', 'AT', 'SE', 'NO', 'DK', 'FI', 'PT', 'IE', 'EUROPE', 'EU', 'GERMANY', 'FRANCE', 'SPAIN', 'ITALY'].some(x => c.includes(x))) return BANK_CONFIGS.EU;
   return BANK_CONFIGS.OTHER;
 }
+
+export const COUNTRY_PHONE_RULES: Record<string, { phoneCode: string; maxDigits: number }> = {
+  "India": { phoneCode: "+91", maxDigits: 10 },
+  "United Arab Emirates": { phoneCode: "+971", maxDigits: 9 },
+  "United States": { phoneCode: "+1", maxDigits: 10 },
+  "United Kingdom": { phoneCode: "+44", maxDigits: 11 },
+  "Canada": { phoneCode: "+1", maxDigits: 10 },
+  "Australia": { phoneCode: "+61", maxDigits: 10 },
+  "Germany": { phoneCode: "+49", maxDigits: 11 },
+  "France": { phoneCode: "+33", maxDigits: 10 },
+  "Singapore": { phoneCode: "+65", maxDigits: 8 },
+  "Saudi Arabia": { phoneCode: "+966", maxDigits: 9 },
+  "Qatar": { phoneCode: "+974", maxDigits: 8 },
+  "Oman": { phoneCode: "+968", maxDigits: 8 },
+  "Kuwait": { phoneCode: "+965", maxDigits: 8 },
+  "Bahrain": { phoneCode: "+973", maxDigits: 8 },
+  "China": { phoneCode: "+86", maxDigits: 11 },
+  "Japan": { phoneCode: "+81", maxDigits: 10 },
+  "South Korea": { phoneCode: "+82", maxDigits: 10 },
+  "Malaysia": { phoneCode: "+60", maxDigits: 10 },
+  "Indonesia": { phoneCode: "+62", maxDigits: 12 },
+  "Philippines": { phoneCode: "+63", maxDigits: 10 },
+  "Vietnam": { phoneCode: "+84", maxDigits: 10 },
+  "Thailand": { phoneCode: "+66", maxDigits: 9 },
+  "New Zealand": { phoneCode: "+64", maxDigits: 10 },
+  "South Africa": { phoneCode: "+27", maxDigits: 9 },
+  "Brazil": { phoneCode: "+55", maxDigits: 11 },
+  "Mexico": { phoneCode: "+52", maxDigits: 10 },
+  "Italy": { phoneCode: "+39", maxDigits: 10 },
+  "Spain": { phoneCode: "+34", maxDigits: 9 },
+  "Netherlands": { phoneCode: "+31", maxDigits: 9 },
+  "Switzerland": { phoneCode: "+41", maxDigits: 9 },
+  "Sweden": { phoneCode: "+46", maxDigits: 9 },
+  "Norway": { phoneCode: "+47", maxDigits: 8 },
+  "Denmark": { phoneCode: "+45", maxDigits: 8 },
+  "Ireland": { phoneCode: "+353", maxDigits: 9 },
+  "Pakistan": { phoneCode: "+92", maxDigits: 10 },
+  "Bangladesh": { phoneCode: "+880", maxDigits: 10 },
+  "Sri Lanka": { phoneCode: "+94", maxDigits: 9 },
+  "Nepal": { phoneCode: "+977", maxDigits: 10 },
+  "Russia": { phoneCode: "+7", maxDigits: 10 },
+  "Turkey": { phoneCode: "+90", maxDigits: 10 },
+  "Egypt": { phoneCode: "+20", maxDigits: 10 },
+  "Nigeria": { phoneCode: "+234", maxDigits: 10 },
+  "Kenya": { phoneCode: "+254", maxDigits: 9 },
+  "Poland": { phoneCode: "+48", maxDigits: 9 },
+  "Argentina": { phoneCode: "+54", maxDigits: 10 },
+  "Chile": { phoneCode: "+56", maxDigits: 9 },
+  "Colombia": { phoneCode: "+57", maxDigits: 10 },
+  "Hong Kong": { phoneCode: "+852", maxDigits: 8 },
+  "Taiwan": { phoneCode: "+886", maxDigits: 9 },
+  "Israel": { phoneCode: "+972", maxDigits: 9 },
+  "Austria": { phoneCode: "+43", maxDigits: 10 },
+  "Belgium": { phoneCode: "+32", maxDigits: 9 },
+  "Portugal": { phoneCode: "+351", maxDigits: 9 },
+  "Greece": { phoneCode: "+30", maxDigits: 10 },
+  "Czechia": { phoneCode: "+420", maxDigits: 9 },
+  "Hungary": { phoneCode: "+36", maxDigits: 9 },
+  "Romania": { phoneCode: "+40", maxDigits: 10 },
+};
+
+export function getPhoneRulesForCountry(countryName: string): { phoneCode: string; maxDigits: number } {
+  if (!countryName) return { phoneCode: "+91", maxDigits: 10 };
+  if (COUNTRY_PHONE_RULES[countryName]) {
+    return COUNTRY_PHONE_RULES[countryName];
+  }
+  const upper = countryName.toUpperCase().trim();
+  if (upper === 'INDIA' || upper === 'IN') return COUNTRY_PHONE_RULES["India"];
+  if (upper === 'UAE' || upper === 'AE' || upper.includes('EMIRATES')) return COUNTRY_PHONE_RULES["United Arab Emirates"];
+  if (upper === 'USA' || upper === 'US' || upper.includes('UNITED STATES')) return COUNTRY_PHONE_RULES["United States"];
+  if (upper === 'UK' || upper === 'GB' || upper.includes('KINGDOM')) return COUNTRY_PHONE_RULES["United Kingdom"];
+  if (upper === 'CANADA' || upper === 'CA') return COUNTRY_PHONE_RULES["Canada"];
+  if (upper === 'AUSTRALIA' || upper === 'AU') return COUNTRY_PHONE_RULES["Australia"];
+
+  for (const [key, rule] of Object.entries(COUNTRY_PHONE_RULES)) {
+    if (upper === key.toUpperCase() || upper.includes(key.toUpperCase()) || key.toUpperCase().includes(upper)) {
+      return rule;
+    }
+  }
+
+  return { phoneCode: "+1", maxDigits: 15 };
+}
+
+/**
+ * Extracts subscriber digits from an existing phone string by stripping country code or special chars.
+ */
+export function extractSubscriberDigits(phone: string, phoneCode: string, maxDigits: number): string {
+  if (!phone) return '';
+  const cleanCode = phoneCode.replace(/\D/g, '');
+  const cleanPhone = phone.replace(/\D/g, '');
+  if (cleanCode && cleanPhone.startsWith(cleanCode) && cleanPhone.length > cleanCode.length) {
+    return cleanPhone.slice(cleanCode.length).slice(0, maxDigits);
+  }
+  return cleanPhone.slice(0, maxDigits);
+}
+

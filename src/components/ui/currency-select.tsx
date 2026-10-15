@@ -21,9 +21,10 @@ interface CurrencySelectProps {
   onChange: (value: string, currency: Currency) => void;
   disabled?: boolean;
   className?: string;
+  compact?: boolean;
 }
 
-export function CurrencySelect({ value, onChange, disabled, className }: CurrencySelectProps) {
+export function CurrencySelect({ value, onChange, disabled, className, compact }: CurrencySelectProps) {
   const [open, setOpen] = useState(false)
 
   const selectedCurrency = CURRENCIES.find((c) => c.code === value)
@@ -36,12 +37,18 @@ export function CurrencySelect({ value, onChange, disabled, className }: Currenc
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={cn("w-full justify-between h-10 rounded-xl border-slate-200 shadow-sm hover:bg-slate-50 font-normal", className)}
+          className={cn("w-full justify-between h-10 rounded-xl border-slate-200 shadow-sm hover:bg-slate-50 font-normal min-w-0 overflow-hidden", className)}
         >
-          {selectedCurrency
-            ? `${selectedCurrency.flag} ${selectedCurrency.code} (${selectedCurrency.symbol}) - ${selectedCurrency.name}`
-            : "Select currency..."}
-          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          {selectedCurrency ? (
+            <span className="truncate text-left flex-1 min-w-0 text-xs sm:text-sm">
+              {compact
+                ? `${selectedCurrency.flag} ${selectedCurrency.code} (${selectedCurrency.symbol})`
+                : `${selectedCurrency.flag} ${selectedCurrency.code} (${selectedCurrency.symbol}) - ${selectedCurrency.name}`}
+            </span>
+          ) : (
+            <span className="text-slate-400 font-normal truncate text-xs sm:text-sm">Select currency...</span>
+          )}
+          <ChevronsUpDownIcon className="ml-1.5 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[380px] p-0 rounded-xl border-slate-200 shadow-lg z-[100]" align="start">

@@ -51,16 +51,20 @@ export function InvoicePaymentPageClient({
     if (typeof window === 'undefined') return ''
     const fromStorage = window.localStorage.getItem('activeBusinessId') || ''
     const fromCookie = getCookie('activeBusinessId')
-    return fromStorage || fromCookie
+    const fromPath = window.location.pathname.match(/\/dashboard\/([^/]+)/)?.[1] || ''
+    return fromStorage || fromCookie || fromPath
   }
 
   const [selectedTargetInvoiceId, setSelectedTargetInvoiceId] = useState<string>(invoiceId || '')
   const targetInvoiceId = invoiceId || selectedTargetInvoiceId || ''
+  const [fetchedInvoice, setFetchedInvoice] = useState<any>(null)
+  const [isLoadingInvoice, setIsLoadingInvoice] = useState(false)
 
   const invoice = useMemo(() => {
+    if (fetchedInvoice) return fetchedInvoice
     if (!targetInvoiceId) return null
     return (business?.invoices ?? []).find((inv: any) => inv.id === targetInvoiceId) ?? null
-  }, [business, targetInvoiceId])
+  }, [fetchedInvoice, business, targetInvoiceId])
   
   const [pendingInvoices, setPendingInvoices] = useState<any[]>([])
   const [isLoadingPending, setIsLoadingPending] = useState(false)
@@ -74,6 +78,40 @@ export function InvoicePaymentPageClient({
     }
   }, [invoiceId])
 
+  const targetBusinessId = businessId || business?.id || getClientBusinessId() || ''
+
+  // Fetch invoice directly from API when targetInvoiceId is available
+  useEffect(() => {
+    if (!targetInvoiceId) return
+    let isCancelled = false
+
+    const fetchInvoiceData = async () => {
+      setIsLoadingInvoice(true)
+      try {
+        const token = getCookie('token') || getCookie('accessToken')
+        const res = await fetch(`${API_BASE}/api/invoices/${encodeURIComponent(targetInvoiceId)}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'x-business-id': targetBusinessId,
+          },
+        })
+        const data = await res.json()
+        if (!isCancelled && data?.success && (data?.data || data?.invoice)) {
+          setFetchedInvoice(data.data || data.invoice)
+        }
+      } catch (err) {
+        console.error('Failed to fetch invoice for payment:', err)
+      } finally {
+        if (!isCancelled) setIsLoadingInvoice(false)
+      }
+    }
+
+    void fetchInvoiceData()
+    return () => {
+      isCancelled = true
+    }
+  }, [targetInvoiceId, targetBusinessId, API_BASE])
+
   useEffect(() => {
     if (!invoiceId && customerId) {
       const fetchPending = async () => {
@@ -82,7 +120,7 @@ export function InvoicePaymentPageClient({
           const token = getCookie('token') || getCookie('accessToken')
           const endpoint = `${API_BASE}/api/invoices?customerId=${customerId}&status=SENT,PARTIALLY_PAID`
           const res = await fetch(endpoint, {
-            headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId }
+            headers: { Authorization: `Bearer ${token}`, 'x-business-id': targetBusinessId }
           })
           const data = await res.json()
           if (data.success) {
@@ -96,9 +134,7 @@ export function InvoicePaymentPageClient({
       }
       fetchPending()
     }
-  }, [invoiceId, customerId, API_BASE, businessId])
-
-  const targetBusinessId = businessId || business?.id || getClientBusinessId() || ''
+  }, [invoiceId, customerId, API_BASE, targetBusinessId])
 
   const invoiceAmount = useMemo(() => Number(invoice?.grandTotal || 0), [invoice])
   // Inherit currency from invoice — read-only, not user selectable
@@ -122,17 +158,20 @@ export function InvoicePaymentPageClient({
 
   useEffect(() => {
     if (!invoice) return
+    const currentPaid = Number(invoice.amountPaid || 0)
+    const currentGrandTotal = Number(invoice.grandTotal || 0)
+    const remaining = Math.max(currentGrandTotal - currentPaid, 0)
     setPaymentForm((prev) => ({
       ...prev,
-      amountReceived: String(Math.max((invoiceAmount || 0) - (invoice.amountPaid || 0), 0)),
-      paymentDate: new Date().toISOString().split('T')[0],
-      currency: invoice.currency || business?.baseCurrency?.code || 'AED',
+      amountReceived: String(remaining > 0 ? remaining : 0),
+      paymentDate: prev.paymentDate || new Date().toISOString().split('T')[0],
+      currency: prev.currency || invoice.currency || business?.baseCurrency?.code || 'AED',
     }))
-  }, [invoice, invoiceAmount, business])
+  }, [invoice, business])
 
   useEffect(() => {
     const loadPaymentSummary = async () => {
-      if (!targetInvoiceId) return
+      if (!targetInvoiceId || !invoice) return
 
       setIsLoadingPaymentSummary(true)
       try {
@@ -150,12 +189,12 @@ export function InvoicePaymentPageClient({
           },
         })
 
-        const customerId = invoice?.customerId || invoice?.customer?.id;
-        if (customerId && isBasic) {
+        const custId = invoice?.customerId || invoice?.customer?.id;
+        if (custId && isBasic) {
           try {
             const cnRes = await creditNotesAPI.getCreditNotes(targetBusinessId);
             if (cnRes.success && cnRes.data) {
-              const customerNotes = cnRes.data.filter(cn => cn.customer?.id === customerId && cn.status === 'OPEN');
+              const customerNotes = cnRes.data.filter(cn => cn.customer?.id === custId && cn.status === 'OPEN');
               setAvailableCreditNotes(customerNotes);
             }
           } catch (e) {
@@ -165,46 +204,31 @@ export function InvoicePaymentPageClient({
 
         const payload = await response.json()
         if (!response.ok || !payload?.success) {
-          throw new Error(payload?.message || 'Failed to load invoice payments')
+          console.warn('Payments load warning:', payload?.message)
         }
 
-        const list = Array.isArray(payload?.data) ? payload.data : []
-        const paidAmount = invoice?.amountPaid || 0
-        const calculatedRemaining = Math.max(invoiceAmount - paidAmount, 0)
-        const backendStatus = normalizeInvoiceStatus(invoice?.status)
-        const computedStatus = calculatedRemaining === 0 ? 'PAID' : paidAmount > 0 ? 'PARTIALLY_PAID' : backendStatus
+        const totalAmount = Number(invoice.grandTotal || 0)
+        const paidAmount = Number(invoice.amountPaid || 0)
+        const calculatedRemaining = Math.max(totalAmount - paidAmount, 0)
+        const backendStatus = normalizeInvoiceStatus(invoice.status)
+        const computedStatus = (totalAmount > 0 && calculatedRemaining === 0) ? 'PAID' : paidAmount > 0 ? 'PARTIALLY_PAID' : backendStatus
 
         setRemainingAmount(calculatedRemaining)
         setInvoicePaymentStatus(computedStatus)
         setPaymentForm((prev) => ({
           ...prev,
-          amountReceived: String(calculatedRemaining || 0),
+          amountReceived: prev.amountReceived || String(calculatedRemaining || 0),
           paymentDate: prev.paymentDate || new Date().toISOString().split('T')[0],
         }))
-
-        // Redirect if invoice is PAID or OVERPAID - only PARTIALLY_PAID can access payment page
-        if ((computedStatus as any) === 'PAID' || (computedStatus as any) === 'OVERPAID') {
-          toast({
-            title: 'Payment not allowed',
-            description: `This invoice is already ${computedStatus.toLowerCase().replace('_', ' ')}. No additional payment can be recorded.`,
-            variant: 'destructive',
-          })
-          navigate(`/dashboard/${businessId}/invoices`)
-          return
-        }
       } catch (err: any) {
-        toast({
-          title: 'Failed to load payment status',
-          description: err?.message || 'Unknown error',
-          variant: 'destructive',
-        })
+        console.error('Failed to load payment summary:', err)
       } finally {
         setIsLoadingPaymentSummary(false)
       }
     }
 
     void loadPaymentSummary()
-  }, [API_BASE, targetInvoiceId, targetBusinessId, invoiceAmount, invoice, invoiceDate])
+  }, [API_BASE, targetInvoiceId, targetBusinessId, invoice, isBasic])
 
   const handleSavePayment = async () => {
     if (!targetInvoiceId) {
@@ -366,31 +390,37 @@ export function InvoicePaymentPageClient({
                 ) : null}
 
                 <div className="grid gap-2">
-                  <Label htmlFor="amountReceived" className="text-sm font-semibold text-foreground">
-                    Amount Received
-                  </Label>
-                  <div className="flex gap-2">
-                    <div className="w-[140px] md:w-[180px] shrink-0">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="amountReceived" className="text-sm font-semibold text-foreground">
+                      Amount Received
+                    </Label>
+                    {remainingAmount > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        Remaining balance: <strong className="text-foreground">{invoiceCurrencySymbol || paymentForm.currency} {remainingAmount.toFixed(2)}</strong>
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex h-11 w-full rounded-xl border border-border bg-background shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                    <div className="w-[140px] sm:w-[160px] shrink-0 border-r border-border bg-muted/30">
                       <CurrencySelect
-                        value={paymentForm.currency}
+                        value={paymentForm.currency || invoiceCurrency || 'CAD'}
                         onChange={(value) => setPaymentForm(prev => ({ ...prev, currency: value }))}
+                        disabled={isLoadingPaymentSummary || invoicePaymentStatus === 'PAID'}
+                        className="h-full rounded-none border-0 shadow-none bg-transparent hover:bg-muted/50 focus:ring-0 px-3"
+                        compact
                       />
                     </div>
-                    <div className="relative flex-1">
-                      {getCurrencySymbol(paymentForm.currency) && (
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground pointer-events-none">
-                          {getCurrencySymbol(paymentForm.currency)}
-                        </span>
-                      )}
+                    <div className="flex-1 min-w-0">
                       <Input
                         id="amountReceived"
                         type="number"
-                        step="0.01"
+                        step="any"
                         min="0"
+                        placeholder="0.00"
                         value={paymentForm.amountReceived}
                         onChange={(e) => setPaymentForm((prev) => ({ ...prev, amountReceived: e.target.value }))}
                         disabled={isLoadingPaymentSummary || invoicePaymentStatus === 'PAID'}
-                        className={`h-10 rounded-xl border-border focus-visible:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${getCurrencySymbol(paymentForm.currency) ? 'pl-8' : ''}`}
+                        className="h-full rounded-none border-0 shadow-none focus-visible:ring-0 text-base font-semibold px-4 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </div>
