@@ -1,4 +1,3 @@
-import { toast } from 'sonner';
 import React, { useEffect, useMemo, useState } from 'react'
 import {  useNavigate  } from 'react-router-dom';
 import { ArrowLeftIcon, Loader2Icon, Wallet, FileText, CheckCircle2, ArrowUpRight } from 'lucide-react'
@@ -244,7 +243,11 @@ export function InvoicePaymentPageClient({
     if (!targetInvoiceId) return
     const allocAmount = Math.min(availableAmount, remainingAmount)
     if (allocAmount <= 0) {
-      toast.error('This invoice has no remaining dues.')
+      toast({
+        title: 'No remaining dues',
+        description: 'This invoice has no remaining dues.',
+        variant: 'destructive',
+      })
       return
     }
 
@@ -269,12 +272,19 @@ export function InvoicePaymentPageClient({
         throw new Error(data.message || 'Failed to allocate advance payment')
       }
 
-      toast.success(`Successfully allocated ${invoiceCurrencySymbol || ''} ${allocAmount.toFixed(2)} from advance payment to this invoice.`)
+      toast({
+        title: 'Advance payment allocated',
+        description: `Successfully allocated ${invoiceCurrencySymbol || ''} ${allocAmount.toFixed(2)} from advance payment to this invoice.`,
+      })
       await fetchInvoiceData()
       await loadPaymentSummary()
       void refresh?.()
     } catch (err: any) {
-      toast.error(err.message || 'Failed to allocate advance payment')
+      toast({
+        title: 'Allocation failed',
+        description: err.message || 'Failed to allocate advance payment',
+        variant: 'destructive',
+      })
     } finally {
       setIsAllocatingAdvance(null)
     }
