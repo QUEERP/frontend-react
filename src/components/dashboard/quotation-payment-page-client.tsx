@@ -137,11 +137,13 @@ export function QuotationPaymentPageClient({
 
   useEffect(() => {
     if (!quotation && !project && !customerData) return
+    const custCur = (customerData?.currency && customerData.currency !== 'SYSTEM') ? customerData.currency : null
+    const effectiveCur = quotation?.currency || project?.currency || custCur || business?.baseCurrency?.code || 'USD'
     setPaymentForm((prev) => ({
       ...prev,
-      amountReceived: quotationAmount ? quotationAmount.toString() : '0',
-      paymentDate: quotationDate,
-      currency: quotation?.currency || project?.currency || customerData?.currency || customerData?.currencyId || business?.baseCurrency?.code || 'AED',
+      amountReceived: quotationAmount ? quotationAmount.toString() : prev.amountReceived || '0',
+      paymentDate: quotationDate || prev.paymentDate,
+      currency: prev.currency || effectiveCur,
     }))
   }, [quotation, project, customerData, quotationAmount, quotationDate, business])
 
@@ -361,7 +363,7 @@ export function QuotationPaymentPageClient({
         },
         body: JSON.stringify({
           amount: normalizedAmount,
-          currency: paymentForm.currency || quotationCurrency || business?.baseCurrency?.code || 'AED',
+          currency: paymentForm.currency || quotationCurrency || ((customerData?.currency && customerData.currency !== 'SYSTEM') ? customerData.currency : null) || business?.baseCurrency?.code || 'USD',
           paymentDate: paymentForm.paymentDate,
           paymentMode: paymentForm.paymentMode,
           transactionId: paymentForm.transactionId || null,
