@@ -1,9 +1,10 @@
 import { toast } from 'sonner';
 import React, { useEffect, useMemo, useState } from 'react'
 import {  useNavigate  } from 'react-router-dom';
-import { ArrowLeftIcon, Loader2Icon } from 'lucide-react'
+import { ArrowLeftIcon, Loader2Icon, Wallet, FileText, CheckCircle2, ArrowUpRight } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -69,6 +70,8 @@ export function InvoicePaymentPageClient({
   const [pendingInvoices, setPendingInvoices] = useState<any[]>([])
   const [isLoadingPending, setIsLoadingPending] = useState(false)
   const [availableCreditNotes, setAvailableCreditNotes] = useState<CreditNote[]>([])
+  const [availableAdvancePayments, setAvailableAdvancePayments] = useState<any[]>([])
+  const [isAllocatingAdvance, setIsAllocatingAdvance] = useState<string | null>(null)
   
   const isBasic = business?.businessType?.toLowerCase() === 'basic'
 
@@ -81,36 +84,31 @@ export function InvoicePaymentPageClient({
   const targetBusinessId = businessId || business?.id || getClientBusinessId() || ''
 
   // Fetch invoice directly from API when targetInvoiceId is available
-  useEffect(() => {
+  const fetchInvoiceData = React.useCallback(async () => {
     if (!targetInvoiceId) return
-    let isCancelled = false
-
-    const fetchInvoiceData = async () => {
-      setIsLoadingInvoice(true)
-      try {
-        const token = getCookie('token') || getCookie('accessToken')
-        const res = await fetch(`${API_BASE}/api/invoices/${encodeURIComponent(targetInvoiceId)}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'x-business-id': targetBusinessId,
-          },
-        })
-        const data = await res.json()
-        if (!isCancelled && data?.success && (data?.data || data?.invoice)) {
-          setFetchedInvoice(data.data || data.invoice)
-        }
-      } catch (err) {
-        console.error('Failed to fetch invoice for payment:', err)
-      } finally {
-        if (!isCancelled) setIsLoadingInvoice(false)
+    setIsLoadingInvoice(true)
+    try {
+      const token = getCookie('token') || getCookie('accessToken')
+      const res = await fetch(`${API_BASE}/api/invoices/${encodeURIComponent(targetInvoiceId)}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-business-id': targetBusinessId,
+        },
+      })
+      const data = await res.json()
+      if (data?.success && (data?.data || data?.invoice)) {
+        setFetchedInvoice(data.data || data.invoice)
       }
-    }
-
-    void fetchInvoiceData()
-    return () => {
-      isCancelled = true
+    } catch (err) {
+      console.error('Failed to fetch invoice for payment:', err)
+    } finally {
+      setIsLoadingInvoice(false)
     }
   }, [targetInvoiceId, targetBusinessId, API_BASE])
+
+  useEffect(() => {
+    void fetchInvoiceData()
+  }, [fetchInvoiceData])
 
   useEffect(() => {
     if (!invoiceId && customerId) {
@@ -169,66 +167,118 @@ export function InvoicePaymentPageClient({
     }))
   }, [invoice, business])
 
-  useEffect(() => {
-    const loadPaymentSummary = async () => {
-      if (!targetInvoiceId || !invoice) return
+  const loadPaymentSummary = React.useCallback(async () => {
+    if (!targetInvoiceId || !invoice) return
 
-      setIsLoadingPaymentSummary(true)
-      try {
-        const token = getCookie('token') || getCookie('accessToken')
-        if (!token) {
-          throw new Error('Authentication token missing. Please sign in again.')
-        }
-
-        const response = await fetch(`${API_BASE}/api/payments/invoice/${encodeURIComponent(targetInvoiceId)}`, {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            Authorization: `Bearer ${token}`,
-            'x-business-id': targetBusinessId,
-          },
-        })
-
-        const custId = invoice?.customerId || invoice?.customer?.id;
-        if (custId && isBasic) {
-          try {
-            const cnRes = await creditNotesAPI.getCreditNotes(targetBusinessId);
-            if (cnRes.success && cnRes.data) {
-              const customerNotes = cnRes.data.filter(cn => cn.customer?.id === custId && cn.status === 'OPEN');
-              setAvailableCreditNotes(customerNotes);
-            }
-          } catch (e) {
-            console.error('Failed to load credit notes', e)
-          }
-        }
-
-        const payload = await response.json()
-        if (!response.ok || !payload?.success) {
-          console.warn('Payments load warning:', payload?.message)
-        }
-
-        const totalAmount = Number(invoice.grandTotal || 0)
-        const paidAmount = Number(invoice.amountPaid || 0)
-        const calculatedRemaining = Math.max(totalAmount - paidAmount, 0)
-        const backendStatus = normalizeInvoiceStatus(invoice.status)
-        const computedStatus = (totalAmount > 0 && calculatedRemaining === 0) ? 'PAID' : paidAmount > 0 ? 'PARTIALLY_PAID' : backendStatus
-
-        setRemainingAmount(calculatedRemaining)
-        setInvoicePaymentStatus(computedStatus)
-        setPaymentForm((prev) => ({
-          ...prev,
-          amountReceived: prev.amountReceived || String(calculatedRemaining || 0),
-          paymentDate: prev.paymentDate || new Date().toISOString().split('T')[0],
-        }))
-      } catch (err: any) {
-        console.error('Failed to load payment summary:', err)
-      } finally {
-        setIsLoadingPaymentSummary(false)
+    setIsLoadingPaymentSummary(true)
+    try {
+      const token = getCookie('token') || getCookie('accessToken')
+      if (!token) {
+        throw new Error('Authentication token missing. Please sign in again.')
       }
+
+      const custId = invoice?.customerId || invoice?.customer?.id;
+      const headers = {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+        'x-business-id': targetBusinessId,
+      };
+
+      const [response, cnRes, payRes] = await Promise.all([
+        fetch(`${API_BASE}/api/payments/invoice/${encodeURIComponent(targetInvoiceId)}`, {
+          method: 'GET',
+          headers,
+        }),
+        custId ? creditNotesAPI.getCreditNotes(targetBusinessId).catch(() => null) : null,
+        custId ? fetch(`${API_BASE}/api/payments?customerId=${encodeURIComponent(custId)}&limit=500`, { headers }).then(r => r.json()).catch(() => null) : null
+      ]);
+
+      if (cnRes?.success && Array.isArray(cnRes.data)) {
+        const customerNotes = cnRes.data.filter((cn: any) => 
+          (cn.customer?.id === custId || cn.customerId === custId) && 
+          cn.status === 'OPEN' && 
+          Number(cn.remainingAmount || 0) > 0
+        );
+        setAvailableCreditNotes(customerNotes);
+      }
+
+      if (payRes?.success) {
+        const rawList = Array.isArray(payRes.data?.items) ? payRes.data.items : Array.isArray(payRes.data) ? payRes.data : [];
+        const advances = rawList.filter((p: any) => {
+          const unapplied = Number(p.amount || 0) - Number(p.amountAllocated || 0);
+          return !p.invoiceId && unapplied > 0;
+        });
+        setAvailableAdvancePayments(advances);
+      }
+
+      const payload = await response.json()
+      if (!response.ok || !payload?.success) {
+        console.warn('Payments load warning:', payload?.message)
+      }
+
+      const totalAmount = Number(invoice.grandTotal || 0)
+      const paidAmount = Number(invoice.amountPaid || 0)
+      const calculatedRemaining = Math.max(totalAmount - paidAmount, 0)
+      const backendStatus = normalizeInvoiceStatus(invoice.status)
+      const computedStatus = (totalAmount > 0 && calculatedRemaining === 0) ? 'PAID' : paidAmount > 0 ? 'PARTIALLY_PAID' : backendStatus
+
+      setRemainingAmount(calculatedRemaining)
+      setInvoicePaymentStatus(computedStatus)
+      setPaymentForm((prev) => ({
+        ...prev,
+        amountReceived: prev.amountReceived || String(calculatedRemaining || 0),
+        paymentDate: prev.paymentDate || new Date().toISOString().split('T')[0],
+      }))
+    } catch (err: any) {
+      console.error('Failed to load payment summary:', err)
+    } finally {
+      setIsLoadingPaymentSummary(false)
+    }
+  }, [API_BASE, targetInvoiceId, targetBusinessId, invoice])
+
+  useEffect(() => {
+    void loadPaymentSummary()
+  }, [loadPaymentSummary])
+
+  const handleApplyAdvancePayment = async (paymentId: string, availableAmount: number) => {
+    if (!targetInvoiceId) return
+    const allocAmount = Math.min(availableAmount, remainingAmount)
+    if (allocAmount <= 0) {
+      toast.error('This invoice has no remaining dues.')
+      return
     }
 
-    void loadPaymentSummary()
-  }, [API_BASE, targetInvoiceId, targetBusinessId, invoice, isBasic])
+    setIsAllocatingAdvance(paymentId)
+    try {
+      const token = getCookie('token') || getCookie('accessToken')
+      const res = await fetch(`${API_BASE}/api/payments/${paymentId}/allocate-existing-invoice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'x-business-id': targetBusinessId,
+        },
+        body: JSON.stringify({
+          invoiceId: targetInvoiceId,
+          amount: allocAmount,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to allocate advance payment')
+      }
+
+      toast.success(`Successfully allocated ${invoiceCurrencySymbol || ''} ${allocAmount.toFixed(2)} from advance payment to this invoice.`)
+      await fetchInvoiceData()
+      await loadPaymentSummary()
+      void refresh?.()
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to allocate advance payment')
+    } finally {
+      setIsAllocatingAdvance(null)
+    }
+  }
 
   const handleSavePayment = async () => {
     if (!targetInvoiceId) {
@@ -389,6 +439,103 @@ export function InvoicePaymentPageClient({
                   </div>
                 ) : null}
 
+                {/* Available Customer Advance Payments Banner */}
+                {availableAdvancePayments.length > 0 && remainingAmount > 0 && (
+                  <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-5 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 bg-emerald-600 text-white rounded-xl shadow-xs">
+                          <Wallet className="size-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-foreground">Customer Advance Balance Available</h4>
+                          <p className="text-xs text-muted-foreground">Unallocated advance funds found for this customer. You can allocate them directly to this invoice.</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white font-mono text-xs">
+                        {availableAdvancePayments.length} Available
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-2 pt-1">
+                      {availableAdvancePayments.map((adv: any) => {
+                        const unapplied = Number(adv.amount || 0) - Number(adv.amountAllocated || 0);
+                        const canCover = Math.min(unapplied, remainingAmount);
+                        const advCurrSymbol = getCurrencySymbol(adv.currency || invoiceCurrency || 'USD');
+                        const isCurrentAllocating = isAllocatingAdvance === adv.id;
+
+                        return (
+                          <div key={adv.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-card border border-emerald-200/60 shadow-xs">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-sm text-foreground">{adv.paymentNumber || 'Advance Payment'}</span>
+                                <span className="text-xs px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-semibold">
+                                  {advCurrSymbol}{unapplied.toLocaleString('en-US', { minimumFractionDigits: 2 })} unallocated
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Date: {adv.paymentDate ? new Date(adv.paymentDate).toLocaleDateString() : '-'} {adv.paymentMode ? `• Mode: ${adv.paymentMode}` : ''} {adv.note ? `• ${adv.note}` : ''}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={isCurrentAllocating || remainingAmount <= 0}
+                                onClick={() => handleApplyAdvancePayment(adv.id, unapplied)}
+                                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 px-4 gap-1.5 shadow-xs cursor-pointer"
+                              >
+                                {isCurrentAllocating ? (
+                                  <>
+                                    <Loader2Icon className="size-3.5 animate-spin" />
+                                    Applying...
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 className="size-3.5" />
+                                    Apply {advCurrSymbol}{canCover.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/dashboard/${businessId}/payments/${adv.id}/allocate`)}
+                                className="rounded-xl text-xs h-9 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
+                                title="Open Allocation Workspace"
+                              >
+                                <ArrowUpRight className="size-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Available Credit Notes Banner */}
+                {availableCreditNotes.length > 0 && remainingAmount > 0 && (
+                  <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent p-4 shadow-xs flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-600 text-white rounded-xl shadow-xs">
+                        <FileText className="size-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-foreground">Available Credit Notes</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {availableCreditNotes.length} open credit note(s) found. Select from &quot;Apply Credit Note&quot; below to offset this invoice.
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="border-blue-300 text-blue-700 font-semibold text-xs shrink-0">
+                      {availableCreditNotes.map(c => `${c.creditNumber}: ${invoiceCurrencySymbol}${c.remainingAmount}`).join(', ')}
+                    </Badge>
+                  </div>
+                )}
+
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="amountReceived" className="text-sm font-semibold text-foreground">
@@ -403,7 +550,7 @@ export function InvoicePaymentPageClient({
                   <div className="flex h-11 w-full rounded-xl border border-border bg-background shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
                     <div className="w-[140px] sm:w-[160px] shrink-0 border-r border-border bg-muted/30">
                       <CurrencySelect
-                        value={paymentForm.currency || invoiceCurrency || 'CAD'}
+                        value={paymentForm.currency || invoiceCurrency || 'USD'}
                         onChange={(value) => setPaymentForm(prev => ({ ...prev, currency: value }))}
                         disabled={isLoadingPaymentSummary || invoicePaymentStatus === 'PAID'}
                         className="h-full rounded-none border-0 shadow-none bg-transparent hover:bg-muted/50 focus:ring-0 px-3"
@@ -485,7 +632,7 @@ export function InvoicePaymentPageClient({
                     />
                 </div>
 
-                {isBasic && targetInvoiceId && (
+                {targetInvoiceId && availableCreditNotes.length > 0 && (
                   <div className="grid gap-2">
                     <Label htmlFor="creditNoteId" className="text-sm font-semibold text-foreground">Apply Credit Note</Label>
                     <Select
