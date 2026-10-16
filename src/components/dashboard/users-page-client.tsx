@@ -17,9 +17,11 @@ import {
   ShieldIcon,
   UserPlusIcon,
   CheckCircle2Icon,
+  Edit3Icon,
 } from 'lucide-react'
 import { Link } from 'react-router-dom';
 import { NotificationBell } from './notification-bell'
+import { EditUserDialog } from './edit-user-dialog'
 
 import { Badge } from '@/components/ui/badge'
 import {
@@ -93,6 +95,8 @@ export function UsersPageClient({ businessId }: { businessId: string }) {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isBusinessInactiveDialogOpen, setIsBusinessInactiveDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [selectedEditUser, setSelectedEditUser] = useState<any>(null)
   const navigate = useNavigate()
   const { toast } = useToast()
   const { businessId: ctxBusinessId, business, loading: businessLoading } = useBusinessData()
@@ -638,6 +642,15 @@ export function UsersPageClient({ businessId }: { businessId: string }) {
                           <EyeIcon className="mr-2 size-4" />
                           View Details
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedEditUser(user)
+                            setIsEditDialogOpen(true)
+                          }}
+                        >
+                          <Edit3Icon className="mr-2 size-4" />
+                          Edit User
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-destructive"
@@ -694,6 +707,16 @@ export function UsersPageClient({ businessId }: { businessId: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EditUserDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        businessId={resolvedBusinessId || businessId}
+        user={selectedEditUser}
+        onUserUpdated={() => {
+          fetchUsers(false)
+        }}
+      />
     </div>
   )
 }

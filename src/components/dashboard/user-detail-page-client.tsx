@@ -15,9 +15,11 @@ import {
   Loader2Icon,
   ShieldIcon,
   CheckCircle2Icon,
+  UserCogIcon,
 } from 'lucide-react'
 
 import { NotificationBell } from './notification-bell'
+import { EditUserDialog } from './edit-user-dialog'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -329,6 +331,7 @@ export function UserDetailPageClient({
   const [user, setUser] = useState<UserItem | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false)
   const { toast } = useToast()
   
   const { business } = useBusinessData()
@@ -499,7 +502,7 @@ export function UserDetailPageClient({
     }
 
     const list = toUserList(payload)
-    return list.find((u) => u.userId === userId) || null
+    return list.find((u) => u.userId === userId || u.membershipId === userId) || null
   }, [API_BASE, getCookie, resolvedBusinessId, toUserList, userId])
 
   const fetchUserPermissions = React.useCallback(async (targetUserId: string) => {
@@ -605,87 +608,42 @@ export function UserDetailPageClient({
     try {
       setIsSaving(true)
 
+      const selectedPermissions: Array<{ module: string; actions: string[] }> = []
       for (const moduleItem of ALL_MODULES) {
         const moduleName = moduleItem.name
         const availableActions = new Set(
           (moduleItem.actions || []).map((action) => String(action).toLowerCase()),
         )
-
-        const resetActions = crudActions.filter((action) => availableActions.has(action))
         const selectedActions = crudActions.filter(
           (action) => availableActions.has(action) && Boolean(permissions[moduleName]?.[action]),
         )
-
-        const removeRes = await fetch(
-          `${API_BASE}/api/permissions/remove/${encodeURIComponent(user.userId)}`,
-          {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-              'x-business-id': resolvedBusinessId,
-            },
-            body: JSON.stringify({
-              module: moduleName,
-              actions: resetActions,
-            }),
-          },
-        )
-
-        const removePayload = await removeRes.json()
-        if (!removeRes.ok || !removePayload?.success) {
-          throw new Error(removePayload?.message || `Failed to remove ${moduleName} permissions`)
-        }
-
         if (selectedActions.length > 0) {
-          const assignRes = await fetch(
-            `${API_BASE}/api/permissions/assign/${encodeURIComponent(user.userId)}`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'x-business-id': resolvedBusinessId,
-              },
-              body: JSON.stringify({
-                module: moduleName,
-                actions: selectedActions,
-              }),
-            },
-          )
-
-          const assignPayload = await assignRes.json()
-          if (!assignRes.ok || !assignPayload?.success) {
-            throw new Error(assignPayload?.message || `Failed to assign ${moduleName} permissions`)
-          }
+          selectedPermissions.push({
+            module: moduleName,
+            actions: selectedActions,
+          })
         }
       }
 
-      const syncedPermissions = ALL_MODULES.flatMap((moduleItem) => {
-        const moduleName = moduleItem.name
-        const availableActions = new Set(
-          (moduleItem.actions || []).map((action) => String(action).toLowerCase()),
-        )
+      const syncRes = await fetch(
+        `${API_BASE}/api/permissions/sync/${encodeURIComponent(user.userId)}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'x-business-id': resolvedBusinessId,
+          },
+          body: JSON.stringify({
+            permissions: selectedPermissions,
+          }),
+        },
+      )
 
-        return crudActions
-          .filter(
-            (action) =>
-              availableActions.has(action) &&
-              Boolean(permissions[moduleName]?.[action]),
-          )
-          .map((action) => ({
-            module: moduleName,
-            action,
-          }))
-      })
-
-      setUser((prev) => {
-        if (!prev) return prev
-        return {
-          ...prev,
-          directPermissions: syncedPermissions,
-        }
-      })
+      const syncPayload = await syncRes.json()
+      if (!syncRes.ok || !syncPayload?.success) {
+        throw new Error(syncPayload?.message || 'Failed to save permissions')
+      }
 
       const refreshedPermissions = await fetchUserPermissions(user.userId)
       setUser((prev) => {
@@ -825,6 +783,17 @@ export function UserDetailPageClient({
                   {user.status}
                 </Badge>
               </div>
+              <div className="mt-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs font-medium"
+                  onClick={() => setIsEditUserDialogOpen(true)}
+                >
+                  <UserCogIcon className="mr-2 size-3.5" />
+                  Edit User
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
@@ -937,6 +906,29 @@ export function UserDetailPageClient({
           </Card>
         </div>
       </div>
+
+      <EditUserDialog
+        open={isEditUserDialogOpen}
+        onOpenChange={setIsEditUserDialogOpen}
+        businessId={resolvedBusinessId || businessId}
+        user={user}
+        onUserUpdated={(updatedData) => {
+          setUser((prev) => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              name: updatedData.user?.name || updatedData.name || prev.name,
+              email: updatedData.user?.email || updatedData.email || prev.email,
+              role: updatedData.role?.name || updatedData.role || prev.role,
+              status: (updatedData.isActive !== undefined
+                ? updatedData.isActive
+                  ? 'Active'
+                  : 'Disabled'
+                : prev.status) as any,
+            }
+          })
+        }}
+      />
     </div>
   )
 }
