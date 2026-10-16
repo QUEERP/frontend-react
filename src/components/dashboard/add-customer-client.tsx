@@ -66,7 +66,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
   const { toast: uiToast } = useToast();
   const { business, refresh } = useBusinessData();
 
-  const API_BASE = import.meta.env.VITE_API_BASE || '';
+  const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
   const getCookie = (name: string) => {
     if (typeof document === 'undefined') return '';
     const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\]\\^])/g, '\\$1') + '=([^;]*)'));
@@ -257,7 +257,8 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.company) {
+    if (!formData.company || !formData.company.trim()) {
+      toast.error("Company / Customer name is required.");
       uiToast({
         title: "Validation Error",
         description: "Company name is required.",
@@ -267,6 +268,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
     }
 
     if (formData.country === 'INDIA' && !formData.state) {
+      toast.error("State is required for Indian customers under CBIC regulations.");
       uiToast({
         title: "Validation Error",
         description: "State is required for Indian customers under CBIC regulations.",
@@ -278,6 +280,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
     if (formData.vatNumber && bankConfig.taxValidator) {
       const taxRes = bankConfig.taxValidator(formData.vatNumber);
       if (typeof taxRes === 'string') {
+        toast.error(taxRes);
         uiToast({
           title: "Invalid Tax ID",
           description: taxRes,
@@ -289,6 +292,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
 
     const activeBusinessId = getActiveBusinessId();
     if (!activeBusinessId) {
+      toast.error("Active business identifier not found. Please refresh or select a business.");
       uiToast({
         title: "Configuration Error",
         description: "Active business identifier not found. Please refresh or select a business.",
@@ -320,6 +324,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       }
 
       if (draftError) {
+        toast.error(draftError);
         uiToast({
           title: "Incomplete Bank Account",
           description: draftError,
@@ -333,7 +338,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       finalBankAccounts.push({
         accountHolderName: (draftAccount.accountHolderName || '').trim(),
         bankName: (draftAccount.bankName || '').trim(),
-        accountNumber: draftAccount.accountNumber?.trim(),
+        accountNumber: (draftAccount.accountNumber || draftAccount.iban || '').trim(),
         accountNumberMasked: masked,
         country: bankConfig.countryName,
         currency: formData.currency || bankConfig.currency,
@@ -358,7 +363,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       const token = getToken();
       const payload = {
         businessId: activeBusinessId,
-        company: formData.company,
+        company: formData.company.trim(),
         country: formData.country,
         region: formData.country,
         currency: formData.currency,
@@ -394,7 +399,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
         bankAccounts: finalBankAccounts.map(acc => ({
           accountHolderName: acc.accountHolderName,
           bankName: acc.bankName,
-          accountNumber: acc.accountNumber,
+          accountNumber: acc.accountNumber || acc.iban || '',
           country: acc.country || formData.country,
           currency: acc.currency || formData.currency,
           ifsc: acc.ifsc || undefined,
@@ -427,6 +432,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       }
 
       setSaveStatus('saved');
+      toast.success(`Customer "${formData.company}" created successfully!`);
       uiToast({
         title: "Success",
         description: `Customer "${formData.company}" created successfully!`,
@@ -437,6 +443,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       navigate(`/dashboard/${activeBusinessId}/customers`);
     } catch (err: any) {
       console.error('Error creating customer:', err);
+      toast.error(err.message || "Failed to create customer");
       uiToast({
         title: "Error",
         description: err.message || "Failed to create customer",
@@ -486,7 +493,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} noValidate className="space-y-8">
               {/* 1. Primary Statutory Identity */}
               <div className="space-y-6">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-wider border-b border-border pb-2 flex items-center gap-2">
