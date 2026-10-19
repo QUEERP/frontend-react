@@ -53,7 +53,7 @@ export default function ConvertLeadToCustomerPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const leadId = id as string
-  const { business } = useBusinessData()
+  const { business, refresh } = useBusinessData()
   const isTrading = (business as any)?.businessType === 'Trading'
   const [searchParams] = useSearchParams()
   const isDealMode = searchParams.get('type') === 'deal' || isTrading
@@ -89,7 +89,7 @@ export default function ConvertLeadToCustomerPage() {
     shippingCountry: '',
     
     // Deal integration
-    createDeal: isTrading,
+    createDeal: isDealMode,
     dealName: '',
     dealStage: 'New', // New/Qualification
     dealAmount: '',
@@ -103,18 +103,52 @@ export default function ConvertLeadToCustomerPage() {
         setLoading(true)
         const response = await leadsAPI.getLeadDetails(businessId, leadId)
         if (response.success) {
-        toast.success(isDealMode ? 'Lead converted to Deal successfully!' : 'Lead converted to Customer successfully!')
-        try {
-          await refresh()
-        } catch {}
-        navigate(isDealMode && formData.createDeal ? `/dashboard/${businessId}/deals` : `/dashboard/${businessId}/customers`)
+          const leadData = response.data
+          setLead(leadData)
+
+          let defaultReg = 'INDIA'
+          if (leadData.country) {
+            const cleanC = leadData.country.trim().toUpperCase()
+            if (['IN', 'IND', 'INDIA'].includes(cleanC)) defaultReg = 'INDIA'
+            else if (['AE', 'ARE', 'UAE', 'UNITED ARAB EMIRATES'].includes(cleanC) || cleanC.includes('EMIRATES')) defaultReg = 'UNITED_ARAB_EMIRATES'
+            else if (['US', 'USA', 'UNITED STATES'].includes(cleanC) || cleanC.includes('STATES')) defaultReg = 'UNITED_STATES'
+            else if (['GB', 'GBR', 'UK', 'UNITED KINGDOM'].includes(cleanC) || cleanC.includes('KINGDOM')) defaultReg = 'UNITED_KINGDOM'
+            else if (['CA', 'CAN', 'CANADA'].includes(cleanC)) defaultReg = 'CANADA'
+            else if (['AU', 'AUS', 'AUSTRALIA'].includes(cleanC)) defaultReg = 'AUSTRALIA'
+            else if (['SA', 'SAU', 'SAUDI ARABIA'].includes(cleanC)) defaultReg = 'SAUDI_ARABIA'
+          } else if ((business as any)?.country) {
+            const bCountry = String((business as any).country).trim().toUpperCase()
+            if (['IN', 'IND', 'INDIA'].includes(bCountry)) defaultReg = 'INDIA'
+            else if (['AE', 'ARE', 'UAE'].includes(bCountry)) defaultReg = 'UNITED_ARAB_EMIRATES'
+          }
+
+          setFormData(prev => ({
+            ...prev,
+            company: leadData.company || leadData.name || '',
+            phone: leadData.phone || '',
+            region: defaultReg,
+            currency: leadData.currency || getDefaultCurrencyForRegion(defaultReg),
+            country: leadData.country || '',
+            city: leadData.city || '',
+            state: leadData.state || '',
+            address: leadData.address || '',
+            zipCode: leadData.zipCode || '',
+            createDeal: isDealMode,
+            dealName: leadData.company ? `${leadData.company} - Deal` : `${leadData.name} - Deal`,
+            dealAmount: leadData.leadValue ? String(leadData.leadValue) : '',
+            expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          }))
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to fetch lead')
+        navigate(`/dashboard/${businessId}/leads`)
       } finally {
         setLoading(false)
       }
     }
 
     fetchLead()
-  }, [businessId, leadId, navigate])
+  }, [businessId, leadId, navigate, isDealMode, business])
 
   const handleRegionChange = (val: string) => {
     handleInputChange('region', val)
@@ -181,8 +215,11 @@ export default function ConvertLeadToCustomerPage() {
       const response = await leadsAPI.convertToCustomer(businessId, leadId, payload)
       
       if (response.success) {
-        toast.success(isTrading ? 'Lead converted to Deal successfully!' : 'Lead converted to Customer successfully!')
-        navigate(isTrading && formData.createDeal ? `/dashboard/${businessId}/deals` : `/dashboard/${businessId}/customers`)
+        toast.success(isDealMode ? 'Lead converted to Deal successfully!' : 'Lead converted to Customer successfully!')
+        try {
+          await refresh()
+        } catch {}
+        navigate(isDealMode && formData.createDeal ? `/dashboard/${businessId}/deals` : `/dashboard/${businessId}/customers`)
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to convert lead')
