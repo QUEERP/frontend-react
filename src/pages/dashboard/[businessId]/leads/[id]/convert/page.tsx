@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {  useNavigate, useParams  } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { leadsAPI, Lead } from '@/lib/api/leads'
 import { Button } from '@/components/ui/button'
@@ -55,6 +55,8 @@ export default function ConvertLeadToCustomerPage() {
   const leadId = id as string
   const { business } = useBusinessData()
   const isTrading = (business as any)?.businessType === 'Trading'
+  const [searchParams] = useSearchParams()
+  const isDealMode = searchParams.get('type') === 'deal' || isTrading
   
   const [lead, setLead] = useState<Lead | null>(null)
   const [loading, setLoading] = useState(true)
@@ -101,26 +103,11 @@ export default function ConvertLeadToCustomerPage() {
         setLoading(true)
         const response = await leadsAPI.getLeadDetails(businessId, leadId)
         if (response.success) {
-          const leadData = response.data
-          setLead(leadData)
-          
-          setFormData(prev => ({
-            ...prev,
-            company: leadData.company || leadData.name || '',
-            phone: leadData.phone || '',
-            currency: leadData.currency || 'SYSTEM',
-            country: leadData.country || '',
-            city: leadData.city || '',
-            state: leadData.state || '',
-            address: leadData.address || '',
-            zipCode: leadData.zipCode || '',
-            dealName: leadData.company ? `${leadData.company} - Initial Deal` : `${leadData.name} - Initial Deal`,
-            expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // default 30 days
-          }))
-        }
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Failed to fetch lead')
-        navigate(`/dashboard/${businessId}/leads`)
+        toast.success(isDealMode ? 'Lead converted to Deal successfully!' : 'Lead converted to Customer successfully!')
+        try {
+          await refresh()
+        } catch {}
+        navigate(isDealMode && formData.createDeal ? `/dashboard/${businessId}/deals` : `/dashboard/${businessId}/customers`)
       } finally {
         setLoading(false)
       }
@@ -227,7 +214,7 @@ export default function ConvertLeadToCustomerPage() {
             Back to Lead details
           </Button>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
-            {isTrading ? 'Convert Lead to Deal' : 'Convert Lead'} <Sparkles className="h-5 w-5 text-amber-500" />
+            {isDealMode ? 'Convert Lead to Deal' : 'Convert Lead to Customer'} <Sparkles className="h-5 w-5 text-amber-500" />
           </h1>
           <p className="text-muted-foreground mt-1">
             {isTrading ? (
@@ -511,7 +498,7 @@ export default function ConvertLeadToCustomerPage() {
                 Executing Conversion Engine...
               </>
             ) : (
-              isTrading ? 'Confirm Conversion to Deal' : 'Confirm Lead Conversion'
+              isDealMode ? 'Confirm Conversion to Deal' : 'Confirm Lead Conversion'
             )}
           </Button>
         </div>

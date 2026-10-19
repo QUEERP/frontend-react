@@ -70,9 +70,15 @@ export default function AddLeadPage() {
       return
     }
 
+    // Sanitize phone number so empty dial codes aren't saved
+    const rawPhone = formData.phone?.trim() || '';
+    const hasPhoneDigits = /\d/.test(rawPhone.replace(/^\+\d+/, ''));
+    const sanitizedPhone = hasPhoneDigits ? rawPhone : '';
+
     // Convert tags input to array
     const submissionData = {
       ...formData,
+      phone: sanitizedPhone,
       leadValue: formData.leadValue ? Number(formData.leadValue) : 0,
       tags: tagsInput ? tagsInput.split(',').map((tag: string) => tag.trim()).filter(Boolean) : [],
     }
@@ -152,7 +158,7 @@ export default function AddLeadPage() {
                       id="phone"
                       value={formData.phone || ''}
                       onChange={(val) => setFormData(prev => ({ ...prev, phone: val }))}
-                      defaultCountry={formData.country}
+                      defaultCountry={formData.country || (business as any)?.country || 'India'}
                       className="border-slate-200 focus-visible:ring-blue-500 shadow-sm h-10 rounded-lg flex-1"
                     />
                   </div>

@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  Award,
+
   ArrowLeft,
   Calendar,
   MessageSquare,
@@ -236,13 +238,22 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
             <Edit className="h-4 w-4" /> Edit Lead
           </Button>
           {!isConverted && (
-            <Button
-              size="sm"
-              onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert`)}
-              className="h-9 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm rounded-lg border-none"
-            >
-              <Sparkles className="h-4 w-4" /> {isTrading ? 'Convert to Deal' : 'Convert to Customer'}
-            </Button>
+            <>
+              <Button
+                size="sm"
+                onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert?type=deal`)}
+                className="h-9 gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm rounded-lg border-none font-medium"
+              >
+                <Award className="h-4 w-4" /> Convert to Deal
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert?type=customer`)}
+                className="h-9 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm rounded-lg border-none font-medium"
+              >
+                <Sparkles className="h-4 w-4" /> Convert to Customer
+              </Button>
+            </>
           )}
           {isConverted && (
             <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 px-4 py-1.5 text-sm font-semibold rounded-lg shadow-sm">
@@ -271,7 +282,7 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
                 return (
                   <React.Fragment key={stage.key}>
                     <button
-                      onClick={() => handleMoveStage(stage.id)}
+                      onClick={() => handleMoveStage(stage.key)}
                       disabled={stageMoving || isCurrent}
                       className="flex flex-col items-center gap-2 min-w-[80px] group transition-all"
                     >
@@ -307,7 +318,7 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
             </div>
 
             <p className="text-xs font-medium text-muted-foreground mt-2 text-center sm:text-left">
-              Click any stage to move this lead, or use <strong className="text-emerald-600 font-semibold">{isTrading ? 'Convert to Deal' : 'Convert to Customer'}</strong> to complete the workflow.
+              Click any stage to move this lead, or use <strong className="text-emerald-600 font-semibold">Convert to Deal or Customer</strong> to complete the workflow.
             </p>
           </CardContent>
         </Card>
@@ -589,7 +600,7 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
                 <button
                   key={stage.key}
                   disabled={stage.key === lead.status || stageMoving}
-                  onClick={() => handleMoveStage(stage.id)}
+                  onClick={() => handleMoveStage(stage.key)}
                   className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all
                     ${stage.key === lead.status
                       ? `${stage.bg} border border-border shadow-sm cursor-default`
@@ -619,12 +630,20 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
             </CardHeader>
             <CardContent className="space-y-3 pt-5">
               {!isConverted && (
-                <Button
-                  className="w-full h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm border-none font-semibold rounded-lg"
-                  onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert`)}
-                >
-                  <Sparkles className="h-4 w-4" /> {isTrading ? 'Convert to Deal' : 'Convert to Customer'}
-                </Button>
+                <>
+                  <Button
+                    className="w-full h-10 gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-none font-semibold rounded-lg"
+                    onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert?type=deal`)}
+                  >
+                    <Award className="h-4 w-4" /> Convert to Deal
+                  </Button>
+                  <Button
+                    className="w-full h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm border-none font-semibold rounded-lg"
+                    onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert?type=customer`)}
+                  >
+                    <Sparkles className="h-4 w-4" /> Convert to Customer
+                  </Button>
+                </>
               )}
               <Button
                 variant="outline"
