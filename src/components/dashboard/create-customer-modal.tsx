@@ -1,4 +1,3 @@
-import { toast } from 'sonner';
 import React, { useState } from 'react'
 import { contactsAPI, CreateCustomerData } from '@/lib/api/contacts'
 import { Button } from '@/components/ui/button'
@@ -103,6 +102,11 @@ export function CreateCustomerModal({ open, onClose, businessId, onCreated }: Cr
       setError('Region is required.')
       setActiveTab('basic')
       return 
+    }
+    if (form.iban && /[^a-zA-Z0-9]/.test(form.iban.trim())) {
+      setError('IBAN cannot contain special characters or spaces.')
+      setActiveTab('bank')
+      return
     }
     
     setSaving(true)
@@ -348,7 +352,16 @@ export function CreateCustomerModal({ open, onClose, businessId, onCreated }: Cr
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-foreground">IBAN</Label>
-                  <Input className={fieldCls} value={form.iban || ''} onChange={e => set('iban', e.target.value)} placeholder="Enter IBAN" />
+                  <Input 
+                    className={fieldCls} 
+                    value={form.iban || ''} 
+                    onChange={e => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                      set('iban', sanitized);
+                    }} 
+                    placeholder="Enter IBAN (letters and digits only)" 
+                    maxLength={34}
+                  />
                 </div>
               </div>
             )}

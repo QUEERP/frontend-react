@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Check, ChevronsUpDown, Search } from "lucide-react"
+import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,6 +25,9 @@ interface CountrySelectProps {
   placeholder?: string
 }
 
+const normalizeText = (text: string) =>
+  (text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+
 export function CountrySelect({
   value,
   onValueChange,
@@ -38,32 +41,41 @@ export function CountrySelect({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          type="button"
           variant="outline"
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={cn("w-full justify-between h-11 rounded-xl bg-muted/50 hover:bg-muted/50 text-foreground font-normal", className)}
+          className={cn(
+            "w-full justify-between h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground font-normal hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-blue-500",
+            className
+          )}
         >
           {value ? (
-            <span className="truncate">
+            <span className="truncate font-medium text-foreground">
               {value}
             </span>
           ) : (
-            <span className="text-slate-500 font-normal">{placeholder}</span>
+            <span className="text-muted-foreground font-normal">{placeholder}</span>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-        <Command>
-          <div className="flex items-center border-b px-3">
-            <CommandInput 
-              placeholder="Search country..." 
-              className="h-10 border-0 bg-background py-3 text-sm outline-none placeholder:text-muted-foreground w-full"
-            />
-          </div>
-          <CommandEmpty>No country found.</CommandEmpty>
-          <CommandList className="max-h-[250px] overflow-y-auto">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[280px] p-0 z-50" align="start">
+        <Command
+          filter={(itemValue, search) => {
+            if (normalizeText(itemValue).includes(normalizeText(search))) return 1
+            return 0
+          }}
+        >
+          <CommandInput 
+            placeholder="Search country..." 
+            className="h-10 text-sm"
+          />
+          <CommandList className="max-h-[260px] overflow-y-auto p-1">
+            <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+              No country found.
+            </CommandEmpty>
             <CommandGroup>
               {COUNTRIES.map((country) => (
                 <CommandItem
@@ -73,9 +85,9 @@ export function CountrySelect({
                     onValueChange(country)
                     setOpen(false)
                   }}
-                  className="flex items-center justify-between cursor-pointer"
+                  className="flex items-center justify-between cursor-pointer px-3 py-2 rounded-lg text-sm"
                 >
-                  <span className="font-medium text-foreground">{country}</span>
+                  <span className="text-foreground">{country}</span>
                   <Check
                     className={cn(
                       "h-4 w-4 text-blue-600",

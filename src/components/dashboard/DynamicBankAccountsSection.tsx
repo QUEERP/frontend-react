@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { PlusIcon, Trash2Icon, LandmarkIcon, CheckCircle2Icon } from 'lucide-react';
-import { getBankConfigForCountry, CountryBankConfig, BankFieldDef } from '@/lib/bank-configs';
+import { getBankConfigForCountry, CountryBankConfig } from '@/lib/bank-configs';
 
 export interface BankAccountItem {
   id?: string;
@@ -72,6 +72,12 @@ export function DynamicBankAccountsSection({
         value = `${digits.slice(0, 3)}-${digits.slice(3)}`;
       } else {
         value = digits;
+      }
+    } else if (key === 'iban') {
+      // IBAN must only contain uppercase alphanumeric characters (no special characters or spaces)
+      value = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      if (fieldDef?.maxLength) {
+        value = value.slice(0, fieldDef.maxLength);
       }
     } else if (fieldDef?.digitsOnly) {
       value = value.replace(/\D/g, '');

@@ -306,7 +306,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
             <TableHeader className="bg-muted/80 sticky top-0 z-10 backdrop-blur-sm">
               <TableRow className="hover:bg-background border-b border-border">
                 <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Reference / Project</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Amount</TableHead>
+                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Amount / Remaining</TableHead>
                 <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Payment Date</TableHead>
                 <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Mode</TableHead>
                 <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Transaction ID</TableHead>
@@ -339,49 +339,85 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                   </TableCell>
                 </TableRow>
               ) : (
-                payments.map((payment) => (
-                  <TableRow key={payment.id} className="group hover:bg-muted/50 border-b border-border transition-colors">
-                    <TableCell className="py-4">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm text-foreground">{payment.invoiceNumber}</span>
-                        {(payment as any).projectName && (payment as any).projectName !== payment.invoiceNumber && (
-                          <span className="text-[11px] text-muted-foreground font-medium mt-0.5 truncate max-w-[150px]" title={(payment as any).projectName}>
-                            {(payment as any).projectName}
+                payments.map((payment) => {
+                  const sym = payment.currency ? getCurrencySymbol(payment.currency) : currencySymbol
+                  const locale = (payment.currency || currencySymbol) === 'CAD' ? 'en-CA' : (payment.currency || currencySymbol) === 'USD' ? 'en-US' : 'en-IN'
+                  const totalAmt = Number(payment.amount || 0)
+                  const allocAmt = Number(payment.amountAllocated || 0)
+                  const remainingAmt = Math.max(0, totalAmt - allocAmt)
+
+                  return (
+                    <TableRow key={payment.id} className="group hover:bg-muted/50 border-b border-border transition-colors">
+                      <TableCell className="py-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm text-foreground">{payment.invoiceNumber}</span>
+                          {(payment as any).projectName && (payment as any).projectName !== payment.invoiceNumber && (
+                            <span className="text-[11px] text-muted-foreground font-medium mt-0.5 truncate max-w-[150px]" title={(payment as any).projectName}>
+                              {(payment as any).projectName}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex flex-col">
+                          {allocAmt > 0 ? (
+                            <>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-sm text-foreground">
+                                  {sym} {remainingAmt.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                </span>
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
+                                  remainingAmt > 0
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                }`}>
+                                  {remainingAmt > 0 ? 'Remaining' : 'Fully Applied'}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-muted-foreground mt-0.5">
+                                Total: {sym} {totalAmt.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} • Allocated: {sym} {allocAmt.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                              </span>
+                              {payment.currency && (
+                                <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{payment.currency}</span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className="font-medium text-sm text-foreground">
+                                {sym} {totalAmt.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                              </span>
+                              {payment.currency && (
+                                <span className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase tracking-wider">{payment.currency}</span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4 text-sm font-medium text-muted-foreground">
+                        {payment.paymentDate || '-'}
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <Badge variant="outline" className="bg-muted text-foreground border-border font-semibold px-2.5 py-0.5">
+                          {payment.paymentMode}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-4 text-sm text-muted-foreground">
+                        {payment.transactionId || '-'}
+                      </TableCell>
+                      <TableCell className="py-4 text-sm">
+                        <div className="flex flex-col gap-1">
+                          {payment.status === 'unapplied' && <Badge variant="outline" className="w-fit bg-slate-100 text-slate-700">Unapplied</Badge>}
+                          {payment.status === 'partially_applied' && (
+                            <Badge variant="outline" className="w-fit bg-amber-100 text-amber-700">
+                              Partially Applied ({sym} {remainingAmt.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} left)
+                            </Badge>
+                          )}
+                          {payment.status === 'fully_applied' && <Badge variant="outline" className="w-fit bg-emerald-100 text-emerald-700">Fully Applied</Badge>}
+                          <span className="text-muted-foreground max-w-[200px] truncate" title={payment.note}>
+                            {payment.note || ''}
                           </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm text-foreground">
-                        {payment.currency ? getCurrencySymbol(payment.currency) : currencySymbol} {Number(payment.amount || 0).toLocaleString((payment.currency || currencySymbol) === 'CAD' ? 'en-CA' : 'en-IN')}
-                      </span>
-                        {payment.currency && (
-                          <span className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase tracking-wider">{payment.currency}</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4 text-sm font-medium text-muted-foreground">
-                      {payment.paymentDate || '-'}
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <Badge variant="outline" className="bg-muted text-foreground border-border font-semibold px-2.5 py-0.5">
-                        {payment.paymentMode}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-4 text-sm text-muted-foreground">
-                      {payment.transactionId || '-'}
-                    </TableCell>
-                    <TableCell className="py-4 text-sm">
-                      <div className="flex flex-col gap-1">
-                        {payment.status === 'unapplied' && <Badge variant="outline" className="w-fit bg-slate-100 text-slate-700">Unapplied</Badge>}
-                        {payment.status === 'partially_applied' && <Badge variant="outline" className="w-fit bg-amber-100 text-amber-700">Partially Applied</Badge>}
-                        {payment.status === 'fully_applied' && <Badge variant="outline" className="w-fit bg-emerald-100 text-emerald-700">Fully Applied</Badge>}
-                        <span className="text-muted-foreground max-w-[200px] truncate" title={payment.note}>
-                          {payment.note || ''}
-                        </span>
-                      </div>
-                    </TableCell>
+                        </div>
+                      </TableCell>
                     <TableCell className="py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {payment.customerId && payment.status !== 'fully_applied' && (
@@ -429,7 +465,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
+                )})
               )}
             </TableBody>
           </Table>

@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2Icon, SaveIcon, ArrowLeftIcon } from 'lucide-react'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Loader2Icon, SaveIcon, ArrowLeftIcon, FileTextIcon, ArrowUpRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { getCookie } from '@/lib/utils'
 
@@ -163,10 +165,26 @@ export function PaymentDetailsPageClient({ businessId, paymentId, isEditMode }: 
                 onChange={(e) => setAmount(e.target.value)}
                 disabled={!isEditMode}
               />
-              {isEditMode && payment.amountAllocated > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Min amount allowed: {payment.amountAllocated} (Currently allocated)
-                </p>
+              {payment.amountAllocated > 0 && (
+                <div className="flex flex-col gap-1.5 text-xs mt-2 p-3 rounded-xl bg-muted/60 border border-border">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Total Payment:</span>
+                    <span className="font-semibold text-foreground">{payment.currency || ''} {Number(payment.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-blue-600">
+                    <span className="font-medium">Allocated to Invoices:</span>
+                    <span className="font-semibold">{payment.currency || ''} {Number(payment.amountAllocated || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-emerald-600 font-bold border-t border-border/60 pt-1.5">
+                    <span>Remaining Unallocated:</span>
+                    <span>{payment.currency || ''} {(Number(payment.amount || 0) - Number(payment.amountAllocated || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  {isEditMode && (
+                    <p className="text-[11px] text-muted-foreground mt-1 border-t border-border/40 pt-1">
+                      Minimum amount allowed is {payment.amountAllocated} (must cover allocated portion).
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
@@ -244,6 +262,67 @@ export function PaymentDetailsPageClient({ businessId, paymentId, isEditMode }: 
           )}
         </CardContent>
       </Card>
+
+      {/* Payment Allocations Section */}
+      {payment.paymentAllocations && payment.paymentAllocations.length > 0 && (
+        <Card className="rounded-2xl border-border shadow-sm bg-card overflow-hidden">
+          <CardHeader className="bg-muted/50 border-b border-border pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                  <FileTextIcon className="size-4 text-blue-600" />
+                  Allocations History
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Invoices that received allocations from this payment
+                </CardDescription>
+              </div>
+              {Number(payment.unappliedBalance || 0) > 0 && payment.customerId && (
+                <Button
+                  size="sm"
+                  className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-8 gap-1.5 shadow-sm"
+                  onClick={() => navigate(`/dashboard/${businessId}/payments/${payment.id}/allocate`)}
+                >
+                  Allocate Remaining
+                  <ArrowUpRight className="size-3.5" />
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow className="border-b border-border">
+                  <TableHead className="text-xs font-semibold">Invoice #</TableHead>
+                  <TableHead className="text-xs font-semibold">Allocation Date</TableHead>
+                  <TableHead className="text-xs font-semibold">Type</TableHead>
+                  <TableHead className="text-xs font-semibold text-right">Allocated Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payment.paymentAllocations.map((alloc: any) => (
+                  <TableRow key={alloc.id} className="border-b border-border hover:bg-muted/40">
+                    <TableCell className="font-semibold text-sm text-foreground">
+                      {alloc.invoice?.invoiceNumber || alloc.invoiceId || 'Invoice'}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {alloc.createdAt ? new Date(alloc.createdAt).toLocaleDateString() : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] font-medium uppercase tracking-wider bg-muted text-muted-foreground">
+                        {alloc.allocationType || 'Allocated'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-sm text-emerald-600 font-mono">
+                      {payment.currency || '$'} {Number(alloc.allocatedAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

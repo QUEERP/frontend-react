@@ -21,6 +21,8 @@ import {
   Globe
 } from 'lucide-react'
 import { taxAPI, SupplyTypeResolution } from '@/lib/api/tax'
+import { format } from 'date-fns'
+import api from '@/lib/api'
 import { CreateCustomerModal } from '@/components/dashboard/create-customer-modal'
 import { CreateProductModal } from '@/components/dashboard/create-product-modal'
 import { salesOrdersAPI } from '@/lib/api/sales-orders'
@@ -207,6 +209,64 @@ export function AddInvoiceClient({
     shippingBillDate: '',
     portCode: '',
   })
+
+  // Live Exchange Rate State
+  const [fxRateInfo, setFxRateInfo] = useState<{
+    rate: number;
+    effectiveDate?: string;
+    fetchedAt?: string;
+    source: string;
+    ageHours?: number;
+    warningLevel: 'NONE' | 'AMBER' | 'RED';
+    warningMessage?: string | null;
+    isNoRate?: boolean;
+    error?: string | null;
+  } | null>(null);
+  const [loadingFxRate, setLoadingFxRate] = useState(false);
+  const [isManualOverride, setIsManualOverride] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
+
+  const baseCurrencyCode = (((business as any)?.baseCurrency?.code || business?.currency || 'INR') as string).toUpperCase();
+  const selectedCcy = ((formData.currency || currency || 'INR') as string).toUpperCase();
+
+  // On-demand fetch / resolve commercial rate when currency or invoiceDate changes
+  useEffect(() => {
+    if (!businessId || selectedCcy === baseCurrencyCode) {
+      setFxRateInfo(null);
+      return;
+    }
+
+    let isMounted = true;
+    setLoadingFxRate(true);
+
+    api.get(`/currency/rate?currencyCode=${selectedCcy}&documentDate=${formData.invoiceDate}&businessId=${businessId}`)
+      .then(res => {
+        if (!isMounted) return;
+        if (res.data?.success && res.data?.data) {
+          const r = res.data.data;
+          setFxRateInfo(r);
+          if (!isManualOverride) {
+            setFormData(prev => ({ ...prev, exchangeRate: Number(r.rate) }));
+          }
+        }
+      })
+      .catch(err => {
+        if (!isMounted) return;
+        const msg = err.message || `No exchange rate for ${selectedCcy}`;
+        setFxRateInfo({
+          rate: 0,
+          source: '',
+          warningLevel: 'RED',
+          isNoRate: true,
+          error: msg
+        });
+      })
+      .finally(() => {
+        if (isMounted) setLoadingFxRate(false);
+      });
+
+    return () => { isMounted = false; };
+  }, [businessId, selectedCcy, formData.invoiceDate, baseCurrencyCode]);
 
   const hasGoodsItem = React.useMemo(() => {
     if (items.length === 0) return true;
@@ -859,6 +919,26 @@ export function AddInvoiceClient({
       return
     }
 
+    if (selectedCcy !== baseCurrencyCode) {
+      if (isManualOverride) {
+        if (!formData.exchangeRate || formData.exchangeRate <= 0) {
+          toast({ title: 'Validation Blocked', description: 'Please enter a valid manual exchange rate.', variant: 'destructive' });
+          return;
+        }
+        if (!overrideReason.trim()) {
+          toast({ title: 'Validation Blocked', description: 'Please enter a reason for the manual exchange rate override.', variant: 'destructive' });
+          return;
+        }
+      } else if (fxRateInfo?.isNoRate || !formData.exchangeRate || formData.exchangeRate <= 0) {
+        toast({
+          title: 'Saving Blocked',
+          description: fxRateInfo?.error || `No exchange rate for ${selectedCcy}. Please enable manual override or record a rate.`,
+          variant: 'destructive'
+        });
+        return;
+      }
+    }
+
     handleFinalSubmit(undefined, true)
   }
 
@@ -869,6 +949,9 @@ export function AddInvoiceClient({
       const payload = {
         ...formData,
         currency: formData.currency || currency,
+        isManualOverride,
+        overrideReason: isManualOverride ? overrideReason : undefined,
+        exchangeRate: formData.exchangeRate,
         designTemplate: template,
         salesOrderId: selectedSOId === 'none' ? undefined : selectedSOId,
         projectId: formData.projectId || undefined,
@@ -1138,24 +1221,144 @@ export function AddInvoiceClient({
                       <Label>Currency</Label>
                       <CurrencySelect
                         value={formData.currency || currency}
-                        onValueChange={(v) => setFormData(p => ({ ...p, currency: v }))}
+                        onValueChange={(v) => {
+                          setFormData(p => ({ ...p, currency: v }));
+                          setIsManualOverride(false);
+                          setOverrideReason('');
+                        }}
                       />
                     </div>
-                    {((formData.currency || currency) && (formData.currency || currency) !== 'INR') && (
-                      <div className="space-y-2">
-                        <Label>Exchange Rate (1 {formData.currency || currency} to INR)</Label>
-                        <Input
-                          type="number"
-                          step="0.0001"
-                          min="0.0001"
-                          className="h-10 text-sm"
-                          value={formData.exchangeRate || 1}
-                          onChange={e => setFormData(p => ({ ...p, exchangeRate: Number(e.target.value || 1) }))}
-                          placeholder="e.g. 83.50"
-                        />
-                      </div>
-                    )}
                   </div>
+
+                  {/* LIVE EXCHANGE RATE & MANUAL OVERRIDE SECTION FOR FOREIGN CURRENCIES */}
+                  {selectedCcy !== baseCurrencyCode && (
+                    <div className="rounded-xl border border-blue-200/80 dark:border-blue-900/60 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-slate-50/50 dark:from-blue-950/20 dark:via-indigo-950/10 dark:to-slate-900/40 p-4 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-blue-100 dark:border-blue-900/40 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                            <Globe className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                              Live Foreign Exchange Rate ({selectedCcy} → {baseCurrencyCode})
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400 block sm:inline sm:ml-2">
+                              Commercial Valuation & Snapshotted Booked Rate
+                            </span>
+                          </div>
+                          {loadingFxRate && <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />}
+                        </div>
+
+                        {/* Manual Override Toggle */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const nextOverride = !isManualOverride;
+                            setIsManualOverride(nextOverride);
+                            if (!nextOverride && fxRateInfo?.rate) {
+                              setFormData(p => ({ ...p, exchangeRate: fxRateInfo.rate }));
+                            }
+                          }}
+                          className={`text-xs h-7 px-2.5 rounded-lg border font-medium transition-all ${
+                            isManualOverride
+                              ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-700 shadow-2xs'
+                              : 'text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {isManualOverride ? 'Manual Override Active' : 'Manual Override'}
+                        </Button>
+                      </div>
+
+                      {/* Display live fetched rate or error */}
+                      {fxRateInfo?.isNoRate && !isManualOverride ? (
+                        <div className="flex items-start gap-3 p-3.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-200">
+                          <AlertTriangle className="h-5 w-5 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                          <div className="text-xs space-y-1">
+                            <p className="font-bold text-sm">No exchange rate for {selectedCcy}</p>
+                            <p className="text-rose-700 dark:text-rose-300">
+                              No exchange rate was found in the live provider or stored database. Saving is blocked until a rate exists or you enable Manual Override with an explicit rate and reason.
+                            </p>
+                          </div>
+                        </div>
+                      ) : fxRateInfo && !isManualOverride ? (
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs">
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span className="font-mono text-sm font-bold text-slate-900 dark:text-white">
+                                1 {selectedCcy} = {Number(fxRateInfo.rate).toFixed(4)} {baseCurrencyCode}
+                              </span>
+                              <span className="text-xs text-slate-500 dark:text-slate-400">
+                                fetched {fxRateInfo.fetchedAt ? format(new Date(fxRateInfo.fetchedAt), 'dd MMM yyyy HH:mm') : 'recently'}
+                              </span>
+                              <Badge variant="outline" className="text-[10px] bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 font-medium">
+                                Source: {fxRateInfo.source?.startsWith('API') ? 'API' : fxRateInfo.source}
+                              </Badge>
+                            </div>
+
+                            {/* Age / Freshness Indicator Badges */}
+                            {fxRateInfo.warningLevel === 'RED' && (
+                              <Badge className="bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-200 text-xs font-semibold">
+                                Amber/Red Warning: Rate &gt; 7 days old
+                              </Badge>
+                            )}
+                            {fxRateInfo.warningLevel === 'AMBER' && (
+                              <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-200 text-xs font-semibold">
+                                Warning: Rate &gt; 24h old
+                              </Badge>
+                            )}
+                            {fxRateInfo.warningLevel === 'NONE' && (
+                              <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200 text-xs font-semibold">
+                                Live &amp; Fresh (&lt;24h)
+                              </Badge>
+                            )}
+                          </div>
+
+                          {fxRateInfo.warningMessage && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium px-1">
+                              ⚠ {fxRateInfo.warningMessage}
+                            </p>
+                          )}
+                        </div>
+                      ) : null}
+
+                      {/* Manual Override Fields */}
+                      {isManualOverride && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 bg-amber-50/70 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800/60 shadow-2xs">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                              Manual Exchange Rate (1 {selectedCcy} to {baseCurrencyCode}) *
+                            </Label>
+                            <Input
+                              type="number"
+                              step="0.0001"
+                              min="0.0001"
+                              className="h-9 text-sm bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-700"
+                              value={formData.exchangeRate || ''}
+                              onChange={e => setFormData(p => ({ ...p, exchangeRate: Number(e.target.value) }))}
+                              placeholder="e.g. 60.20"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                              Reason for Manual Override *
+                            </Label>
+                            <Input
+                              type="text"
+                              className="h-9 text-sm bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-700"
+                              value={overrideReason}
+                              onChange={e => setOverrideReason(e.target.value)}
+                              placeholder="e.g. Contractual fixed FX agreement"
+                            />
+                          </div>
+                          <p className="col-span-full text-[11px] text-amber-800 dark:text-amber-300 italic">
+                            * Manual override will be permanently recorded in the rate table with Source: "MANUAL", attributing your user identity and the reason entered.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Region & Export Specific Extra Fields */}
                   {summary.isIndia && !summary.isExport && (

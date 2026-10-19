@@ -19,7 +19,7 @@ import { PhoneInput } from '@/components/ui/phone-input'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { CURRENCIES, getCurrencyByCountry, getCurrencySymbol } from '@/lib/currencies'
-import { COUNTRIES } from '@/lib/countries'
+import { CountrySelect } from '@/components/dashboard/country-select'
 
 export default function AddLeadPage() {
   const routerParams = useParams() as any;
@@ -222,7 +222,7 @@ export default function AddLeadPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="country" className="text-slate-700 font-medium">Country</Label>
-                    <Select 
+                    <CountrySelect 
                       value={formData.country} 
                       onValueChange={(value) => {
                         setFormData(prev => {
@@ -232,18 +232,9 @@ export default function AddLeadPage() {
                           return { ...prev, ...updates };
                         });
                       }}
-                    >
-                      <SelectTrigger id="country" className="border-slate-200 focus:ring-blue-500 h-10 rounded-lg shadow-sm w-full">
-                        <SelectValue placeholder="Select country" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-slate-200 shadow-lg max-h-[300px]">
-                        {COUNTRIES.map(country => (
-                          <SelectItem key={country} value={country} className="py-2 focus:bg-blue-50" textValue={country}>
-                            {country}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Select country"
+                      className="border-slate-200 focus:ring-blue-500 h-10 rounded-lg shadow-sm"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="zipCode" className="text-slate-700 font-medium">Zip Code</Label>
