@@ -22,13 +22,18 @@ import {
   FileText,
   Table as TableIcon,
   FileJson,
-  X
+  X,
+  Globe,
+  Scale,
+  Plus
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -76,6 +81,7 @@ interface CurrencyUsageData {
   rateDetails?: {
     rate: number;
     effectiveDate?: string | null;
+    fetchedAt?: string | Date | null;
     source?: string;
     rateType?: string;
     isStale?: boolean;
@@ -85,6 +91,7 @@ interface CurrencyUsageData {
   summary: {
     sales: number;
     salesBase?: number;
+    valueAtLatestRate?: number;
     purchases: number;
     purchasesBase?: number;
     receivables: number;
@@ -180,6 +187,17 @@ export default function CurrencyReportsPage() {
     unrealizedFx?: any;
   } | null>(null);
   const [isFxModalOpen, setIsFxModalOpen] = useState(false);
+
+  // Live Exchange Rate Refresh & Statutory Rates State
+  const [refreshingRates, setRefreshingRates] = useState(false);
+  const [isStatutoryModalOpen, setIsStatutoryModalOpen] = useState(false);
+  const [savingStatutory, setSavingStatutory] = useState(false);
+  const [statutoryForm, setStatutoryForm] = useState({
+    currencyCode: 'USD',
+    rate: '',
+    effectiveDate: format(new Date(), 'yyyy-MM-dd'),
+    source: 'CBIC Notification No. 12/2026 - Customs'
+  });
 
   // Business currency resolution
   const baseCode = (business as any)?.baseCurrency?.code || business?.currencyCode || business?.currency || currency || 'INR';
@@ -286,6 +304,71 @@ export default function CurrencyReportsPage() {
     setIsFxModalOpen(true);
   };
 
+  const handleRefreshRates = async () => {
+    try {
+      setRefreshingRates(true);
+      const res = await api.post(`/currency/refresh-rates?businessId=${businessId}`);
+      if (res.data?.success) {
+        toast({
+          title: 'Rates Refreshed Successfully',
+          description: res.data.message || 'Live exchange rates fetched and updated from rate provider.',
+        });
+        await fetchData();
+      }
+    } catch (err: any) {
+      console.error('Failed to refresh rates', err);
+      toast({
+        title: 'Refresh Rates Failed',
+        description: err.message || 'Failed to fetch live rates from rate provider.',
+        variant: 'destructive',
+      });
+    } finally {
+      setRefreshingRates(false);
+    }
+  };
+
+  const handleSaveStatutoryRate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const rateNum = Number(statutoryForm.rate);
+    if (!rateNum || rateNum <= 0) {
+      toast({
+        title: 'Invalid Rate',
+        description: 'Please enter a valid statutory exchange rate greater than 0.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setSavingStatutory(true);
+      const res = await api.post(`/currency/statutory-rate?businessId=${businessId}`, {
+        currencyCode: statutoryForm.currencyCode,
+        rate: rateNum,
+        effectiveDate: statutoryForm.effectiveDate,
+        source: statutoryForm.source || 'CBIC-Notified'
+      });
+
+      if (res.data?.success) {
+        toast({
+          title: 'Statutory Rate Saved',
+          description: `Successfully recorded ${statutoryForm.currencyCode} statutory rate (${rateNum} ${baseCode}) for period.`,
+        });
+        setIsStatutoryModalOpen(false);
+        setStatutoryForm(prev => ({ ...prev, rate: '' }));
+        await fetchData();
+      }
+    } catch (err: any) {
+      console.error('Failed to save statutory rate', err);
+      toast({
+        title: 'Error Saving Statutory Rate',
+        description: err.message || 'Unable to record statutory exchange rate.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingStatutory(false);
+    }
+  };
+
   const handleExport = async (exportFormat: string) => {
     try {
       setExporting(true);
@@ -374,6 +457,31 @@ export default function CurrencyReportsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Real Live Rate Refresh Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshRates}
+            disabled={refreshingRates}
+            className="shadow-sm border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-all font-medium"
+            title="Fetch real live exchange rates from rate provider (open.er-api.com)"
+          >
+            <Globe className={`mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400 ${refreshingRates ? 'animate-spin' : ''}`} />
+            {refreshingRates ? 'Fetching Rates...' : 'Refresh Rates'}
+          </Button>
+
+          {/* Statutory (CBIC/RBI) Rates Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsStatutoryModalOpen(true)}
+            className="shadow-sm border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/60 transition-all font-medium"
+            title="Manual entry or import of statutory CBIC-notified/RBI reference rates"
+          >
+            <Scale className="mr-2 h-4 w-4 text-purple-600 dark:text-purple-400" />
+            Statutory Rates (GST)
+          </Button>
+
           {/* Recalculate FX Button */}
           <Button
             variant="outline"
@@ -748,18 +856,22 @@ export default function CurrencyReportsPage() {
                           </div>
                         ) : (
                           <div className="flex flex-col items-end gap-1">
-                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 shadow-2xs">
-                              1 {item.currency} = {rate.toLocaleString(undefined, { maximumFractionDigits: 6 })} {baseCode} ({baseSymbol})
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 shadow-2xs">
+                              1 {item.currency} = {rate.toLocaleString(undefined, { maximumFractionDigits: 6 })} {baseCode}
                             </span>
                             <div className="flex flex-wrap items-center justify-end gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                                Source: {item.rateDetails?.source || 'Commercial Bank / Market Rate'}
+                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                Source: {item.rateDetails?.source || 'API:open.er-api.com'}
                               </span>
-                              {item.rateDetails?.effectiveDate && (
-                                <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                              {item.rateDetails?.fetchedAt ? (
+                                <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                  Fetched: {format(new Date(item.rateDetails.fetchedAt), 'dd MMM yyyy HH:mm')}
+                                </span>
+                              ) : item.rateDetails?.effectiveDate ? (
+                                <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                                   Eff: {format(new Date(item.rateDetails.effectiveDate), 'dd MMM yyyy')}
                                 </span>
-                              )}
+                              ) : null}
                             </div>
                           </div>
                         )}
@@ -784,16 +896,24 @@ export default function CurrencyReportsPage() {
                           </div>
 
                           {/* Calculated Total in Base Currency Field */}
-                          <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-1">
+                          <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-1.5">
                             <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
-                              <span>Total in {baseLabel}:</span>
+                              <span>Total in {baseLabel} (Booked):</span>
                               <span className="text-sm font-bold text-blue-700 dark:text-blue-400">
                                 {baseSymbol} {item.computedSalesBase.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
                               </span>
                             </div>
                             {!isBase && (
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400 text-right font-mono">
-                                {item.summary.sales.toLocaleString()} × {rate} = {baseSymbol}{item.computedSalesBase.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+                                <span>Value at latest rate:</span>
+                                <span className="text-sm font-bold text-indigo-700 dark:text-indigo-400">
+                                  {baseSymbol} {(item.summary.valueAtLatestRate ?? Number((item.summary.sales * rate).toFixed(2))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
+                                </span>
+                              </div>
+                            )}
+                            {!isBase && (
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 text-right font-mono">
+                                Booked snapshot: {item.summary.sales.toLocaleString()} @ historic FX
                               </div>
                             )}
                           </div>
@@ -814,16 +934,24 @@ export default function CurrencyReportsPage() {
                           </div>
 
                           {/* Calculated Total in Base Currency Field */}
-                          <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-1">
+                          <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-1.5">
                             <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
-                              <span>Total in {baseLabel}:</span>
+                              <span>Total in {baseLabel} (Booked):</span>
                               <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
                                 {baseSymbol} {item.computedPurchasesBase.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
                               </span>
                             </div>
                             {!isBase && (
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400 text-right font-mono">
-                                {item.summary.purchases.toLocaleString()} × {rate} = {baseSymbol}{item.computedPurchasesBase.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+                                <span>Value at latest rate:</span>
+                                <span className="text-sm font-bold text-orange-700 dark:text-orange-400">
+                                  {baseSymbol} {Number((item.summary.purchases * rate).toFixed(2)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCode}
+                                </span>
+                              </div>
+                            )}
+                            {!isBase && (
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 text-right font-mono">
+                                Booked snapshot: {item.summary.purchases.toLocaleString()} @ historic FX
                               </div>
                             )}
                           </div>
@@ -1356,6 +1484,113 @@ export default function CurrencyReportsPage() {
               Close
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* STATUTORY (CBIC / RBI) EXCHANGE RATE ENTRY DIALOG */}
+      <Dialog open={isStatutoryModalOpen} onOpenChange={setIsStatutoryModalOpen}>
+        <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                <Scale className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white">
+                  Record Statutory Rate (CBIC / RBI)
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Official customs rate for export taxable valuation. Kept strictly isolated from market API rates.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveStatutoryRate} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Currency Code *
+              </Label>
+              <Input
+                type="text"
+                placeholder="e.g. USD, CAD, AED, EUR"
+                className="h-9 uppercase font-mono"
+                value={statutoryForm.currencyCode}
+                onChange={e => setStatutoryForm(prev => ({ ...prev, currencyCode: e.target.value.toUpperCase() }))}
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Statutory Exchange Rate (1 Unit in {baseCode}) *
+              </Label>
+              <Input
+                type="number"
+                step="0.0001"
+                min="0.0001"
+                placeholder="e.g. 84.15"
+                className="h-9 font-mono"
+                value={statutoryForm.rate}
+                onChange={e => setStatutoryForm(prev => ({ ...prev, rate: e.target.value }))}
+                required
+              />
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                CBIC notified rate for Customs Act / RBI reference rate for statutory GST period.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Effective Date *
+              </Label>
+              <Input
+                type="date"
+                className="h-9"
+                value={statutoryForm.effectiveDate}
+                onChange={e => setStatutoryForm(prev => ({ ...prev, effectiveDate: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                CBIC Notification / Source *
+              </Label>
+              <Input
+                type="text"
+                placeholder="e.g. CBIC Notification No. 12/2026 - Customs"
+                className="h-9"
+                value={statutoryForm.source}
+                onChange={e => setStatutoryForm(prev => ({ ...prev, source: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="rounded-lg bg-purple-50/70 dark:bg-purple-950/30 p-2.5 border border-purple-200 dark:border-purple-900/60 text-[11px] text-purple-900 dark:text-purple-200">
+              💡 <strong>Compliance Note:</strong> This statutory rate is never overwritten by live commercial API sync jobs, ensuring complete audit compliance with CBIC tax requirements.
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsStatutoryModalOpen(false)}
+                disabled={savingStatutory}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={savingStatutory}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-medium"
+              >
+                {savingStatutory ? 'Recording...' : 'Save Statutory Rate'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

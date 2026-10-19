@@ -32,7 +32,9 @@ export interface CountryBankConfig {
  */
 export function validateIbanMod97(iban: string): boolean {
   if (!iban) return false;
-  const clean = String(iban).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const str = String(iban).trim();
+  if (/[^A-Za-z0-9]/.test(str)) return false;
+  const clean = str.toUpperCase();
   if (clean.length < 15 || clean.length > 34) return false;
 
   const rearranged = clean.slice(4) + clean.slice(0, 4);
@@ -168,7 +170,9 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         required: true,
         maxLength: 23,
         validator: val => {
-          const clean = val.replace(/\s/g, '').toUpperCase();
+          if (!val) return 'IBAN is required';
+          if (/[^a-zA-Z0-9]/.test(val)) return 'IBAN cannot contain special characters or spaces';
+          const clean = val.toUpperCase();
           if (!clean.startsWith('AE') || clean.length !== 23) return 'Must start with AE and be 23 characters';
           if (!validateIbanMod97(clean)) return 'Invalid IBAN checksum (Mod-97 failed)';
           return true;
@@ -257,7 +261,11 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         placeholder: 'e.g. GB29NWBK60161331926819', 
         required: false,
         maxLength: 34,
-        validator: val => !val || validateIbanMod97(val) || 'Invalid IBAN checksum'
+        validator: val => {
+          if (!val) return true;
+          if (/[^a-zA-Z0-9]/.test(val)) return 'IBAN cannot contain special characters or spaces';
+          return validateIbanMod97(val.toUpperCase()) || 'Invalid IBAN checksum';
+        }
       }
     ]
   },
@@ -278,7 +286,11 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         placeholder: 'e.g. DE89370400440532013000', 
         required: true,
         maxLength: 34,
-        validator: val => validateIbanMod97(val) || 'Invalid SEPA IBAN (Mod-97 failed)'
+        validator: val => {
+          if (!val) return 'IBAN is required';
+          if (/[^a-zA-Z0-9]/.test(val)) return 'IBAN cannot contain special characters or spaces';
+          return validateIbanMod97(val.toUpperCase()) || 'Invalid SEPA IBAN (Mod-97 failed)';
+        }
       },
       { 
         key: 'swift', 
@@ -386,7 +398,11 @@ export const BANK_CONFIGS: Record<string, CountryBankConfig> = {
         placeholder: 'IBAN if applicable', 
         required: false,
         maxLength: 34,
-        validator: val => !val || validateIbanMod97(val) || 'Invalid IBAN checksum'
+        validator: val => {
+          if (!val) return true;
+          if (/[^a-zA-Z0-9]/.test(val)) return 'IBAN cannot contain special characters or spaces';
+          return validateIbanMod97(val.toUpperCase()) || 'Invalid IBAN checksum';
+        }
       }
     ]
   }

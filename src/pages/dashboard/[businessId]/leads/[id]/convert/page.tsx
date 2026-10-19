@@ -17,6 +17,7 @@ import {
 import { ArrowLeft, Loader2, Award, Sparkles, MapPinIcon, HashIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { ALL_REGIONS, getRegionDisplayLabel } from '@/components/dashboard/regions'
+import { CountrySelect } from '@/components/dashboard/country-select'
 
 function getDefaultCurrencyForRegion(region: string) {
   switch (region) {
@@ -476,12 +477,12 @@ export default function ConvertLeadToCustomerPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
+                <CountrySelect
                   value={formData.country}
-                  onChange={(e) => handleInputChange('country', e.target.value)}
-                  placeholder="Country"
+                  onValueChange={(val) => handleInputChange('country', val)}
+                  placeholder="Select country"
                   disabled={formLoading}
+                  className="border-slate-200 focus:ring-blue-500 h-10 rounded-lg shadow-sm"
                 />
               </div>
             </div>

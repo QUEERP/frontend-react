@@ -116,6 +116,7 @@ interface PaymentItem {
   invoiceId: string
   invoiceNumber: string
   amount: number
+  amountAllocated?: number
   paymentDate: string
   paymentMode: string
   transactionId: string
@@ -562,6 +563,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
                 (p.customerId && !p.invoiceId && !p.quotationId ? 'Unassigned Advance' : '-')
               ),
               amount: Number(p.amount || 0),
+              amountAllocated: Number(p.amountAllocated || 0),
               paymentDate: p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : '-',
               paymentMode: String(p.paymentMode || 'Cash'),
               transactionId: String(p.transactionId || '-'),
@@ -1355,13 +1357,28 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paymentsList.map((p) => (
-                        <TableRow key={p.id}>
-                          <TableCell className="font-semibold text-foreground">{p.transactionId}</TableCell>
-                          <TableCell className="text-muted-foreground">{p.invoiceNumber}</TableCell>
-                          <TableCell className="text-muted-foreground">{p.paymentDate}</TableCell>
-                          <TableCell className="text-muted-foreground">{p.paymentMode}</TableCell>
-                          <TableCell className="text-right font-semibold font-mono text-emerald-600"><span className="font-semibold">{formatMoney(p.amount)}</span></TableCell>
+                      {paymentsList.map((p) => {
+                        const allocAmt = Number(p.amountAllocated || 0)
+                        const remainingAmt = Math.max(0, Number(p.amount || 0) - allocAmt)
+
+                        return (
+                          <TableRow key={p.id}>
+                            <TableCell className="font-semibold text-foreground">{p.transactionId}</TableCell>
+                            <TableCell className="text-muted-foreground">{p.invoiceNumber}</TableCell>
+                            <TableCell className="text-muted-foreground">{p.paymentDate}</TableCell>
+                            <TableCell className="text-muted-foreground">{p.paymentMode}</TableCell>
+                            <TableCell className="text-right font-semibold font-mono text-emerald-600">
+                              {allocAmt > 0 ? (
+                                <div className="flex flex-col items-end">
+                                  <span className="font-bold">{formatMoney(remainingAmt)}</span>
+                                  <span className="text-[10px] text-muted-foreground font-normal">
+                                    Remaining (Total: {formatMoney(p.amount)})
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="font-semibold">{formatMoney(p.amount)}</span>
+                              )}
+                            </TableCell>
                           <TableCell className="text-right">
                             <Button
                               size="sm"
@@ -1379,7 +1396,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
                             </Button>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )})}
                     </TableBody>
                   </Table>
                 </div>
