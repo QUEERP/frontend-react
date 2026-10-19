@@ -269,7 +269,7 @@ export function InquiryDetailsClient({ businessId }: InquiryDetailsClientProps) 
                 return (
                   <React.Fragment key={stage.key}>
                     <button
-                      onClick={() => handleMoveStage(stage.id)}
+                      onClick={() => handleMoveStage(stage.key)}
                       disabled={stageMoving || isCurrent}
                       className="flex flex-col items-center gap-2 min-w-[80px] group transition-all"
                     >
@@ -587,7 +587,7 @@ export function InquiryDetailsClient({ businessId }: InquiryDetailsClientProps) 
                 <button
                   key={stage.key}
                   disabled={stage.key === lead.status || stageMoving}
-                  onClick={() => handleMoveStage(stage.id)}
+                  onClick={() => handleMoveStage(stage.key)}
                   className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all
                     ${stage.key === lead.status
                       ? `${stage.bg} border border-border shadow-sm cursor-default`

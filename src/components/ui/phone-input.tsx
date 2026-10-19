@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useState, useEffect, useRef } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { COUNTRY_DIAL_CODES } from '@/lib/country-codes';
+import { COUNTRY_DIAL_CODES, CountryDialCode } from '@/lib/country-codes';
 
 interface PhoneInputProps {
   value: string;
@@ -12,33 +12,69 @@ interface PhoneInputProps {
   required?: boolean;
 }
 
-export function PhoneInput({ value, onChange, defaultCountry, id, className, required }: PhoneInputProps) {
-  const getInitialCountry = () => {
-    if (defaultCountry) {
-      const match = COUNTRY_DIAL_CODES.find(c => 
-        c.country.toLowerCase() === defaultCountry.toLowerCase() || 
-        c.code.toLowerCase() === defaultCountry.toLowerCase()
-      );
-      if (match) return match.code;
-    }
-    return 'US';
-  };
-  const [selectedCountry, setSelectedCountry] = useState(getInitialCountry());
-  const [number, setNumber] = useState('');
+// Sort with longest dialCode first (e.g. +1868 before +1, +971 before +9)
+const SORTED_COUNTRIES: CountryDialCode[] = [...COUNTRY_DIAL_CODES].sort(
+  (a, b) => b.dialCode.length - a.dialCode.length
+);
 
-  // Synchronize state precisely
+function resolveCountryCode(countryNameOrCode?: string): string {
+  if (!countryNameOrCode) return 'IN';
+  const clean = countryNameOrCode.trim().toLowerCase();
+  const match = COUNTRY_DIAL_CODES.find(
+    c => c.country.toLowerCase() === clean || c.code.toLowerCase() === clean
+  );
+  return match ? match.code : 'IN';
+}
+
+export function PhoneInput({ value, onChange, defaultCountry, id, className, required }: PhoneInputProps) {
+  const [selectedCountry, setSelectedCountry] = useState<string>(() => resolveCountryCode(defaultCountry));
+  const [number, setNumber] = useState<string>('');
+  const userInteractedRef = useRef<boolean>(false);
+
   useEffect(() => {
     let parsedCode = '';
     let parsedNumber = '';
     let hasDialCode = false;
 
-    if (value) {
-      for (const country of COUNTRY_DIAL_CODES) {
-        if (value.startsWith(country.dialCode)) {
-          parsedCode = country.code;
-          parsedNumber = value.substring(country.dialCode.length).trim().replace(/^[-\s]+/, '');
+    if (value && value.trim()) {
+      const trimmedVal = value.trim();
+
+      // 1. Direct match with '+' against sorted dial codes
+      if (trimmedVal.startsWith('+')) {
+        for (const country of SORTED_COUNTRIES) {
+          if (trimmedVal.startsWith(country.dialCode)) {
+            parsedCode = country.code;
+            parsedNumber = trimmedVal.substring(country.dialCode.length).trim().replace(/^[-\s]+/, '');
+            hasDialCode = true;
+            break;
+          }
+        }
+      }
+
+      // 2. Starts with dial code digits without '+' (e.g. 917945612300 or 91 7945612300)
+      if (!hasDialCode) {
+        const digitsOnly = trimmedVal.replace(/\D/g, '');
+        for (const country of SORTED_COUNTRIES) {
+          const rawDial = country.dialCode.replace('+', '');
+          if (digitsOnly.startsWith(rawDial) && digitsOnly.length > rawDial.length) {
+            const remainder = digitsOnly.substring(rawDial.length);
+            if (remainder.length >= 7 && remainder.length <= (country.maxLength || 15)) {
+              parsedCode = country.code;
+              parsedNumber = remainder;
+              hasDialCode = true;
+              break;
+            }
+          }
+        }
+      }
+
+      // 3. 10-digit number (e.g. 7945612300) - in India standard mobile numbers start with 6, 7, 8, 9
+      if (!hasDialCode) {
+        const digitsOnly = trimmedVal.replace(/\D/g, '');
+        if (/^[6-9]\d{9}$/.test(digitsOnly)) {
+          parsedCode = 'IN';
+          parsedNumber = digitsOnly;
           hasDialCode = true;
-          break;
         }
       }
     }
@@ -47,26 +83,19 @@ export function PhoneInput({ value, onChange, defaultCountry, id, className, req
       setSelectedCountry(parsedCode);
       setNumber(parsedNumber);
     } else {
-      // If no valid dial code, determine the best country code
-      let bestCode = selectedCountry;
+      // Determine fallback country code: defaultCountry first, or retain user's selection, else 'IN'
+      let fallbackCode = 'IN';
       if (defaultCountry) {
-        const match = COUNTRY_DIAL_CODES.find(c => 
-          c.country.toLowerCase() === defaultCountry.toLowerCase() || 
-          c.code.toLowerCase() === defaultCountry.toLowerCase()
-        );
-        if (match) bestCode = match.code;
+        fallbackCode = resolveCountryCode(defaultCountry);
+      } else if (userInteractedRef.current && selectedCountry) {
+        fallbackCode = selectedCountry;
       }
-      
-      setSelectedCountry(bestCode);
-      
-      if (value) {
-        const cleanVal = value.replace(/^[-\s]+/, '');
+
+      setSelectedCountry(fallbackCode);
+
+      if (value && value.trim()) {
+        const cleanVal = value.trim().replace(/^[-\s]+/, '');
         setNumber(cleanVal);
-        const matchCountry = COUNTRY_DIAL_CODES.find(c => c.code === bestCode);
-        if (matchCountry && cleanVal) {
-          // Push the dial code up to the parent so it's not lost
-          setTimeout(() => onChange(`${matchCountry.dialCode} ${cleanVal}`), 0);
-        }
       } else {
         setNumber('');
       }
@@ -74,25 +103,34 @@ export function PhoneInput({ value, onChange, defaultCountry, id, className, req
   }, [value, defaultCountry]);
 
   const handleCountryChange = (newCode: string) => {
+    userInteractedRef.current = true;
     setSelectedCountry(newCode);
     const country = COUNTRY_DIAL_CODES.find(c => c.code === newCode);
-    if (country && number) {
-      onChange(`${country.dialCode} ${number}`);
+    if (country) {
+      if (number.trim()) {
+        onChange(`${country.dialCode} ${number.trim()}`);
+      } else {
+        // Retain dial code so parent captures choice
+        onChange(`${country.dialCode} `);
+      }
     }
   };
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    userInteractedRef.current = true;
     const val = e.target.value.replace(/[^\d\s\-]/g, '');
     setNumber(val);
-    const country = COUNTRY_DIAL_CODES.find(c => c.code === selectedCountry);
-    if (val && country) {
-      onChange(`${country.dialCode} ${val}`);
+    const country = COUNTRY_DIAL_CODES.find(c => c.code === selectedCountry) || COUNTRY_DIAL_CODES[0];
+    if (val.trim()) {
+      onChange(`${country.dialCode} ${val.trim()}`);
     } else {
       onChange('');
     }
   };
 
-  const currentCountry = COUNTRY_DIAL_CODES.find(c => c.code === selectedCountry) || COUNTRY_DIAL_CODES[0];
+  const currentCountry = COUNTRY_DIAL_CODES.find(c => c.code === selectedCountry) || 
+    COUNTRY_DIAL_CODES.find(c => c.code === 'IN') || 
+    COUNTRY_DIAL_CODES[0];
 
   return (
     <div className="flex w-full shadow-sm rounded-lg">

@@ -259,7 +259,7 @@ export const leadsAPI = {
   },
 
   // Move lead to different stage
-  async moveStage(businessId: string, leadId: string, stageId: string) {
+  async moveStage(businessId: string, leadId: string, stageIdOrStatus: string) {
     const token = getCookie('token') || getCookie('accessToken')
     if (!token) throw new Error('No authentication token found')
 
@@ -270,7 +270,7 @@ export const leadsAPI = {
         Authorization: `Bearer ${token}`,
         'x-business-id': businessId,
       },
-      body: JSON.stringify({ stageId }),
+      body: JSON.stringify({ stageId: stageIdOrStatus, status: stageIdOrStatus }),
     })
 
     if (!response.ok) {

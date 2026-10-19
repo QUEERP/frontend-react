@@ -68,6 +68,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { contactsAPI } from '@/lib/api/contacts'
 import { UserMenu } from './user-menu'
 
 export function CustomersPageClient({ businessId }: { businessId: string }) {
@@ -80,6 +81,8 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [isBusinessInactiveDialogOpen, setIsBusinessInactiveDialogOpen] = useState(false)
+  const [customerList, setCustomerList] = useState<any[]>([])
+  const [fetchingCustomers, setFetchingCustomers] = useState(false)
   
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<any>(null)
@@ -91,6 +94,27 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
     const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\]\\^])/g, '\\$1') + '=([^;]*)'))
     return match ? decodeURIComponent(match[1]) : ''
   }
+
+  const fetchCustomerList = React.useCallback(async () => {
+    if (!businessId) return
+    try {
+      setFetchingCustomers(true)
+      const res = await contactsAPI.getCustomers(businessId)
+      if (res?.success && Array.isArray(res.customers)) {
+        setCustomerList(res.customers)
+      } else if (res?.success && Array.isArray((res as any).data)) {
+        setCustomerList((res as any).data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch live customer list:', err)
+    } finally {
+      setFetchingCustomers(false)
+    }
+  }, [businessId])
+
+  useEffect(() => {
+    fetchCustomerList()
+  }, [fetchCustomerList])
 
   useEffect(() => {
     const storedName = window.localStorage.getItem('businessName')
@@ -110,7 +134,8 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
   }, [businessName, businessId])
 
   const customers = useMemo(() => {
-    return (business?.customers ?? []).map((c: any) => {
+    const rawList = customerList.length > 0 ? customerList : (business?.customers ?? [])
+    return rawList.map((c: any) => {
       const cInvoices = (business?.invoices ?? []).filter((inv: any) => inv.customerId === c.id);
       const rev = cInvoices.reduce((sum: number, inv: any) => {
         if (inv.status !== 'DRAFT' && inv.status !== 'CANCELLED') {
@@ -144,7 +169,7 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
         phone: c.phone || '',
         region: c.country || c.region || '',
         address: [c.city, c.country].filter(Boolean).join(', '),
-        status: c.isActive ? 'Active' : 'Inactive',
+        status: c.isActive !== false ? 'Active' : 'Inactive',
         totalInvoices: cInvoices.length,
         totalRevenue: rev > 0 ? formatCurrency(rev, customerCurrency) : '',
         lastInvoice: cInvoices.length > 0 && cInvoices[0]?.createdAt
@@ -154,7 +179,7 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
         rawRevenue: rev
       };
     })
-  }, [business])
+  }, [customerList, business])
 
   const filteredCustomers = useMemo(() => {
     return customers.filter((customer: any) => {
@@ -464,6 +489,7 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
                   })
                   try {
                     await refresh()
+                    await fetchCustomerList()
                   } catch {}
                 } catch (err: any) {
                   toast({
