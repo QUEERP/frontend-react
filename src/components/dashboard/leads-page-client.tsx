@@ -314,10 +314,10 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
                                   </DropdownMenuItem>
                                   {lead.status !== 'CONVERTED' && (
                                      <>
-                                       <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/leads/${lead.id}/convert?type=deal`)} className="cursor-pointer text-amber-600 focus:text-amber-700 focus:bg-amber-50 py-2">
+                                       <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/deals/add?leadId=${lead.id}`)} className="cursor-pointer text-amber-600 focus:text-amber-700 focus:bg-amber-50 py-2">
                                          <Award className="mr-2 h-4 w-4" /> Convert to Deal
                                        </DropdownMenuItem>
-                                       <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/leads/${lead.id}/convert?type=customer`)} className="cursor-pointer text-emerald-700 focus:text-emerald-800 focus:bg-emerald-50 py-2">
+                                       <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/customers/add?leadId=${lead.id}`)} className="cursor-pointer text-emerald-700 focus:text-emerald-800 focus:bg-emerald-50 py-2">
                                          <CheckCircle2 className="mr-2 h-4 w-4" /> Convert to Customer
                                        </DropdownMenuItem>
                                      </>
@@ -461,10 +461,10 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
                                 </DropdownMenuItem>
                                 {lead.status !== 'CONVERTED' && (
                                      <>
-                                       <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/leads/${lead.id}/convert?type=deal`)} className="cursor-pointer text-amber-600 focus:text-amber-700 focus:bg-amber-50 py-2">
+                                       <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/deals/add?leadId=${lead.id}`)} className="cursor-pointer text-amber-600 focus:text-amber-700 focus:bg-amber-50 py-2">
                                          <Award className="mr-2 h-4 w-4" /> Convert to Deal
                                        </DropdownMenuItem>
-                                       <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/leads/${lead.id}/convert?type=customer`)} className="cursor-pointer text-emerald-700 focus:text-emerald-800 focus:bg-emerald-50 py-2">
+                                       <DropdownMenuItem onClick={() => navigate(`/dashboard/${businessId}/customers/add?leadId=${lead.id}`)} className="cursor-pointer text-emerald-700 focus:text-emerald-800 focus:bg-emerald-50 py-2">
                                          <CheckCircle2 className="mr-2 h-4 w-4" /> Convert to Customer
                                        </DropdownMenuItem>
                                      </>

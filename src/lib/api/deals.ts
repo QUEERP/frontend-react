@@ -67,6 +67,7 @@ export interface CreateDealData {
   source?: string
   description?: string
   currency?: string
+  leadId?: string
 }
 
 const normalizeDeal = (deal: Deal): Deal => {

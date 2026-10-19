@@ -57,6 +57,15 @@ export default function ConvertLeadToCustomerPage() {
   const isTrading = (business as any)?.businessType === 'Trading'
   const [searchParams] = useSearchParams()
   const isDealMode = searchParams.get('type') === 'deal' || isTrading
+
+  useEffect(() => {
+    if (!businessId || !leadId) return;
+    if (isDealMode) {
+      navigate(`/dashboard/${businessId}/deals/add?leadId=${leadId}`, { replace: true });
+    } else {
+      navigate(`/dashboard/${businessId}/customers/add?leadId=${leadId}`, { replace: true });
+    }
+  }, [businessId, leadId, isDealMode, navigate]);
   
   const [lead, setLead] = useState<Lead | null>(null)
   const [loading, setLoading] = useState(true)

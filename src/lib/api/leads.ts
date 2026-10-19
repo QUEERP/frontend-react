@@ -10,6 +10,7 @@ export interface Lead {
   phone?: string
   company?: string
   status: string
+  customerId?: string
   stageId?: string
   stage?: {
     id: string
@@ -119,6 +120,7 @@ export interface CreateLeadData {
   industry?: string
   gstVatNumber?: string
   type?: string
+  customerId?: string
 }
 
 // API Functions

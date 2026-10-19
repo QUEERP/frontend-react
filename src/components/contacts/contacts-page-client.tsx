@@ -297,6 +297,10 @@ export function ContactsPageClient({ businessId }: { businessId: string }) {
         isOpen={!!viewingContact}
         onClose={() => setViewingContact(null)}
         customerName={viewingContact ? customersMap[viewingContact.customerId] : undefined}
+        onEdit={(contact) => {
+          setViewingContact(null)
+          handleEdit(contact)
+        }}
       />
     </div>
   )
