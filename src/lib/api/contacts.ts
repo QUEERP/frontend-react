@@ -109,6 +109,7 @@ export interface CreateCustomerData {
   swiftCode?: string;
   iban?: string;
   crmStatus?: string;
+  leadId?: string;
 }
 
 class ContactsAPI {

@@ -241,14 +241,14 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
             <>
               <Button
                 size="sm"
-                onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert?type=deal`)}
+                onClick={() => navigate(`/dashboard/${businessId}/deals/add?leadId=${leadId}`)}
                 className="h-9 gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm rounded-lg border-none font-medium"
               >
                 <Award className="h-4 w-4" /> Convert to Deal
               </Button>
               <Button
                 size="sm"
-                onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert?type=customer`)}
+                onClick={() => navigate(`/dashboard/${businessId}/customers/add?leadId=${leadId}`)}
                 className="h-9 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm rounded-lg border-none font-medium"
               >
                 <Sparkles className="h-4 w-4" /> Convert to Customer
@@ -633,13 +633,13 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
                 <>
                   <Button
                     className="w-full h-10 gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-none font-semibold rounded-lg"
-                    onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert?type=deal`)}
+                    onClick={() => navigate(`/dashboard/${businessId}/deals/add?leadId=${leadId}`)}
                   >
                     <Award className="h-4 w-4" /> Convert to Deal
                   </Button>
                   <Button
                     className="w-full h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm border-none font-semibold rounded-lg"
-                    onClick={() => navigate(`/dashboard/${businessId}/leads/${leadId}/convert?type=customer`)}
+                    onClick={() => navigate(`/dashboard/${businessId}/customers/add?leadId=${leadId}`)}
                   >
                     <Sparkles className="h-4 w-4" /> Convert to Customer
                   </Button>

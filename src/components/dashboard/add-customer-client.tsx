@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeftIcon,
   Building2Icon,
@@ -10,8 +10,10 @@ import {
   HashIcon,
   PhoneIcon,
   MapPinIcon,
-  AlertTriangleIcon
+  AlertTriangleIcon,
+  Sparkles,
 } from 'lucide-react';
+import { leadsAPI, Lead } from '@/lib/api/leads';
 
 import {
   Card,
@@ -63,6 +65,10 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [draftAccount, setDraftAccount] = useState<Record<string, string> | null>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const leadId = searchParams.get('leadId');
+  const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
+  const [loadingLead, setLoadingLead] = useState(false);
   const { toast: uiToast } = useToast();
   const { business, refresh } = useBusinessData();
 
@@ -160,6 +166,84 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       setBusinessName(storedName);
     }
   }, []);
+
+  useEffect(() => {
+    if (!leadId) return;
+    const fetchLeadForCustomer = async () => {
+      try {
+        setLoadingLead(true);
+        const activeBiz = getActiveBusinessId();
+        if (!activeBiz) return;
+        const res = await leadsAPI.getLeadDetails(activeBiz, leadId);
+        if (res.success && res.data) {
+          const l = res.data;
+          setConvertingLead(l);
+
+          let targetCountry = defaultCountry;
+          if (l.country) {
+            const cleanC = l.country.trim().toUpperCase();
+            if (['IN', 'IND', 'INDIA'].includes(cleanC)) targetCountry = 'India';
+            else if (['AE', 'ARE', 'UAE', 'UNITED ARAB EMIRATES'].includes(cleanC) || cleanC.includes('EMIRATES')) targetCountry = 'United Arab Emirates';
+            else if (['US', 'USA', 'UNITED STATES'].includes(cleanC) || cleanC.includes('STATES')) targetCountry = 'United States';
+            else if (['GB', 'GBR', 'UK', 'UNITED KINGDOM'].includes(cleanC) || cleanC.includes('KINGDOM')) targetCountry = 'United Kingdom';
+            else if (['CA', 'CAN', 'CANADA'].includes(cleanC)) targetCountry = 'Canada';
+            else if (['AU', 'AUS', 'AUSTRALIA'].includes(cleanC)) targetCountry = 'Australia';
+            else if (['SA', 'SAU', 'SAUDI ARABIA'].includes(cleanC)) targetCountry = 'Saudi Arabia';
+            else targetCountry = l.country;
+          }
+
+          const targetConfig = getBankConfigForCountry(targetCountry);
+          const targetCurrency = l.currency || COUNTRY_TO_CURRENCY[targetCountry] || targetConfig.currency || 'INR';
+          const targetPhoneRules = getPhoneRulesForCountry(targetCountry);
+
+          let nationalPhone = l.phone || '';
+          if (targetPhoneRules.phoneCode && nationalPhone.startsWith(targetPhoneRules.phoneCode)) {
+            nationalPhone = nationalPhone.replace(targetPhoneRules.phoneCode, '').trim();
+          } else if (nationalPhone.startsWith('+')) {
+            nationalPhone = nationalPhone.replace(/^\+\d+\s*/, '').trim();
+          }
+          nationalPhone = nationalPhone.replace(/\D/g, '').slice(0, targetPhoneRules.maxDigits);
+
+          const isIndia = targetCountry.toUpperCase() === 'INDIA' || targetCountry.toUpperCase() === 'IN';
+          const resolvedState = l.state || (isIndia ? 'Gujarat' : '');
+
+          setFormData(prev => ({
+            ...prev,
+            company: l.company || l.name || '',
+            country: targetCountry,
+            region: targetCountry,
+            currency: targetCurrency,
+            phone: nationalPhone,
+            website: l.website || '',
+            vatNumber: l.gstVatNumber || '',
+            industry: l.industry || '',
+            tags: Array.isArray(l.tags) ? l.tags.join(', ') : (l.tags || ''),
+            address: l.address || '',
+            city: l.city || '',
+            state: resolvedState,
+            zipCode: l.zipCode || '',
+            billingStreet: l.address || '',
+            billingCity: l.city || '',
+            billingState: resolvedState,
+            billingZipCode: l.zipCode || '',
+            billingCountry: targetCountry,
+            shippingStreet: l.address || '',
+            shippingCity: l.city || '',
+            shippingState: resolvedState,
+            shippingZipCode: l.zipCode || '',
+            shippingCountry: targetCountry,
+          }));
+        }
+      } catch (err: any) {
+        console.error('Failed to load lead details for customer creation:', err);
+        toast.error('Could not load lead information');
+      } finally {
+        setLoadingLead(false);
+      }
+    };
+
+    fetchLeadForCustomer();
+  }, [leadId]);
 
   const handleCountrySelection = (newCountry: string) => {
     if (newCountry === formData.country) return;
@@ -363,6 +447,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       const token = getToken();
       const payload = {
         businessId: activeBusinessId,
+        leadId: leadId || undefined,
         company: formData.company.trim(),
         country: formData.country,
         region: formData.country,
@@ -432,10 +517,13 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       }
 
       setSaveStatus('saved');
-      toast.success(`Customer "${formData.company}" created successfully!`);
+      const successMsg = convertingLead 
+        ? `Lead "${convertingLead.company || convertingLead.name}" converted to Customer "${formData.company}" successfully!` 
+        : `Customer "${formData.company}" created successfully!`;
+      toast.success(successMsg);
       uiToast({
         title: "Success",
-        description: `Customer "${formData.company}" created successfully!`,
+        description: successMsg,
       });
       try {
         if (refresh) await refresh();
@@ -485,6 +573,26 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {convertingLead && (
+          <div className="mb-6 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-950/30 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+                <Sparkles className="size-5" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-emerald-950 dark:text-emerald-100">
+                  Converting Lead: {convertingLead.company || convertingLead.name}
+                </p>
+                <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                  Information pre-filled from lead details. Creating this customer profile will mark the lead as Converted.
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-semibold px-3 py-1 bg-emerald-200/80 dark:bg-emerald-800/80 text-emerald-900 dark:text-emerald-100 rounded-full">
+              Lead Conversion
+            </span>
+          </div>
+        )}
         <Card className="border border-border/80 shadow-sm bg-card rounded-2xl overflow-hidden">
           <CardHeader className="bg-muted/20 border-b border-border pb-6">
             <CardTitle className="text-base font-bold text-foreground">Customer Profile</CardTitle>
@@ -927,7 +1035,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                   className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 h-11 gap-2 shadow-sm cursor-pointer"
                 >
                   <SaveIcon className="size-4" />
-                  {isSubmitting ? 'Creating...' : saveStatus === 'saved' ? 'Saved!' : 'Create Customer'}
+                  {isSubmitting ? (convertingLead ? 'Converting...' : 'Creating...') : saveStatus === 'saved' ? 'Saved!' : convertingLead ? 'Convert Lead to Customer' : 'Create Customer'}
                 </Button>
               </div>
             </form>
