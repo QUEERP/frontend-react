@@ -100,11 +100,21 @@ export function ContactList({
             {contacts.map((contact) => (
               <TableRow key={contact.id} className="hover:bg-slate-50/50">
                 <TableCell className="font-medium text-slate-900 whitespace-nowrap">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-                      <User className="h-4 w-4" />
+                  <div 
+                    className="flex items-center gap-2.5 cursor-pointer group"
+                    onClick={() => onView?.(contact)}
+                  >
+                    <div className="h-8 w-8 rounded-full bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex items-center justify-center flex-shrink-0 font-semibold text-xs">
+                      {contact.fullName.charAt(0).toUpperCase()}
                     </div>
-                    {contact.fullName}
+                    <span className="group-hover:text-blue-600 transition-colors font-semibold">
+                      {contact.fullName}
+                    </span>
+                    {contact.isPrimary && (
+                      <Badge className="bg-amber-100 text-amber-800 border-none text-[10px] px-1.5 py-0 font-bold ml-1">
+                        Primary
+                      </Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
