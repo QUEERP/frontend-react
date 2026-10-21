@@ -66,11 +66,18 @@ export default function NewVendorBillPageClient() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!vendorId) { toast({ title: 'Please select a vendor', variant: 'destructive' }); return }
-    const validItems = items.filter(i => i.description.trim() && i.quantity > 0)
+    const validItems = items.filter(i => i.description.trim() && i.quantity > 0).map(i => ({
+      name: i.description.trim(),
+      description: i.description.trim(),
+      quantity: Number(i.quantity),
+      price: Number(i.unitPrice),
+      unitPrice: Number(i.unitPrice),
+      taxPercent: Number(i.taxPercent || 0)
+    }))
     if (validItems.length === 0) { toast({ title: 'Add at least one item', variant: 'destructive' }); return }
     try {
       setIsSubmitting(true)
-      await vendorBillsAPI.create(businessId, { vendorId, billNumber: billNumber || undefined, billDate, dueDate: dueDate || undefined, currency, notes, items: validItems, subtotal, taxAmount: tax, totalAmount: total } as any)
+      await vendorBillsAPI.create(businessId, { vendorId, billNumber: billNumber ? billNumber.trim() : undefined, billDate, dueDate: dueDate || undefined, currency, notes, items: validItems, subtotal, taxAmount: tax, totalAmount: total } as any)
       toast({ title: 'Vendor bill created' })
       navigate(`/dashboard/${businessId}/vendor-bills`)
     } catch (err: any) {

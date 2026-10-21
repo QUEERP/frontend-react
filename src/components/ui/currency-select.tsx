@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
 import { CURRENCIES, Currency } from '@/lib/currencies'
 import { cn } from '@/lib/utils'
@@ -24,10 +24,76 @@ interface CurrencySelectProps {
   compact?: boolean;
 }
 
+let cachedMasterCurrencies: Currency[] | null = null;
+let masterCurrenciesPromise: Promise<Currency[]> | null = null;
+
+async function fetchMasterCurrencies(): Promise<Currency[]> {
+  if (cachedMasterCurrencies) return cachedMasterCurrencies;
+  if (masterCurrenciesPromise) return masterCurrenciesPromise;
+
+  masterCurrenciesPromise = (async () => {
+    try {
+      const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
+      const API_ROOT = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`;
+      const token = typeof document !== 'undefined'
+        ? (document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] ||
+           document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] || '')
+        : '';
+
+      const res = await fetch(`${API_ROOT}/currency/master`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          const map = new Map<string, Currency>();
+          CURRENCIES.forEach(c => map.set(c.code.toUpperCase(), c));
+
+          const masterList: Currency[] = json.data.map((item: any) => {
+            const code = (item.code || '').toUpperCase();
+            const meta = map.get(code);
+            return {
+              code,
+              name: item.name || meta?.name || code,
+              symbol: item.symbol || meta?.symbol || code,
+              flag: meta?.flag || '🌐'
+            };
+          });
+
+          cachedMasterCurrencies = masterList;
+          return masterList;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load master currencies, using default supported list:', err);
+    }
+
+    cachedMasterCurrencies = CURRENCIES;
+    return CURRENCIES;
+  })();
+
+  return masterCurrenciesPromise;
+}
+
 export function CurrencySelect({ value, onChange, disabled, className, compact }: CurrencySelectProps) {
   const [open, setOpen] = useState(false)
+  const [currencies, setCurrencies] = useState<Currency[]>(cachedMasterCurrencies || CURRENCIES)
 
-  const selectedCurrency = CURRENCIES.find((c) => c.code === value)
+  useEffect(() => {
+    fetchMasterCurrencies().then(setCurrencies);
+  }, [])
+
+  const selectedCurrency = useMemo(() => {
+    if (!value) return null;
+    const upper = value.trim().toUpperCase();
+    return currencies.find((c) => c.code.toUpperCase() === upper) ||
+           CURRENCIES.find((c) => c.code.toUpperCase() === upper) ||
+           { code: upper, name: upper, symbol: upper, flag: '🌐' };
+  }, [value, currencies])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -56,7 +122,7 @@ export function CurrencySelect({ value, onChange, disabled, className, compact }
           <CommandInput placeholder="Search currency by code, name, or symbol..." />
           <CommandEmpty>No currency found.</CommandEmpty>
           <CommandGroup className="max-h-[300px] overflow-auto custom-scrollbar p-1">
-            {CURRENCIES.map((currency) => (
+            {currencies.map((currency) => (
               <CommandItem
                 key={currency.code}
                 value={`${currency.code} ${currency.name} ${currency.symbol}`}

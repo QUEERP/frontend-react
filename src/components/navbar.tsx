@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, X, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getAuthenticatedRedirectUrl } from '@/lib/auth';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -18,17 +19,14 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
 
     const checkAuth = () => {
-      if (typeof document === 'undefined') return;
-      const cookies = document.cookie.split('; ');
-      const token = cookies.find(row => row.startsWith('token='))?.split('=')[1];
-      if (token) {
+      if (typeof window === 'undefined') return;
+      const redirectUrl = getAuthenticatedRedirectUrl();
+      if (redirectUrl) {
         setIsLoggedIn(true);
-        const businessId = cookies.find(row => row.startsWith('activeBusinessId='))?.split('=')[1];
-        if (businessId) {
-          setDashboardUrl(`/dashboard/${decodeURIComponent(businessId)}`);
-        } else {
-          setDashboardUrl('/create-business');
-        }
+        setDashboardUrl(redirectUrl);
+      } else {
+        setIsLoggedIn(false);
+        setDashboardUrl('/signin');
       }
     };
     checkAuth();

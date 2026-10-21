@@ -151,6 +151,15 @@ export function AppSidebar() {
   const isBusinessLoaded = !isBusinessDataLoading && !isLoadingBusinesses
   const isIndia = (business as any)?.country === 'INDIA'
 
+  // Allocation gating: If business has allocated modules, only show those modules
+  const isModuleAllocated = React.useCallback((moduleKey: string) => {
+    const allocated = (business as any)?.allocatedModules;
+    if (!allocated || !Array.isArray(allocated) || allocated.length === 0) {
+      return true; // unrestricted default
+    }
+    return allocated.includes(moduleKey);
+  }, [business]);
+
   const API_BASE_RAW = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').trim()
   const API_BASE = API_BASE_RAW.replace(/\/$/, '')
   const API_ROOT = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`
@@ -965,7 +974,7 @@ export function AppSidebar() {
               {/* 1. Dashboard is already above */}
 
               {/* 2. USER */}
-              {!isEmployeeSession && (
+              {!isEmployeeSession && isModuleAllocated('user_management') && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     className='rounded-xl my-0.5'
@@ -983,6 +992,7 @@ export function AppSidebar() {
 
               {/* 3. Reorganized Sales Module */}
               {(() => {
+                if (!isModuleAllocated('sales')) return null;
                 const bType = business?.businessType || business?.industry || (business as any)?.type || (business as any)?.businessCategory || 'unknown';
                 if (!isMenuVisible(bType, 'Sales')) return null;
 
@@ -1163,6 +1173,7 @@ export function AppSidebar() {
 
               {/* 4. Reorganized Procurement Module */}
               {(() => {
+                if (!isModuleAllocated('procurement')) return null;
                 const bType = business?.businessType || business?.industry || (business as any)?.type || (business as any)?.businessCategory || 'unknown';
                 if (!isMenuVisible(bType, 'Procurement')) return null;
 
@@ -1291,6 +1302,7 @@ export function AppSidebar() {
 
               {/* 5. Reorganized Inventory Module */}
               {(() => {
+                if (!isModuleAllocated('inventory')) return null;
                 const bType = business?.businessType || business?.industry || (business as any)?.type || (business as any)?.businessCategory || 'unknown';
                 if (!isMenuVisible(bType, 'Inventory')) return null;
                 
@@ -1465,6 +1477,7 @@ export function AppSidebar() {
 
               {/* 6. Project Management collapsible group: Accounts + Journal Entries + Reports + Expenses */}
               {(() => {
+                if (!isModuleAllocated('accounting')) return null;
                 const bType = business?.businessType || business?.industry || (business as any)?.type || (business as any)?.businessCategory || 'unknown';
                 if (!isMenuVisible(bType, 'Accounting & Finance')) return null;
 
@@ -1543,8 +1556,9 @@ export function AppSidebar() {
               })()}
 
               {/* 6.5 Project Operations */}
-              <SidebarMenuItem>
-                <Collapsible open={isProjectOpsOpen} onOpenChange={setIsProjectOpsOpen}>
+              {isModuleAllocated('project_operations') && (
+                <SidebarMenuItem>
+                  <Collapsible open={isProjectOpsOpen} onOpenChange={setIsProjectOpsOpen}>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton className='rounded-xl my-0.5' tooltip="Project Operations">
                       <CheckSquare className="size-4" />
@@ -1736,9 +1750,10 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </Collapsible>
               </SidebarMenuItem>
+              )}
 
               {/* 6.6 General Report */}
-              {business?.businessType?.toLowerCase() === 'basic' && (
+              {business?.businessType?.toLowerCase() === 'basic' && isModuleAllocated('accounting') && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="General Report" isActive={pathname.includes('/general-reports')} className="rounded-xl my-0.5">
                     <Link to={`${baseDashboardPath}/general-reports`} className="flex items-center gap-2">
@@ -1751,6 +1766,7 @@ export function AppSidebar() {
 
               {/* 7. Reorganized HR Module */}
               {(() => {
+                if (!isModuleAllocated('hr')) return null;
                 const bType = business?.businessType || business?.industry || (business as any)?.type || (business as any)?.businessCategory || 'unknown';
                 if (!isMenuVisible(bType, 'HR')) return null;
 
@@ -1893,6 +1909,7 @@ export function AppSidebar() {
 
               {/* 8. Contract */}
               {(() => {
+                if (!isModuleAllocated('contracts')) return null;
                 const item = sidebarModules.find((m) => m.key === 'contract' || m.key === 'contracts')
                 if (!item?.href) return null
                 return (
@@ -1914,6 +1931,7 @@ export function AppSidebar() {
 
               {/* 9. Statutory Reports */}
               {(() => {
+                if (!isModuleAllocated('statutory')) return null;
                 const bType = business?.businessType || business?.industry || (business as any)?.type || (business as any)?.businessCategory || 'unknown';
                 if (!isMenuVisible(bType, 'Statutory Reports')) return null;
                 
@@ -2028,6 +2046,11 @@ export function AppSidebar() {
               {/* Dynamically Filtered Modules (Remaining) */}
               {sidebarModules
                 .filter((m) => !['payroll', 'bankchange', 'approvals', 'overtime', 'loans', 'vendors', 'expenses', 'loan', 'vendor', 'expense', 'settings', 'leads', 'deal', 'deals', 'invoice', 'quotation', 'sales_order', 'salesorder', 'sales order', 'payment', 'payments', 'purchase_order', 'purchaseorder', 'purchase order', 'bill', 'bills', 'product', 'products', 'stock', 'stocks', 'warehouse', 'warehouses', 'activity', 'activities', 'account', 'accounts', 'journal', 'journal_entries', 'journal entries', 'report', 'reports', 'project', 'projects', 'task', 'tasks', 'campaign', 'campaigns', 'crm_task', 'crm_note', 'crmtask', 'crmnote', 'email_log', 'emaillog', 'customer', 'customers', 'employee', 'employees', 'leave', 'leaves', 'journal_entry', 'journalentry', 'credit_note', 'creditnotes', 'creditnote', 'contact', 'contacts', 'meeting', 'meetings', 'call', 'calls', 'note', 'notes', 'recurring_invoice', 'recurring_invoices', 'grn', 'purchase_returns', 'sales_returns', 'vendor_bills', 'purchase_request', 'purchase_requests', 'email_logs', 'email_tracking', 'user', 'users', 'contract', 'contracts'].includes(m.key))
+                .filter((m) => {
+                  const allocated = (business as any)?.allocatedModules;
+                  if (!allocated || !Array.isArray(allocated) || allocated.length === 0) return true;
+                  return allocated.includes(m.key) || allocated.includes(m.label?.toLowerCase());
+                })
                 .map((moduleItem) => (
                   <SidebarMenuItem key={moduleItem.key}>
                     {moduleItem.href ? (

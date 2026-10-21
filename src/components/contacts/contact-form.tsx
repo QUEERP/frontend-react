@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { Loader2, User, Mail, Phone, Building, UserPlus } from 'lucide-react'
 import { CreateCustomerModal } from '@/components/dashboard/create-customer-modal'
+import { PhoneInput } from '@/components/ui/phone-input'
 
 interface ContactFormProps {
   businessId: string;
@@ -84,12 +85,31 @@ export function ContactForm({
     }
   }, [isOpen, customerId, businessId, contact])
 
+  // Prevent background page scrolling when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = originalOverflow
+      }
+    }
+  }, [isOpen])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!formData.customerId || !formData.fullName) {
       toast.error('Customer and full name are required')
       return
+    }
+
+    if (formData.phone && formData.phone.trim()) {
+      const digits = formData.phone.replace(/\D/g, '')
+      if (digits.length < 7 || digits.length > 15) {
+        toast.error('Please enter a valid phone number with complete digits')
+        return
+      }
     }
 
     setLoading(true)
@@ -140,7 +160,7 @@ export function ContactForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-5 px-6 py-6 max-h-[65vh] overflow-y-auto">
+          <div className="space-y-5 px-6 py-6 max-h-[65vh] overflow-y-auto overscroll-contain" data-lenis-prevent="true">
             <div className="space-y-2">
               <Label htmlFor="customerId" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Building className="h-4 w-4 text-slate-400" />
@@ -230,14 +250,13 @@ export function ContactForm({
                   <Phone className="h-4 w-4 text-slate-400" />
                   Phone Number
                 </Label>
-                <Input
+                <PhoneInput
                   id="phone"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData(prev => ({ ...prev, phone: e.target.value }))
+                  value={formData.phone || ''}
+                  onChange={(val) =>
+                    setFormData(prev => ({ ...prev, phone: val }))
                   }
-                  placeholder="+1 234 567 8900"
-                  className="h-10 rounded-xl border-slate-200 focus-visible:ring-blue-500 bg-slate-50/50 focus:bg-white transition-colors"
+                  defaultCountry="IN"
                 />
               </div>
             </div>

@@ -98,6 +98,9 @@ export function EditRecurringInvoiceClient({ businessId, id }: Props) {
     const qty = parseFloat(form.quantity) || 1
     const rate = parseFloat(form.rate) || 0
     const tax = parseFloat(form.taxPercent) || 0
+    const subtotal = qty * rate
+    const taxAmount = tax > 0 ? (subtotal * (tax / 100)) : 0
+    const totalAmount = subtotal + taxAmount
 
     try {
       setSaveLoading(true)
@@ -107,12 +110,18 @@ export function EditRecurringInvoiceClient({ businessId, id }: Props) {
         startDate: form.startDate,
         endDate: form.endDate || null,
         status: form.status,
+        subtotal: subtotal,
+        totalTax: taxAmount,
+        amount: totalAmount,
+        grandTotal: totalAmount,
         items: [
           {
             description: form.description || 'Recurring Service',
             quantity: qty,
+            rate: rate,
             price: rate,
-            taxDetails: tax > 0 ? [{ name: 'Tax', rate: tax, amount: qty * rate * (tax / 100) }] : [],
+            total: totalAmount,
+            taxDetails: tax > 0 ? [{ name: 'Tax', rate: tax, amount: taxAmount }] : [],
           },
         ],
       })

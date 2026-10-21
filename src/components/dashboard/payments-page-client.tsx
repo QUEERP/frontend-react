@@ -22,6 +22,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { DashboardPageSkeleton } from '@/components/dashboard/dashboard-page-skeleton'
 import { getCurrencySymbol } from '@/lib/currencies'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 
 type PaymentItem = {
   id: string
@@ -161,6 +162,29 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
     }
   }, [API_BASE, businessId, businessLoading, currentPage, fromDate, searchTerm, toDate])
 
+  const filteredPayments = useMemo(() => {
+    return payments.filter((p) => {
+      if (fromDate) {
+        if (!p.paymentDate || p.paymentDate < fromDate) return false;
+      }
+      if (toDate) {
+        if (!p.paymentDate || p.paymentDate > toDate) return false;
+      }
+      if (searchTerm.trim()) {
+        const q = searchTerm.trim().toLowerCase();
+        const matchesRef = p.invoiceNumber?.toLowerCase().includes(q);
+        const matchesTx = p.transactionId?.toLowerCase().includes(q);
+        const matchesNote = p.note?.toLowerCase().includes(q);
+        const matchesMode = p.paymentMode?.toLowerCase().includes(q);
+        const matchesProj = (p as any).projectName?.toLowerCase().includes(q);
+        if (!matchesRef && !matchesTx && !matchesNote && !matchesMode && !matchesProj) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [payments, fromDate, toDate, searchTerm]);
+
   const handleDownloadPaySlip = async (payment: PaymentItem) => {
     setDownloadingPaymentId(payment.id)
     try {
@@ -224,12 +248,10 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
       if (!res.ok || !data?.success) throw new Error(data?.message || 'Export failed')
 
       const payload = data?.data
-      const paymentList = Array.isArray(payload) ? payload : (payload?.items || [])
-
-      const exportData = paymentList.map((p: any) => ({
-        'Invoice Number': p.invoice?.invoiceNumber || p.invoiceId || '-',
+      const exportData = filteredPayments.map((p: any) => ({
+        'Invoice Number': p.invoiceNumber || '-',
         'Amount': Number(p.amount || 0),
-        'Payment Date': p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : '',
+        'Payment Date': p.paymentDate || '',
         'Payment Mode': p.paymentMode || '-',
         'Transaction ID': p.transactionId || '-',
         'Note': p.note || ''
@@ -253,7 +275,8 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
         <header className="flex items-center justify-between gap-4 w-full">
           <div className="flex min-w-0 items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl hidden sm:block">
+            <SidebarTrigger className="sm:hidden -ml-2 size-9 rounded-full relative cursor-pointer border border-border/60 bg-muted hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 shadow-sm transition-all" />
+            <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl hidden sm:block">
               <DollarSignIcon className="h-6 w-6" />
             </div>
             <div className="flex flex-col leading-tight">
@@ -302,16 +325,16 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
           </div>
         </div>
         <div className="p-0 border-t-0 flex-1 overflow-auto custom-scrollbar">
-          <Table>
-            <TableHeader className="bg-muted/80 sticky top-0 z-10 backdrop-blur-sm">
-              <TableRow className="hover:bg-background border-b border-border">
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Reference / Project</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Amount / Remaining</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Payment Date</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Mode</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Transaction ID</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground max-w-[200px]">Status / Note</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
+          <Table className="w-full min-w-[950px]">
+            <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-20 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <TableRow className="hover:bg-muted dark:hover:bg-[#181a20] border-b border-border bg-muted dark:bg-[#181a20]">
+                <TableHead className="pl-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Reference / Project</TableHead>
+                <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Amount / Remaining</TableHead>
+                <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Payment Date</TableHead>
+                <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Mode</TableHead>
+                <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Transaction ID</TableHead>
+                <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground max-w-[200px]">Status / Note</TableHead>
+                <TableHead className="pr-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -324,7 +347,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : payments.length === 0 ? (
+              ) : filteredPayments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
@@ -339,7 +362,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                   </TableCell>
                 </TableRow>
               ) : (
-                payments.map((payment) => {
+                filteredPayments.map((payment) => {
                   const sym = payment.currency ? getCurrencySymbol(payment.currency) : currencySymbol
                   const locale = (payment.currency || currencySymbol) === 'CAD' ? 'en-CA' : (payment.currency || currencySymbol) === 'USD' ? 'en-US' : 'en-IN'
                   const totalAmt = Number(payment.amount || 0)
@@ -348,7 +371,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
 
                   return (
                     <TableRow key={payment.id} className="group hover:bg-muted/50 border-b border-border transition-colors">
-                      <TableCell className="py-4">
+                      <TableCell className="pl-6 py-4">
                         <div className="flex flex-col">
                           <span className="font-bold text-sm text-foreground">{payment.invoiceNumber}</span>
                           {(payment as any).projectName && (payment as any).projectName !== payment.invoiceNumber && (
@@ -358,7 +381,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="px-4 py-4">
                         <div className="flex flex-col">
                           {allocAmt > 0 ? (
                             <>
@@ -393,18 +416,18 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="py-4 text-sm font-medium text-muted-foreground">
+                      <TableCell className="px-4 py-4 text-sm font-medium text-muted-foreground">
                         {payment.paymentDate || '-'}
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="px-4 py-4">
                         <Badge variant="outline" className="bg-muted text-foreground border-border font-semibold px-2.5 py-0.5">
                           {payment.paymentMode}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-4 text-sm text-muted-foreground">
+                      <TableCell className="px-4 py-4 text-sm text-muted-foreground">
                         {payment.transactionId || '-'}
                       </TableCell>
-                      <TableCell className="py-4 text-sm">
+                      <TableCell className="px-4 py-4 text-sm">
                         <div className="flex flex-col gap-1">
                           {payment.status === 'unapplied' && <Badge variant="outline" className="w-fit bg-slate-100 text-slate-700">Unapplied</Badge>}
                           {payment.status === 'partially_applied' && (
@@ -418,7 +441,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
                           </span>
                         </div>
                       </TableCell>
-                    <TableCell className="py-4 text-right">
+                    <TableCell className="pr-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {payment.customerId && payment.status !== 'fully_applied' && (
                           <Button

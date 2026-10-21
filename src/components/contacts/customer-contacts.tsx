@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -432,14 +433,13 @@ export function CustomerContacts({ businessId, customerId }: CustomerContactsPro
 
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-sm font-semibold text-slate-700">Phone</Label>
-                  <Input
+                  <PhoneInput
                     id="phone"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData(prev => ({ ...prev, phone: e.target.value }))
+                    value={formData.phone || ''}
+                    onChange={(val) =>
+                      setFormData(prev => ({ ...prev, phone: val }))
                     }
-                    placeholder="+1 234 567 8900"
-                    className="h-10 rounded-xl border-slate-200"
+                    defaultCountry="IN"
                   />
                 </div>
               </div>

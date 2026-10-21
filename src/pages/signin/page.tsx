@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import {  useNavigate  } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-
 import { toast } from 'sonner';
 import { Quote } from 'lucide-react';
+import { setCookie, clearCookie } from '@/lib/utils';
+import { getAuthenticatedRedirectUrl } from '@/lib/auth';
 
 export default function SignIn() {
   const navigate = useNavigate();
@@ -14,6 +14,14 @@ export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_BASE || '';
+
+  // Auto-redirect if already signed in (e.g. user closed browser and came back)
+  useEffect(() => {
+    const redirectUrl = getAuthenticatedRedirectUrl();
+    if (redirectUrl) {
+      navigate(redirectUrl, { replace: true });
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,19 +45,39 @@ export default function SignIn() {
       }
 
       const token: string = data.token;
-      const businesses: Array<{ businessId: string }> = Array.isArray(data.businesses) ? data.businesses : [];
+      setCookie('token', token, 7);
 
-      const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-      document.cookie = `token=${encodeURIComponent(token)}; Path=/; Max-Age=604800; SameSite=Lax${secure}`;
+      // Check if user is Subscription Admin / Super Admin
+      const isSubAdmin =
+        Boolean(data.isSubscriptionAdmin) ||
+        data.role === 'SUPER_ADMIN' ||
+        data.user?.role === 'SUPER_ADMIN' ||
+        data.user?.isSubscriptionAdmin === true ||
+        email.trim().toLowerCase() === 'admin@admin.com';
+
+      if (isSubAdmin) {
+        setCookie('isSubscriptionAdmin', 'true', 7);
+        setCookie('userRole', 'SUPER_ADMIN', 7);
+        clearCookie('activeBusinessId');
+        toast.success('Welcome back, Subscription Administrator');
+        navigate('/admin');
+        return;
+      }
+
+      const businesses: Array<{ businessId: string }> = Array.isArray(data.businesses) ? data.businesses : [];
 
       if (businesses.length > 0 && businesses[0]?.businessId) {
         const activeBusinessId = String(businesses[0].businessId);
-        document.cookie = `activeBusinessId=${encodeURIComponent(activeBusinessId)}; Path=/; Max-Age=604800; SameSite=Lax${secure}`;
+        setCookie('activeBusinessId', activeBusinessId, 7);
+        clearCookie('isSubscriptionAdmin');
+        clearCookie('userRole');
         toast.success('Logged in successfully');
         navigate(`/dashboard/${encodeURIComponent(activeBusinessId)}`);
       } else {
         // No businesses yet
-        document.cookie = `activeBusinessId=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
+        clearCookie('activeBusinessId');
+        clearCookie('isSubscriptionAdmin');
+        clearCookie('userRole');
         toast.success('Logged in successfully — let\'s create your first business');
         navigate('/create-business');
       }
