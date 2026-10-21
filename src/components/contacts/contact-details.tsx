@@ -130,7 +130,7 @@ export function ContactDetails({
                   size="sm"
                   variant="outline"
                   className="h-9 gap-1.5 rounded-xl border-border bg-background/80 hover:bg-background shadow-xs text-xs font-semibold cursor-pointer"
-                  onClick={() => window.open(`mailto:${contact.email}`, '_self')}
+                  onClick={() => window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contact.email!)}`, '_blank', 'noopener,noreferrer')}
                 >
                   <Mail className="size-3.5 text-blue-600" />
                   Email
@@ -170,7 +170,9 @@ export function ContactDetails({
                     <p className="text-xs font-medium text-muted-foreground">Email Address</p>
                     {contact.email ? (
                       <a 
-                        href={`mailto:${contact.email}`}
+                        href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contact.email!)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-sm font-semibold text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline truncate block mt-0.5"
                       >
                         {contact.email}

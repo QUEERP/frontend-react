@@ -98,7 +98,7 @@ export default function NotesPage() {
       if (!response.ok) throw new Error('Failed to load notes')
       const data = await response.json()
       if (data.success) {
-        setNotes(data.notes || [])
+        setNotes(data.notes || data.data || [])
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to fetch notes')

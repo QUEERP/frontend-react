@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Check, ChevronsUpDown, Search } from "lucide-react"
+import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,13 +15,69 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { CURRENCIES, getCurrencySymbol } from "@/lib/currencies"
+import { CURRENCIES, Currency } from "@/lib/currencies"
 
 interface CurrencySelectProps {
   value?: string
   onValueChange: (value: string) => void
   disabled?: boolean
   className?: string
+}
+
+let cachedMasterCurrencies: Currency[] | null = null;
+let masterCurrenciesPromise: Promise<Currency[]> | null = null;
+
+async function fetchMasterCurrencies(): Promise<Currency[]> {
+  if (cachedMasterCurrencies) return cachedMasterCurrencies;
+  if (masterCurrenciesPromise) return masterCurrenciesPromise;
+
+  masterCurrenciesPromise = (async () => {
+    try {
+      const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
+      const API_ROOT = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`;
+      const token = typeof document !== 'undefined'
+        ? (document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] ||
+           document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] || '')
+        : '';
+
+      const res = await fetch(`${API_ROOT}/currency/master`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          const map = new Map<string, Currency>();
+          // Index known CURRENCIES metadata for flag & rich symbol
+          CURRENCIES.forEach(c => map.set(c.code.toUpperCase(), c));
+
+          const masterList: Currency[] = json.data.map((item: any) => {
+            const code = (item.code || '').toUpperCase();
+            const meta = map.get(code);
+            return {
+              code,
+              name: item.name || meta?.name || code,
+              symbol: item.symbol || meta?.symbol || code,
+              flag: meta?.flag || '🌐'
+            };
+          });
+
+          cachedMasterCurrencies = masterList;
+          return masterList;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load master currencies, using default supported list:', err);
+    }
+
+    cachedMasterCurrencies = CURRENCIES;
+    return CURRENCIES;
+  })();
+
+  return masterCurrenciesPromise;
 }
 
 export function CurrencySelect({
@@ -31,10 +87,19 @@ export function CurrencySelect({
   className,
 }: CurrencySelectProps) {
   const [open, setOpen] = React.useState(false)
+  const [currencies, setCurrencies] = React.useState<Currency[]>(cachedMasterCurrencies || CURRENCIES)
 
-  const selectedCurrency = React.useMemo(() => 
-    CURRENCIES.find((c) => c.code === value),
-  [value])
+  React.useEffect(() => {
+    fetchMasterCurrencies().then(setCurrencies);
+  }, [])
+
+  const selectedCurrency = React.useMemo(() => {
+    if (!value) return null;
+    const upper = value.trim().toUpperCase();
+    return currencies.find((c) => c.code.toUpperCase() === upper) ||
+           CURRENCIES.find((c) => c.code.toUpperCase() === upper) ||
+           { code: upper, name: upper, symbol: upper, flag: '🌐' };
+  }, [value, currencies])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -58,8 +123,8 @@ export function CurrencySelect({
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0" align="start">
         <Command 
-          filter={(value, search) => {
-            if (value.toLowerCase().includes(search.toLowerCase())) return 1;
+          filter={(itemValue, search) => {
+            if (itemValue.toLowerCase().includes(search.toLowerCase())) return 1;
             return 0;
           }}
         >
@@ -69,7 +134,7 @@ export function CurrencySelect({
           <CommandEmpty>No currency found.</CommandEmpty>
           <CommandList className="max-h-[250px] overflow-y-auto">
             <CommandGroup>
-              {CURRENCIES.map((currency) => (
+              {currencies.map((currency) => (
                 <CommandItem
                   key={currency.code}
                   value={`${currency.code} ${currency.name}`}

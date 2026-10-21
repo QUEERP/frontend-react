@@ -66,11 +66,14 @@ export function ContactsPageClient({ businessId }: { businessId: string }) {
   }, [businessId])
 
   const filteredContacts = contacts.filter(contact => {
+    const searchLower = searchTerm.toLowerCase().trim()
     const matchesSearch = 
-      contact.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.phone?.includes(searchTerm) ||
-      contact.position?.toLowerCase().includes(searchTerm.toLowerCase())
+      !searchLower ||
+      contact.fullName?.toLowerCase().includes(searchLower) ||
+      contact.email?.toLowerCase().includes(searchLower) ||
+      contact.phone?.toLowerCase().includes(searchLower) ||
+      contact.position?.toLowerCase().includes(searchLower) ||
+      contact.id?.toLowerCase().includes(searchLower)
 
     const matchesStatus = 
       statusFilter === 'all' || 
@@ -275,6 +278,8 @@ export function ContactsPageClient({ businessId }: { businessId: string }) {
         <CardContent className="p-0 sm:p-6">
           <ContactList
             businessId={businessId}
+            contacts={filteredContacts}
+            loading={loading}
             onEdit={handleEdit}
             onView={handleView}
             onRefresh={handleSuccess}

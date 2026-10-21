@@ -156,7 +156,7 @@ export function ViewRecurringInvoiceClient({ businessId, id }: Props) {
           <CardContent className="pt-6 flex-1 flex flex-col gap-4">
             <div className="flex justify-between items-center py-2 border-b border-border dark:border-slate-800">
               <span className="text-sm font-medium text-muted-foreground">Next Billing Date</span>
-              <span className="font-bold text-foreground dark:text-slate-200">{formatDate(profile.nextBillingDate)}</span>
+              <span className="font-bold text-foreground dark:text-slate-200">{formatDate(profile.nextBillingDate || (profile as any).nextInvoiceDate)}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border dark:border-slate-800">
               <span className="text-sm font-medium text-muted-foreground">Quantity</span>

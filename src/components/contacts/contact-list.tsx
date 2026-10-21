@@ -22,6 +22,8 @@ import { toast } from 'sonner'
 interface ContactListProps {
   businessId: string;
   customerId?: string;
+  contacts?: Contact[];
+  loading?: boolean;
   onEdit?: (contact: Contact) => void;
   onView?: (contact: Contact) => void;
   onRefresh?: () => void;
@@ -31,27 +33,40 @@ interface ContactListProps {
 export function ContactList({ 
   businessId, 
   customerId, 
+  contacts: propContacts,
+  loading: propLoading,
   onEdit, 
   onView,
   onRefresh,
   customersMap = {}
 }: ContactListProps) {
-  const [contacts, setContacts] = useState<Contact[]>([])
-  const [loading, setLoading] = useState(true)
+  const [internalContacts, setInternalContacts] = useState<Contact[]>([])
+  const [internalLoading, setInternalLoading] = useState(true)
+
+  const isControlled = propContacts !== undefined
+  const contacts = isControlled ? propContacts : internalContacts
+  const loading = propLoading !== undefined ? propLoading : internalLoading
 
   const fetchContacts = async () => {
+    if (isControlled) return
     try {
-      setLoading(true)
+      setInternalLoading(true)
       const response = await contactsAPI.getContacts(businessId, customerId)
       if (response.success) {
-        setContacts(response.contacts)
+        setInternalContacts(response.contacts)
       }
     } catch (error) {
       toast.error('Failed to fetch contacts')
     } finally {
-      setLoading(false)
+      setInternalLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!isControlled) {
+      fetchContacts()
+    }
+  }, [businessId, customerId, isControlled])
 
   const handleDelete = async (contactId: string) => {
     if (!confirm('Are you sure you want to delete this contact?')) return
@@ -60,7 +75,9 @@ export function ContactList({
       const response = await contactsAPI.deleteContact(businessId, contactId)
       if (response.success) {
         toast.success('Contact deleted successfully')
-        fetchContacts()
+        if (!isControlled) {
+          fetchContacts()
+        }
         onRefresh?.()
       }
     } catch (error) {
@@ -134,11 +151,12 @@ export function ContactList({
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {contact.phone ? (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-slate-400" />
+                    <div className="flex items-center gap-2 max-w-[170px]">
+                      <Phone className="h-4 w-4 text-slate-400 flex-shrink-0" />
                       <a 
                         href={`tel:${contact.phone}`}
-                        className="text-slate-700 hover:text-slate-900 hover:underline font-medium"
+                        className="text-slate-700 hover:text-slate-900 hover:underline font-medium truncate"
+                        title={contact.phone}
                       >
                         {contact.phone}
                       </a>

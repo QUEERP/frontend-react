@@ -188,7 +188,7 @@ export function SalesOrderDetailsClient({ businessId, orderId }: SalesOrderDetai
               <Button variant="outline" size="sm" onClick={() => handleUpdateStatus('CANCELLED')} disabled={actionLoading} className="text-rose-600 hover:text-rose-700 border-rose-200 hover:bg-rose-50">
                 Cancel Order
               </Button>
-              <Button size="sm" variant="outline" onClick={() => handleUpdateStatus('Completed')} disabled={actionLoading} className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+              <Button size="sm" variant="outline" onClick={() => handleUpdateStatus('FULFILLED')} disabled={actionLoading} className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
                 Complete Order
               </Button>
               <Button size="sm" onClick={handleConvertToInvoice} disabled={actionLoading} className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white">

@@ -1,15 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { COUNTRY_DIAL_CODES, CountryDialCode } from '@/lib/country-codes';
+import { validatePhoneNumberLength } from 'libphonenumber-js';
+import { cn } from '@/lib/utils';
 
-interface PhoneInputProps {
-  value: string;
+export interface PhoneInputProps {
+  value?: string;
   onChange: (value: string) => void;
   defaultCountry?: string;
   id?: string;
   className?: string;
   required?: boolean;
+  disabled?: boolean;
+  placeholder?: string;
+  onValidChange?: (isValid: boolean) => void;
 }
 
 // Sort with longest dialCode first (e.g. +1868 before +1, +971 before +9)
@@ -26,91 +45,92 @@ function resolveCountryCode(countryNameOrCode?: string): string {
   return match ? match.code : 'IN';
 }
 
-export function PhoneInput({ value, onChange, defaultCountry, id, className, required }: PhoneInputProps) {
+function checkPhoneValidity(digits: string, countryCode: string, maxLength: number): { isValid: boolean; message?: string } {
+  if (!digits) return { isValid: true };
+  try {
+    const res = validatePhoneNumberLength(digits, countryCode as any);
+    if (res === undefined) {
+      return { isValid: true };
+    }
+    if (res === 'TOO_SHORT') {
+      return { isValid: false, message: `Phone number is too short (${digits.length}/${maxLength} digits)` };
+    }
+    if (res === 'TOO_LONG') {
+      return { isValid: false, message: `Phone number is too long (max ${maxLength} digits)` };
+    }
+  } catch {
+    // fallback
+  }
+
+  if (maxLength && digits.length !== maxLength) {
+    return { isValid: false, message: `Expected ${maxLength} digits (${digits.length}/${maxLength})` };
+  }
+  return { isValid: true };
+}
+
+export function PhoneInput({
+  value = '',
+  onChange,
+  defaultCountry,
+  id,
+  className,
+  required,
+  disabled,
+  placeholder,
+  onValidChange
+}: PhoneInputProps) {
   const [selectedCountry, setSelectedCountry] = useState<string>(() => resolveCountryCode(defaultCountry));
   const [number, setNumber] = useState<string>('');
+  const [open, setOpen] = useState(false);
   const userInteractedRef = useRef<boolean>(false);
 
   useEffect(() => {
-    let parsedCode = '';
-    let parsedNumber = '';
-    let hasDialCode = false;
+    if (!value || !value.trim()) {
+      setNumber('');
+      return;
+    }
 
-    if (value && value.trim()) {
-      const trimmedVal = value.trim();
+    const trimmedVal = value.trim();
 
-      // 1. Direct match with '+' against sorted dial codes
-      if (trimmedVal.startsWith('+')) {
-        for (const country of SORTED_COUNTRIES) {
-          if (trimmedVal.startsWith(country.dialCode)) {
-            parsedCode = country.code;
-            parsedNumber = trimmedVal.substring(country.dialCode.length).trim().replace(/^[-\s]+/, '');
-            hasDialCode = true;
-            break;
-          }
-        }
-      }
-
-      // 2. Starts with dial code digits without '+' (e.g. 917945612300 or 91 7945612300)
-      if (!hasDialCode) {
-        const digitsOnly = trimmedVal.replace(/\D/g, '');
-        for (const country of SORTED_COUNTRIES) {
-          const rawDial = country.dialCode.replace('+', '');
-          if (digitsOnly.startsWith(rawDial) && digitsOnly.length > rawDial.length) {
-            const remainder = digitsOnly.substring(rawDial.length);
-            if (remainder.length >= 7 && remainder.length <= (country.maxLength || 15)) {
-              parsedCode = country.code;
-              parsedNumber = remainder;
-              hasDialCode = true;
-              break;
-            }
-          }
-        }
-      }
-
-      // 3. 10-digit number (e.g. 7945612300) - in India standard mobile numbers start with 6, 7, 8, 9
-      if (!hasDialCode) {
-        const digitsOnly = trimmedVal.replace(/\D/g, '');
-        if (/^[6-9]\d{9}$/.test(digitsOnly)) {
-          parsedCode = 'IN';
-          parsedNumber = digitsOnly;
-          hasDialCode = true;
+    // Only detect dial code if value explicitly starts with '+'
+    if (trimmedVal.startsWith('+')) {
+      for (const country of SORTED_COUNTRIES) {
+        if (trimmedVal.startsWith(country.dialCode)) {
+          setSelectedCountry(country.code);
+          const remainder = trimmedVal.substring(country.dialCode.length).trim().replace(/\D/g, '');
+          setNumber(remainder);
+          return;
         }
       }
     }
 
-    if (hasDialCode) {
-      setSelectedCountry(parsedCode);
-      setNumber(parsedNumber);
-    } else {
-      // Determine fallback country code: defaultCountry first, or retain user's selection, else 'IN'
-      let fallbackCode = 'IN';
-      if (defaultCountry) {
-        fallbackCode = resolveCountryCode(defaultCountry);
-      } else if (userInteractedRef.current && selectedCountry) {
-        fallbackCode = selectedCountry;
-      }
+    // Otherwise, do NOT guess country from raw digits (avoids +91 vs +62 conflict).
+    // Just keep current/default country and use raw digits as the number.
+    const cleanDigits = trimmedVal.replace(/\D/g, '');
+    setNumber(cleanDigits);
+  }, [value]);
 
-      setSelectedCountry(fallbackCode);
+  const currentCountry = COUNTRY_DIAL_CODES.find(c => c.code === selectedCountry) || 
+    COUNTRY_DIAL_CODES.find(c => c.code === 'IN') || 
+    COUNTRY_DIAL_CODES[0];
 
-      if (value && value.trim()) {
-        const cleanVal = value.trim().replace(/^[-\s]+/, '');
-        setNumber(cleanVal);
-      } else {
-        setNumber('');
-      }
+  const validation = checkPhoneValidity(number, currentCountry.code, currentCountry.maxLength || 10);
+
+  useEffect(() => {
+    if (onValidChange) {
+      onValidChange(validation.isValid);
     }
-  }, [value, defaultCountry]);
+  }, [validation.isValid, onValidChange]);
 
-  const handleCountryChange = (newCode: string) => {
+  const handleCountrySelect = (newCode: string) => {
     userInteractedRef.current = true;
     setSelectedCountry(newCode);
+    setOpen(false);
     const country = COUNTRY_DIAL_CODES.find(c => c.code === newCode);
     if (country) {
       if (number.trim()) {
         onChange(`${country.dialCode} ${number.trim()}`);
       } else {
-        // Retain dial code so parent captures choice
         onChange(`${country.dialCode} `);
       }
     }
@@ -118,60 +138,96 @@ export function PhoneInput({ value, onChange, defaultCountry, id, className, req
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     userInteractedRef.current = true;
-    const val = e.target.value.replace(/[^\d\s\-]/g, '');
-    setNumber(val);
+    const digits = e.target.value.replace(/\D/g, '');
+    setNumber(digits);
     const country = COUNTRY_DIAL_CODES.find(c => c.code === selectedCountry) || COUNTRY_DIAL_CODES[0];
-    if (val.trim()) {
-      onChange(`${country.dialCode} ${val.trim()}`);
+    if (digits.trim()) {
+      onChange(`${country.dialCode} ${digits.trim()}`);
     } else {
       onChange('');
     }
   };
 
-  const currentCountry = COUNTRY_DIAL_CODES.find(c => c.code === selectedCountry) || 
-    COUNTRY_DIAL_CODES.find(c => c.code === 'IN') || 
-    COUNTRY_DIAL_CODES[0];
-
   return (
-    <div className="flex w-full shadow-sm rounded-lg">
-      <Select value={selectedCountry} onValueChange={handleCountryChange}>
-        <SelectTrigger className="w-auto min-w-[90px] shrink-0 border-slate-200 border-r-0 rounded-r-none focus:ring-0 focus:ring-offset-0 bg-slate-50 shadow-none hover:bg-slate-100 transition-colors">
-          <div className="flex items-center gap-2">
-            <img 
-              src={`https://flagcdn.com/w20/${currentCountry.code.toLowerCase()}.png`} 
-              alt={currentCountry.country}
-              className="w-5 h-auto object-contain rounded-sm"
-            />
-            <span className="text-slate-700 font-medium">{currentCountry.dialCode}</span>
-          </div>
-        </SelectTrigger>
-        <SelectContent className="rounded-xl border-slate-200 shadow-lg max-h-[300px]">
-          {COUNTRY_DIAL_CODES.map((c) => (
-            <SelectItem key={c.code} value={c.code} textValue={`${c.country} ${c.dialCode}`}>
-              <div className="flex items-center gap-2">
-                <img 
-                  src={`https://flagcdn.com/w20/${c.code.toLowerCase()}.png`} 
-                  alt={c.country}
-                  className="w-5 h-auto object-contain rounded-sm"
-                />
-                <span className="text-slate-700">{c.country}</span>
-                <span className="text-slate-400">{c.dialCode}</span>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      
-      <Input
-        id={id}
-        type="tel"
-        value={number}
-        onChange={handleNumberChange}
-        placeholder="Phone number"
-        className={`rounded-l-none border-l-slate-200 focus-visible:ring-blue-500 shadow-none flex-1 ${className || ''}`}
-        required={required}
-        maxLength={currentCountry.maxLength || 15}
-      />
+    <div className="space-y-1 w-full">
+      <div className="flex w-full shadow-sm rounded-xl overflow-hidden border border-input bg-card focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              role="combobox"
+              aria-expanded={open}
+              disabled={disabled}
+              className="h-10 px-3 rounded-none border-0 border-r border-input bg-muted/40 hover:bg-muted/80 text-foreground font-normal flex items-center gap-1.5 shrink-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            >
+              <span className="text-base leading-none mr-1">{currentCountry.flag}</span>
+              <span className="text-xs font-semibold text-foreground">{currentCountry.dialCode}</span>
+              <ChevronsUpDown className="h-3.5 w-3.5 opacity-50 ml-0.5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-0 z-50 rounded-xl shadow-xl" align="start">
+            <Command
+              filter={(itemValue, search) => {
+                const q = search.toLowerCase().trim().replace(/^\+/, '');
+                const target = itemValue.toLowerCase();
+                if (target.includes(q)) return 1;
+                return 0;
+              }}
+            >
+              <CommandInput placeholder="Search country or dial code..." className="h-10 text-sm" />
+              <CommandList className="max-h-[260px] overflow-y-auto p-1 custom-scrollbar">
+                <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+                  No country found.
+                </CommandEmpty>
+                <CommandGroup>
+                  {COUNTRY_DIAL_CODES.map((c) => (
+                    <CommandItem
+                      key={c.code}
+                      value={`${c.country} ${c.code} ${c.dialCode}`}
+                      onSelect={() => handleCountrySelect(c.code)}
+                      className="flex items-center justify-between cursor-pointer px-3 py-2 rounded-lg text-sm hover:bg-muted/80 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-base leading-none">{c.flag}</span>
+                        <span className="text-xs font-medium text-foreground truncate">{c.country}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-mono text-muted-foreground font-semibold">{c.dialCode}</span>
+                        <Check
+                          className={cn(
+                            "h-4 w-4 text-blue-600",
+                            selectedCountry === c.code ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        
+        <Input
+          id={id}
+          type="tel"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={number}
+          onChange={handleNumberChange}
+          placeholder={placeholder || `Enter ${currentCountry.maxLength || 10} digits`}
+          disabled={disabled}
+          className={`border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none flex-1 h-10 text-foreground text-sm placeholder:text-muted-foreground bg-transparent px-3 ${className || ''}`}
+          required={required}
+          maxLength={currentCountry.maxLength || 15}
+        />
+      </div>
+      {number && !validation.isValid && (
+        <p className="text-xs text-rose-500 font-medium flex items-center gap-1">
+          <span>•</span> {validation.message}
+        </p>
+      )}
     </div>
   );
 }

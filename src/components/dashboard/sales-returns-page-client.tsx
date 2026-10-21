@@ -89,6 +89,7 @@ const formatDate = (d?: string | null) =>
 
 // Blank line item for the create form
 const newItem = () => ({
+  productId: '',
   description: '',
   quantity: 1,
   price: 0,
@@ -182,6 +183,7 @@ export function SalesReturnsPageClient({ businessId }: Props) {
         salesOrderId: form.salesOrderId || undefined,
         reason: form.reason || undefined,
         items: items.map((i) => ({
+          productId: (i as any).productId ? (i as any).productId : undefined,
           description: i.description,
           quantity: Number(i.quantity),
           price: Number(i.price),
@@ -361,6 +363,7 @@ export function SalesReturnsPageClient({ businessId }: Props) {
                                   const inv = invoices.find(i => i.id === form.invoiceId)
                                   const item = inv?.items?.find(it => it.id === itemId)
                                   if (item) {
+                                    updateItem(idx, 'productId', (item as any).productId || '')
                                     updateItem(idx, 'description', item.description || '')
                                     updateItem(idx, 'price', (item as any).rate || (item as any).price || 0)
                                     updateItem(idx, 'taxPercent', item.taxPercent || 0)

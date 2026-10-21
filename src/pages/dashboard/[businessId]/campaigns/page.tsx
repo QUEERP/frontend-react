@@ -18,6 +18,7 @@ import {
   Plus, 
   Loader2, 
   Trash2, 
+  Edit2,
   DollarSign, 
   TrendingUp, 
   Calendar,
@@ -25,6 +26,12 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 export default function CampaignsPage() {
   const routerParams = useParams() as any;
@@ -41,6 +48,22 @@ export default function CampaignsPage() {
   
   // Form state
   const [formData, setFormData] = useState({
+    name: '',
+    type: 'EMAIL',
+    status: 'PLANNING',
+    budget: '',
+    actualCost: '',
+    expectedRevenue: '',
+    startDate: '',
+    endDate: '',
+    description: '',
+  })
+
+  // Edit state
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
+  const [editFormData, setEditFormData] = useState({
     name: '',
     type: 'EMAIL',
     status: 'PLANNING',
@@ -128,6 +151,57 @@ export default function CampaignsPage() {
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to delete campaign')
+    }
+  }
+
+  const handleOpenEdit = (c: Campaign) => {
+    setEditingCampaign(c)
+    setEditFormData({
+      name: c.name || '',
+      type: c.type || 'EMAIL',
+      status: c.status || 'PLANNING',
+      budget: c.budget !== undefined ? String(c.budget) : '',
+      actualCost: c.actualCost !== undefined ? String(c.actualCost) : '',
+      expectedRevenue: c.expectedRevenue !== undefined ? String(c.expectedRevenue) : '',
+      startDate: c.startDate ? c.startDate.split('T')[0] : '',
+      endDate: c.endDate ? c.endDate.split('T')[0] : '',
+      description: c.description || '',
+    })
+    setIsEditOpen(true)
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingCampaign) return
+    if (!editFormData.name.trim()) {
+      toast.error('Campaign name is required')
+      return
+    }
+
+    setEditLoading(true)
+    try {
+      const payload = {
+        name: editFormData.name,
+        type: editFormData.type,
+        status: editFormData.status,
+        budget: editFormData.budget ? parseFloat(editFormData.budget) : undefined,
+        actualCost: editFormData.actualCost ? parseFloat(editFormData.actualCost) : undefined,
+        expectedRevenue: editFormData.expectedRevenue ? parseFloat(editFormData.expectedRevenue) : undefined,
+        startDate: editFormData.startDate || undefined,
+        endDate: editFormData.endDate || undefined,
+        description: editFormData.description || undefined,
+      }
+      const res = await campaignsAPI.update(businessId, editingCampaign.id, payload)
+      if (res.success) {
+        toast.success('Campaign updated successfully!')
+        setIsEditOpen(false)
+        setEditingCampaign(null)
+        fetchCampaigns()
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update campaign')
+    } finally {
+      setEditLoading(false)
     }
   }
 
@@ -348,14 +422,26 @@ export default function CampaignsPage() {
                       {getTypeBadge(c.type)}
                     </div>
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg shrink-0 cursor-pointer absolute right-4 top-4"
-                    onClick={() => handleDelete(c.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 absolute right-4 top-4">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg shrink-0 cursor-pointer"
+                      onClick={() => handleOpenEdit(c)}
+                      title="Edit Campaign"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg shrink-0 cursor-pointer"
+                      onClick={() => handleDelete(c.id)}
+                      title="Archive Campaign"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="p-5 space-y-5 flex-1 flex flex-col">
@@ -407,6 +493,144 @@ export default function CampaignsPage() {
           })}
         </div>
       )}
+
+      {/* EDIT CAMPAIGN MODAL */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl dark:bg-slate-900 dark:border-slate-800">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-foreground dark:text-slate-100 flex items-center gap-2">
+              <Edit2 className="h-5 w-5 text-blue-600" />
+              Edit Marketing Campaign
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Campaign Name *</Label>
+              <Input 
+                value={editFormData.name} 
+                onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g. Q4 Omni-channel Awareness Drive"
+                className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Channel Type</Label>
+                <Select value={editFormData.type} onValueChange={(val) => setEditFormData(prev => ({ ...prev, type: val }))}>
+                  <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus:ring-blue-500 dark:bg-slate-950 dark:text-slate-100">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl dark:bg-slate-900 dark:border-slate-800">
+                    <SelectItem value="EMAIL">Email Marketing</SelectItem>
+                    <SelectItem value="SOCIAL_MEDIA">Social Media</SelectItem>
+                    <SelectItem value="PPC">PPC Advertising</SelectItem>
+                    <SelectItem value="EVENT">Event / Tradeshow</SelectItem>
+                    <SelectItem value="OTHER">Other Channel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</Label>
+                <Select value={editFormData.status} onValueChange={(val) => setEditFormData(prev => ({ ...prev, status: val }))}>
+                  <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus:ring-blue-500 dark:bg-slate-950 dark:text-slate-100">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl dark:bg-slate-900 dark:border-slate-800">
+                    <SelectItem value="PLANNING">Planning</SelectItem>
+                    <SelectItem value="ACTIVE">Active (Live)</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Budget (₹)</Label>
+                <Input 
+                  type="number"
+                  step="0.01"
+                  value={editFormData.budget} 
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, budget: e.target.value }))}
+                  placeholder="0.00"
+                  className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Actual Cost (₹)</Label>
+                <Input 
+                  type="number"
+                  step="0.01"
+                  value={editFormData.actualCost} 
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, actualCost: e.target.value }))}
+                  placeholder="0.00"
+                  className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Expected Rev (₹)</Label>
+                <Input 
+                  type="number"
+                  step="0.01"
+                  value={editFormData.expectedRevenue} 
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, expectedRevenue: e.target.value }))}
+                  placeholder="0.00"
+                  className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Start Date</Label>
+                <Input 
+                  type="date"
+                  value={editFormData.startDate} 
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                  className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">End Date</Label>
+                <Input 
+                  type="date"
+                  value={editFormData.endDate} 
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                  className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Strategic Objectives & Funnel Scope</Label>
+              <Textarea 
+                value={editFormData.description} 
+                onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))} 
+                placeholder="Map out key conversion funnels or criteria..."
+                rows={3}
+                className="rounded-xl border-slate-200 dark:border-slate-700 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 resize-none"
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
+              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)} className="rounded-xl h-10 px-5 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editLoading} className="rounded-xl h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm cursor-pointer">
+                {editLoading ? <Loader2 className="animate-spin h-4 w-4" /> : null}
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

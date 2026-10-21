@@ -948,6 +948,7 @@ export function AddInvoiceClient({
     try {
       const payload = {
         ...formData,
+        tds: Number(formData.tds || 0),
         currency: formData.currency || currency,
         isManualOverride,
         overrideReason: isManualOverride ? overrideReason : undefined,
@@ -1395,8 +1396,16 @@ export function AddInvoiceClient({
                         <Label>TDS Amount ({getCurrencySymbol(formData.currency || currency)})</Label>
                         <Input
                           type="number"
-                          value={formData.tds}
-                          onChange={e => setFormData(p => ({ ...p, tds: Number(e.target.value || 0) }))}
+                          value={formData.tds === 0 ? '' : formData.tds}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setFormData(p => ({ ...p, tds: val === '' ? ('' as any) : Number(val) }));
+                          }}
+                          onBlur={() => {
+                            if (formData.tds === ('' as any) || isNaN(formData.tds)) {
+                              setFormData(p => ({ ...p, tds: 0 }));
+                            }
+                          }}
                           placeholder="0.00"
                         />
                       </div>

@@ -444,9 +444,9 @@ export function RecurringInvoicesPageClient({ businessId }: Props) {
                         {formatDate(profile.endDate)}
                       </TableCell>
                       <TableCell className="px-4 py-4">
-                        {profile.nextBillingDate ? (
+                        {(profile.nextBillingDate || (profile as any).nextInvoiceDate) ? (
                           <span className="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-2.5 py-1 rounded-md">
-                            {formatDate(profile.nextBillingDate)}
+                            {formatDate(profile.nextBillingDate || (profile as any).nextInvoiceDate)}
                           </span>
                         ) : (
                           <span className="text-slate-400 dark:text-muted-foreground text-sm font-medium">—</span>

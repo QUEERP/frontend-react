@@ -156,10 +156,10 @@ export function SalesOrdersPageClient({ businessId }: SalesOrdersPageClientProps
 
   const stats = {
     total: safeOrders.length,
-    fulfilled: safeOrders.filter(o => o.status === 'Fulfilled' || o.status === 'Invoiced').length,
-    confirmed: safeOrders.filter(o => o.status === 'Confirmed' || o.status === 'Approved').length,
-    cancelled: safeOrders.filter(o => o.status === 'Cancelled').length,
-    draft: safeOrders.filter(o => o.status === 'Draft').length,
+    fulfilled: safeOrders.filter(o => ['FULFILLED', 'Fulfilled', 'COMPLETED', 'Completed', 'INVOICED', 'Invoiced'].includes(o.status)).length,
+    confirmed: safeOrders.filter(o => ['CONFIRMED', 'Confirmed', 'APPROVED', 'Approved'].includes(o.status)).length,
+    cancelled: safeOrders.filter(o => ['CANCELLED', 'Cancelled'].includes(o.status)).length,
+    draft: safeOrders.filter(o => ['DRAFT', 'Draft'].includes(o.status)).length,
   }
 
   if (loading) {
@@ -380,7 +380,7 @@ export function SalesOrdersPageClient({ businessId }: SalesOrdersPageClientProps
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={(e) => { e.stopPropagation(); handleChangeStatus(order.id, 'COMPLETED') }}
+                                  onClick={(e) => { e.stopPropagation(); handleChangeStatus(order.id, 'FULFILLED') }}
                                   className="h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
                                 >
                                   <PackageCheck className="mr-1 h-3.5 w-3.5" />
