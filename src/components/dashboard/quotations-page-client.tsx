@@ -3,7 +3,7 @@ import {  useNavigate  } from 'react-router-dom';
 import { quotationsAPI, Quotation } from '@/lib/api/quotations'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -220,135 +220,92 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
   }
 
   return (
-    <div className="grid min-h-svh grid-cols-1 content-start gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
+      {/* Clean Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3 text-foreground">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-              <FileText className="h-6 w-6 sm:h-8 sm:w-8" />
-            </div>
-            Quotations
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base font-medium">
-            Create, manage, and track customer quotations and proposals.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Quotations</h1>
+          <p className="text-sm text-muted-foreground mt-1">Create, manage, and track customer quotations and proposals</p>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             variant="outline"
             onClick={handleExport}
             disabled={exportLoading || filteredQuotations.length === 0}
-            className="h-11 px-6 rounded-xl cursor-pointer border-border bg-card hover:bg-muted text-foreground shadow-sm font-semibold flex-1 sm:flex-none"
+            className="h-10 gap-2 bg-card hover:bg-muted text-foreground border-border shadow-sm rounded-xl font-medium px-4 cursor-pointer"
           >
-            {exportLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <FileDown className="mr-2 h-5 w-5" />}
-            Export
+            {exportLoading ? <Loader2 className="h-4 w-4 animate-spin text-blue-600" /> : <FileDown className="h-4 w-4" />}
+            Export CSV
           </Button>
           <Button
             onClick={() => navigate(`/dashboard/${businessId}/quotations/add`)}
-            className="h-11 px-6 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold flex-1 sm:flex-none"
+            className="h-10 cursor-pointer gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-xl border-none font-medium px-5"
           >
-            <Plus className="mr-2 h-5 w-5" />
+            <Plus className="h-4 w-4" />
             New Quotation
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden col-span-2 lg:col-span-1">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-              <FileText className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Total Quotes</p>
-              <p className="text-2xl font-black text-foreground">{stats.total}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hidden sm:block">
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Approved</p>
-              <p className="text-2xl font-black text-emerald-600">{stats.accepted}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl hidden sm:block">
-              <Send className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Sent</p>
-              <p className="text-2xl font-black text-blue-600">{stats.sent}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-rose-50 text-rose-600 rounded-xl hidden sm:block">
-              <XCircle className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Rejected</p>
-              <p className="text-2xl font-black text-rose-600">{stats.rejected}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-muted text-muted-foreground rounded-xl hidden sm:block">
-              <Edit3 className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Draft</p>
-              <p className="text-2xl font-black text-foreground">{stats.draft}</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPI Cards */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+        {[
+          { label: 'Total Quotes', value: stats.total, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800' },
+          { label: 'Approved', value: stats.accepted, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' },
+          { label: 'Sent', value: stats.sent, icon: Send, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800' },
+          { label: 'Rejected', value: stats.rejected, icon: XCircle, color: 'text-rose-600', bg: 'bg-rose-50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800' },
+          { label: 'Draft', value: stats.draft, icon: Edit3, color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-50 border-slate-100 dark:bg-slate-800/40 dark:border-slate-700' },
+        ].map(stat => (
+          <Card key={stat.label} className="border-border bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-2xl font-black text-foreground mt-1">{stat.value}</p>
+                </div>
+                <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg} ${stat.color} shadow-sm`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Filters and Search */}
-      <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
-        <CardHeader className="pb-4 border-b border-border bg-muted/50">
-          <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-            <Filter className="h-5 w-5 text-blue-600" />
-            Filter Quotations
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-              <Input
-                placeholder="Search by quote number, title, or customer name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-11 rounded-xl border-border bg-muted/50 focus:bg-card transition-colors"
-              />
+      {/* Unified Quotations Directory Card */}
+      <Card className="w-full min-w-0 max-w-full rounded-2xl border-border bg-card shadow-sm overflow-hidden flex flex-col">
+        <CardHeader className="border-b border-border bg-muted/50 pb-5 pt-6 px-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold text-foreground">Quotations Directory</CardTitle>
+              <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
+                Showing <span className="text-foreground font-semibold">{filteredQuotations.length}</span> of {quotations.length} quotations
+              </CardDescription>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[220px] h-11 rounded-xl border-border bg-card font-medium text-foreground cursor-pointer">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-border">
-                <SelectItem value="all" className="rounded-lg cursor-pointer">All Statuses</SelectItem>
-                <SelectItem value="Draft" className="rounded-lg cursor-pointer">Draft</SelectItem>
-                {!isBasic && <SelectItem value="Sent" className="rounded-lg cursor-pointer">Sent</SelectItem>}
-                {!isBasic && <SelectItem value="Accepted" className="rounded-lg cursor-pointer">Accepted</SelectItem>}
-                {isBasic && <SelectItem value="APPROVED" className="rounded-lg cursor-pointer">Approved</SelectItem>}
-                <SelectItem value="Rejected" className="rounded-lg cursor-pointer">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search quote #, customer..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full sm:w-64 pl-9 rounded-xl border-border bg-card focus-visible:ring-blue-500 h-10 text-sm shadow-sm"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[160px] h-10 rounded-xl border-border bg-card font-medium text-foreground text-sm cursor-pointer shadow-sm">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border">
+                  <SelectItem value="all" className="rounded-lg cursor-pointer">All Statuses</SelectItem>
+                  <SelectItem value="Draft" className="rounded-lg cursor-pointer">Draft</SelectItem>
+                  {!isBasic && <SelectItem value="Sent" className="rounded-lg cursor-pointer">Sent</SelectItem>}
+                  {!isBasic && <SelectItem value="Accepted" className="rounded-lg cursor-pointer">Accepted</SelectItem>}
+                  {isBasic && <SelectItem value="APPROVED" className="rounded-lg cursor-pointer">Approved</SelectItem>}
+                  <SelectItem value="Rejected" className="rounded-lg cursor-pointer">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Active Filters */}
@@ -378,29 +335,6 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Results Summary */}
-      <div className="flex items-center justify-between px-1">
-        <p className="text-sm font-semibold text-muted-foreground">
-          Showing <span className="text-foreground">{filteredQuotations.length}</span> of {quotations.length} quotations
-        </p>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-slate-400" />
-          <span className="text-sm font-medium text-muted-foreground">
-            Updated: {new Date().toLocaleDateString()}
-          </span>
-        </div>
-      </div>
-
-      {/* Quotations List */}
-      <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
-        <CardHeader className="pb-4 border-b border-border bg-muted/50">
-          <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-            <FileText className="h-5 w-5 text-blue-600" />
-            Quotations Directory
-          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {filteredQuotations.length === 0 ? (
@@ -409,7 +343,7 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
                 <FileText className="h-8 w-8 text-slate-400" />
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-1">No quotations found</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto text-sm">
                 {searchTerm || statusFilter !== 'all'
                   ? "We couldn't find any quotations matching your current filters."
                   : "You haven't created any quotations yet. Create your first one to get started."}
@@ -418,32 +352,32 @@ export function QuotationsPageClient({ businessId }: QuotationsPageClientProps) 
                 <Button
                   variant="outline"
                   onClick={() => { setSearchTerm(''); setStatusFilter('all') }}
-                  className="rounded-xl font-semibold"
+                  className="rounded-xl font-medium"
                 >
                   Clear Filters
                 </Button>
               ) : (
                 <Button
                   onClick={() => navigate(`/dashboard/${businessId}/quotations/add`)}
-                  className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold"
+                  className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium"
                 >
-                  <Plus className="mr-2 h-5 w-5" />
+                  <Plus className="mr-2 h-4 w-4" />
                   Create Quotation
                 </Button>
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-muted/50">
-                  <TableRow className="hover:bg-background border-border">
-                    <TableHead className="font-semibold text-muted-foreground">Quote #</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground">Title</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground">Customer</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground">Status</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground">Total</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground">Issue Date</TableHead>
-                    <TableHead className="text-right font-semibold text-muted-foreground">Actions</TableHead>
+            <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
+              <Table className="w-full min-w-[850px]">
+                <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-10 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                  <TableRow className="hover:bg-muted dark:hover:bg-[#181a20] border-b border-border">
+                    <TableHead className="pl-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Quote #</TableHead>
+                    <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Title</TableHead>
+                    <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Customer</TableHead>
+                    <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                    <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Total</TableHead>
+                    <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Issue Date</TableHead>
+                    <TableHead className="pr-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

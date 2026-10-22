@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <SidebarProvider>
         <BusinessDataProvider businessId={businessId as string}>
           <AppSidebar />
-          <SidebarInset className="min-h-svh bg-muted/30">
+          <SidebarInset className="min-h-svh bg-muted/30 min-w-0 max-w-full overflow-x-hidden">
             <DashboardGlobalHeader businessId={businessId as string} />
             <DashboardLoadingGate>{children}</DashboardLoadingGate>
           </SidebarInset>

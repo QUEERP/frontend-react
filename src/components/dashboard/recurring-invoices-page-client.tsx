@@ -232,170 +232,126 @@ export function RecurringInvoicesPageClient({ businessId }: Props) {
   }
 
   return (
-    <div className="flex min-h-svh flex-col gap-6 bg-background dark:bg-slate-950 px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 transition-colors">
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
       {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card dark:bg-slate-900 p-6 rounded-2xl border border-border dark:border-slate-800 shadow-sm transition-colors">
-        <header className="flex items-center justify-between gap-4 w-full">
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="p-3 bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-xl hidden sm:block">
-              <RefreshCw className="h-6 w-6" />
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-2xl font-bold text-foreground dark:text-slate-100 tracking-tight">Recurring Invoices</span>
-              <span className="text-sm font-medium text-muted-foreground dark:text-slate-400 mt-0.5">Automated billing profiles &middot; Subscription management</span>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button className="h-10 rounded-xl border-border dark:border-slate-700 bg-card dark:bg-slate-800 hover:bg-muted dark:hover:bg-slate-800/80 text-foreground dark:text-slate-200 font-semibold gap-2 shadow-sm cursor-pointer" variant="outline" disabled={triggerLoading}>
-                  {triggerLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Zap className="h-4 w-4 text-amber-500" />
-                  )}
-                  Trigger Billing
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="rounded-2xl dark:bg-slate-900 dark:border-slate-800">
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="dark:text-slate-100">Run Billing Cycle Now?</AlertDialogTitle>
-                  <AlertDialogDescription className="dark:text-slate-400">
-                    This will process all active recurring invoice profiles and generate invoices for
-                    any billing cycles that are due. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-xl dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 border-border dark:border-slate-700 cursor-pointer">Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleTriggerBilling} className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white cursor-pointer">
-                    Yes, Run Billing
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Recurring Invoices</h1>
+          <p className="text-sm text-muted-foreground mt-1">Automated billing profiles · Subscription management</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button className="h-10 rounded-xl border-border bg-card hover:bg-muted text-foreground font-medium gap-2 shadow-sm cursor-pointer px-4" variant="outline" disabled={triggerLoading}>
+                {triggerLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                ) : (
+                  <Zap className="h-4 w-4 text-amber-500" />
+                )}
+                Trigger Billing
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Run Billing Cycle Now?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will process all active recurring invoice profiles and generate invoices for
+                  any billing cycles that are due. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-xl border-border cursor-pointer">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleTriggerBilling} className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white cursor-pointer">
+                  Yes, Run Billing
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-            <Button asChild className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm cursor-pointer">
-              <Link to={`/dashboard/${businessId}/recurring-invoices/create`}>
-                <Plus className="h-4 w-4" />
-                New Profile
-              </Link>
-            </Button>
-          </div>
-        </header>
+          <Button asChild className="h-10 cursor-pointer gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-xl border-none font-medium px-5">
+            <Link to={`/dashboard/${businessId}/recurring-invoices/create`}>
+              <Plus className="h-4 w-4" />
+              New Profile
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* ── KPI Summary Cards ── */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="rounded-2xl border-border dark:border-slate-800 shadow-sm bg-card dark:bg-slate-900 hover:shadow-md dark:hover:border-slate-700 transition-all">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground dark:text-slate-400">Active Profiles</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center">
-              <Play className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground dark:text-slate-100">{stats.active}</div>
-            <p className="text-xs text-muted-foreground dark:text-slate-400 font-medium mt-1">Currently billing</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border-border dark:border-slate-800 shadow-sm bg-card dark:bg-slate-900 hover:shadow-md dark:hover:border-slate-700 transition-all">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground dark:text-slate-400">Paused Profiles</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
-              <PauseCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground dark:text-slate-100">{stats.paused}</div>
-            <p className="text-xs text-muted-foreground dark:text-slate-400 font-medium mt-1">Temporarily suspended</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border-border dark:border-slate-800 shadow-sm bg-card dark:bg-slate-900 hover:shadow-md dark:hover:border-slate-700 transition-all">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground dark:text-slate-400">Monthly MRR</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
-              <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground dark:text-slate-100">{formatCurrency(stats.totalMRR)}</div>
-            <p className="text-xs text-muted-foreground dark:text-slate-400 font-medium mt-1">From monthly profiles</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border-border dark:border-slate-800 shadow-sm bg-card dark:bg-slate-900 hover:shadow-md dark:hover:border-slate-700 transition-all">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground dark:text-slate-400">Total Profiles</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">
-              <RefreshCw className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground dark:text-slate-100">{stats.total}</div>
-            <p className="text-xs text-muted-foreground dark:text-slate-400 font-medium mt-1">All billing schedules</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: 'Active Profiles', value: stats.active, sub: 'Currently billing', icon: Play, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' },
+          { label: 'Paused Profiles', value: stats.paused, sub: 'Temporarily suspended', icon: PauseCircle, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800' },
+          { label: 'Monthly MRR', value: formatCurrency(stats.totalMRR), sub: 'From monthly profiles', icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800' },
+          { label: 'Total Profiles', value: stats.total, sub: 'All billing schedules', icon: RefreshCw, color: 'text-violet-600', bg: 'bg-violet-50 border-violet-100 dark:bg-violet-900/20 dark:border-violet-800' },
+        ].map(stat => (
+          <Card key={stat.label} className="border-border bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-2xl font-black text-foreground mt-1">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground font-medium mt-1">{stat.sub}</p>
+                </div>
+                <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg} ${stat.color} shadow-sm shrink-0`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* ── Profiles Table ── */}
-      <div className="rounded-2xl border border-border dark:border-slate-800 bg-card dark:bg-slate-900 shadow-sm overflow-hidden transition-colors">
-        <div className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between border-b border-border dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-lg">
-              <CalendarClock className="h-5 w-5" />
-            </div>
+      {/* ── Profiles Table Card ── */}
+      <Card className="w-full min-w-0 max-w-full rounded-2xl border-border bg-card shadow-sm overflow-hidden flex-1 flex flex-col">
+        <CardHeader className="border-b border-border bg-muted/50 pb-5 pt-6 px-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-foreground dark:text-slate-100 flex items-center gap-2">
-                Billing Profiles
-                <Badge variant="secondary" className="bg-muted dark:bg-slate-800 text-muted-foreground dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-transparent rounded-lg px-2">
-                  {filtered.length}
-                </Badge>
-              </h2>
-              <p className="text-sm text-muted-foreground dark:text-slate-400 font-medium mt-0.5">Automated invoice generation schedules</p>
+              <CardTitle className="text-lg font-bold text-foreground">Billing Profiles</CardTitle>
+              <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
+                Showing <span className="text-foreground font-semibold">{filtered.length}</span> of {profiles.length} billing schedules
+              </CardDescription>
+            </div>
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search customer, frequency..."
+                className="pl-9 h-10 rounded-xl border-border bg-card w-full focus-visible:ring-blue-500 text-sm shadow-sm"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
           </div>
-          <div className="relative w-full max-w-xs">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-muted-foreground" />
-            <Input
-              placeholder="Search customer, frequency..."
-              className="pl-9 h-10 rounded-xl border-border dark:border-slate-700 bg-muted dark:bg-slate-950 focus-visible:ring-blue-500 dark:text-slate-100 transition-colors shadow-sm"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-        
-        {filtered.length === 0 ? (
-          <div className="py-16 text-center flex flex-col items-center">
-            <div className="p-4 bg-muted dark:bg-slate-800/50 rounded-full mb-4">
-              <RefreshCw className="h-8 w-8 text-slate-400 dark:text-muted-foreground" />
+        </CardHeader>
+        <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
+          {filtered.length === 0 ? (
+            <div className="py-16 text-center flex flex-col items-center">
+              <div className="p-4 bg-muted rounded-full mb-4">
+                <RefreshCw className="h-8 w-8 text-slate-400" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground">No recurring profiles found</h3>
+              <p className="mt-1 text-sm text-muted-foreground max-w-sm">
+                Create a billing profile to automate invoice generation.
+              </p>
+              <Button asChild className="mt-6 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm font-medium px-5 cursor-pointer">
+                <Link to={`/dashboard/${businessId}/recurring-invoices/create`}>
+                  <Plus className="h-4 w-4" />
+                  Create First Profile
+                </Link>
+              </Button>
             </div>
-            <h3 className="text-base font-bold text-foreground dark:text-slate-200">No recurring profiles found</h3>
-            <p className="mt-1 text-sm text-muted-foreground dark:text-slate-400 max-w-sm">
-              Create a billing profile to automate invoice generation.
-            </p>
-            <Button asChild className="mt-6 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm cursor-pointer">
-              <Link to={`/dashboard/${businessId}/recurring-invoices/create`}>
-                <Plus className="h-4 w-4" />
-                Create First Profile
-              </Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-muted/80 dark:bg-slate-900/50">
-                <TableRow className="hover:bg-background border-border dark:border-slate-800">
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-6">Customer</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Frequency</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Status</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Start Date</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">End Date</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Next Billing</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-6 text-right">Amount</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4 text-center">Action</TableHead>
+          ) : (
+            <Table className="w-full min-w-[850px]">
+              <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-10 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <TableRow className="hover:bg-muted dark:hover:bg-[#181a20] border-b border-border">
+                  <TableHead className="pl-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Customer</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Frequency</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Start Date</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">End Date</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Next Billing</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Amount</TableHead>
+                  <TableHead className="pr-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -493,9 +449,9 @@ export function RecurringInvoicesPageClient({ businessId }: Props) {
                 })}
               </TableBody>
             </Table>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </Card>
     </div>
   )
 }

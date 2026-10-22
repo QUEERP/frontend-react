@@ -3,7 +3,7 @@ import { contactsAPI, Contact } from '@/lib/api/contacts'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -20,7 +20,8 @@ import {
   UserX,
   Calendar,
   Mail,
-  Phone
+  Phone,
+  Download
 } from 'lucide-react'
 import { ContactList } from './contact-list'
 import { ContactForm } from './contact-form'
@@ -109,173 +110,120 @@ export function ContactsPageClient({ businessId }: { businessId: string }) {
     withPhone: contacts.filter(c => c.phone).length,
   }
 
+  const downloadReport = () => {
+    if (filteredContacts.length === 0) {
+      toast.error('No contact data to export')
+      return
+    }
+    const headers = ['Name', 'Email', 'Phone', 'Position', 'Customer', 'Status', 'Created At']
+    const csv = [
+      headers.join(','),
+      ...filteredContacts.map(c => [
+        `"${(c.fullName || '').replace(/"/g, '""')}"`,
+        `"${(c.email || '').replace(/"/g, '""')}"`,
+        `"${(c.phone || '').replace(/"/g, '""')}"`,
+        `"${(c.position || '').replace(/"/g, '""')}"`,
+        `"${(customersMap[c.customerId] || '').replace(/"/g, '""')}"`,
+        `"${c.isActive ? 'Active' : 'Inactive'}"`,
+        `"${new Date(c.createdAt).toLocaleDateString()}"`
+      ].join(','))
+    ].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.setAttribute('href', URL.createObjectURL(blob))
+    link.setAttribute('download', `Contacts_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success('Report downloaded')
+  }
+
   return (
-    <div className="grid min-h-svh grid-cols-1 content-start gap-6 bg-[#f8fafc] px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0">
+    <div className="grid min-h-svh grid-cols-1 content-start gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3 text-slate-800">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-              <Users className="h-6 w-6 sm:h-8 sm:w-8" />
-            </div>
-            Global Contacts
-          </h1>
-          <p className="text-slate-500 mt-2 text-sm sm:text-base font-medium">
-            Manage all customer contacts and their information across your organization.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Global Contacts</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage all customer contacts and their information across your organization</p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} size="lg" className="h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold w-full sm:w-auto cursor-pointer">
-          <Plus className="mr-2 h-5 w-5" />
-          Add New Contact
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={downloadReport}
+            className="h-10 gap-2 bg-card hover:bg-muted text-foreground border-border shadow-sm rounded-xl font-medium px-4 cursor-pointer"
+          >
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+          <Button
+            onClick={() => setIsFormOpen(true)}
+            className="h-10 cursor-pointer gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-xl border-none font-medium px-5"
+          >
+            <Plus className="h-4 w-4" /> Add New Contact
+          </Button>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="rounded-2xl border border-slate-200 shadow-sm bg-white overflow-hidden col-span-2 lg:col-span-1">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-              <Users className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Contacts</p>
-              <p className="text-2xl font-black text-slate-800">{stats.total}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hidden sm:block">
-              <UserCheck className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Active</p>
-              <p className="text-2xl font-black text-emerald-600">{stats.active}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-slate-100 text-slate-500 rounded-xl hidden sm:block">
-              <UserX className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Inactive</p>
-              <p className="text-2xl font-black text-slate-600">{stats.inactive}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hidden sm:block">
-              <Mail className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">With Email</p>
-              <p className="text-2xl font-black text-slate-800">{stats.withEmail}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl hidden sm:block">
-              <Phone className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">With Phone</p>
-              <p className="text-2xl font-black text-slate-800">{stats.withPhone}</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPI Cards */}
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+        {[
+          { label: 'Total Contacts', value: stats.total, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' },
+          { label: 'Active', value: stats.active, icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' },
+          { label: 'Inactive', value: stats.inactive, icon: UserX, color: 'text-slate-600', bg: 'bg-slate-50 border-slate-100' },
+          { label: 'With Email', value: stats.withEmail, icon: Mail, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-100' },
+          { label: 'With Phone', value: stats.withPhone, icon: Phone, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' },
+        ].map(stat => (
+          <Card key={stat.label} className="border-border bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-2xl font-black text-foreground mt-1">{stat.value}</p>
+                </div>
+                <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg} ${stat.color} shadow-sm`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Filters and Search */}
-      <Card className="rounded-2xl border border-slate-200 shadow-sm bg-white overflow-hidden">
-        <CardHeader className="pb-4 border-b border-slate-100 bg-slate-50/50">
-          <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
-            <Filter className="h-5 w-5 text-blue-600" />
-            Search & Filter Directory
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-              <Input
-                placeholder="Search by name, email, phone, or position..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
-              />
+      {/* Directory Card */}
+      <Card className="border-border bg-card shadow-sm rounded-xl overflow-hidden">
+        <CardHeader className="border-b border-border bg-muted/50 pb-5 pt-6 px-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold text-foreground">Contact Directory</CardTitle>
+              <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
+                View and manage all customer contacts in one place.
+              </CardDescription>
             </div>
-            <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
-              <SelectTrigger className="w-full sm:w-[220px] h-11 rounded-xl border-slate-200 bg-white font-medium text-slate-700 cursor-pointer">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-200">
-                <SelectItem value="all" className="rounded-lg cursor-pointer">All Contacts</SelectItem>
-                <SelectItem value="active" className="rounded-lg cursor-pointer">Active Contacts Only</SelectItem>
-                <SelectItem value="inactive" className="rounded-lg cursor-pointer">Inactive Contacts Only</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type="text"
+                  placeholder="Search contacts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full sm:w-64 pl-9 rounded-xl border-border bg-card focus-visible:ring-blue-500 h-10 text-sm shadow-sm"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={(val: any) => setStatusFilter(val)}>
+                <SelectTrigger className="w-[140px] rounded-xl border-border bg-card h-10 shadow-sm focus:ring-blue-500">
+                  <SelectValue placeholder="All Contacts" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border shadow-lg">
+                  <SelectItem value="all" className="cursor-pointer focus:bg-muted">All Contacts</SelectItem>
+                  <SelectItem value="active" className="cursor-pointer focus:bg-muted">Active</SelectItem>
+                  <SelectItem value="inactive" className="cursor-pointer focus:bg-muted">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
-          {/* Active Filters */}
-          {(searchTerm || statusFilter !== 'all') && (
-            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-              {searchTerm && (
-                <Badge variant="secondary" className="gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 border-none rounded-lg text-xs font-semibold">
-                  Search: "{searchTerm}"
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5 cursor-pointer transition-colors"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-              {statusFilter !== 'all' && (
-                <Badge variant="secondary" className="gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-none rounded-lg text-xs font-semibold">
-                  Status: {statusFilter}
-                  <button
-                    onClick={() => setStatusFilter('all')}
-                    className="ml-1 hover:bg-indigo-200 rounded-full p-0.5 cursor-pointer transition-colors"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Results Summary */}
-      <div className="flex items-center justify-between px-1">
-        <p className="text-sm font-semibold text-slate-500">
-          Showing <span className="text-slate-900">{filteredContacts.length}</span> of {contacts.length} contacts
-        </p>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-slate-400" />
-          <span className="text-sm font-medium text-slate-500">
-            Updated: {new Date().toLocaleDateString()}
-          </span>
-        </div>
-      </div>
-
-      {/* Contacts List */}
-      <Card className="rounded-2xl border border-slate-200 shadow-sm bg-white overflow-hidden">
-        <CardHeader className="pb-4 border-b border-slate-100 bg-slate-50/50">
-          <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
-            <Users className="h-5 w-5 text-blue-600" />
-            Contact Directory
-          </CardTitle>
         </CardHeader>
-        <CardContent className="p-0 sm:p-6">
+        <CardContent className="p-0">
           <ContactList
             businessId={businessId}
             contacts={filteredContacts}

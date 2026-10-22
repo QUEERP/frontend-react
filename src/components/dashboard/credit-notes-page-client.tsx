@@ -109,70 +109,59 @@ export function CreditNotesPageClient({ businessId }: CreditNotesPageClientProps
   }
 
   return (
-    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
-        <header className="flex items-center justify-between gap-4 w-full">
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hidden sm:block">
-              <FileText className="h-6 w-6" />
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-2xl font-bold text-foreground tracking-tight">Credit Notes</span>
-              <span className="text-sm font-medium text-muted-foreground mt-0.5">Auto-generated from invoice and bill overpayments</span>
-            </div>
-          </div>
-        </header>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="rounded-2xl border-border shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Total Notes</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center">
-              <FileText className="h-4 w-4 text-blue-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{filtered.length}</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl border-border shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Total Amount</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-emerald-50 flex items-center justify-center">
-              <Download className="h-4 w-4 text-emerald-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{totals.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl border-border shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Remaining Balance</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-amber-50 flex items-center justify-center">
-              <Loader2 className="h-4 w-4 text-amber-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{totals.remaining.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="rounded-2xl border-border shadow-sm bg-card overflow-hidden flex-1 flex flex-col">
-        <div className="p-6 border-b border-border bg-muted/50 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
-          <div className="relative w-full xl:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Search credit notes..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-10 rounded-xl border-border bg-card w-full focus-visible:ring-blue-500 shadow-sm"
-            />
-          </div>
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
+      {/* Clean Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Credit Notes</h1>
+          <p className="text-sm text-muted-foreground mt-1">Auto-generated from invoice and bill overpayments</p>
         </div>
-        <div className="p-0 border-t-0 flex-1 overflow-auto custom-scrollbar">
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid gap-5 sm:grid-cols-3">
+        {[
+          { label: 'Total Notes', value: filtered.length, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800' },
+          { label: 'Total Amount', value: totals.amount.toLocaleString('en-US', { minimumFractionDigits: 2 }), icon: Download, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' },
+          { label: 'Remaining Balance', value: totals.remaining.toLocaleString('en-US', { minimumFractionDigits: 2 }), icon: FileText, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800' },
+        ].map(stat => (
+          <Card key={stat.label} className="border-border bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-2xl font-black text-foreground mt-1">{stat.value}</p>
+                </div>
+                <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg} ${stat.color} shadow-sm shrink-0`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="w-full min-w-0 max-w-full rounded-2xl border-border bg-card shadow-sm overflow-hidden flex-1 flex flex-col">
+        <CardHeader className="border-b border-border bg-muted/50 pb-5 pt-6 px-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold text-foreground">Credit Notes Directory</CardTitle>
+              <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
+                Showing <span className="text-foreground font-semibold">{filtered.length}</span> of {creditNotes.length} credit notes
+              </CardDescription>
+            </div>
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search credit notes..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 h-10 rounded-xl border-border bg-card w-full focus-visible:ring-blue-500 text-sm shadow-sm"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
           {filtered.length === 0 ? (
             <div className="py-16 text-center flex flex-col items-center justify-center">
               <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -182,18 +171,18 @@ export function CreditNotesPageClient({ businessId }: CreditNotesPageClientProps
               <p className="text-sm text-muted-foreground mt-1 max-w-sm">Credit notes are created automatically when overpayments happen.</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader className="bg-muted/80 sticky top-0 z-10 backdrop-blur-sm">
-                <TableRow className="hover:bg-background border-b border-border">
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Credit #</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Type</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Party</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Invoice</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Amount</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Remaining</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Created</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
+            <Table className="w-full min-w-[850px]">
+              <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-10 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <TableRow className="hover:bg-muted dark:hover:bg-[#181a20] border-b border-border">
+                  <TableHead className="pl-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Credit #</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Type</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Party</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Invoice</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Amount</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Remaining</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Created</TableHead>
+                  <TableHead className="pr-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

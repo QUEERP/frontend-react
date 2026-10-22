@@ -22,7 +22,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Activity {
   id: string;
@@ -232,32 +232,28 @@ export default function ActivitiesPageClient() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col gap-6 bg-background dark:bg-slate-950 px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 transition-colors">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card dark:bg-slate-900 p-6 rounded-2xl border border-border dark:border-slate-800 shadow-sm transition-colors">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl hidden sm:block">
-            {typeFilter === 'Call' ? <MessageCircle className="h-6 w-6" /> : <CalendarDays className="h-6 w-6" />}
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-2xl font-bold text-foreground dark:text-slate-100 tracking-tight">
-              {typeFilter === 'Call' ? 'Calls' : typeFilter === 'Meeting' ? 'Meetings' : 'Activities'}
-            </span>
-            <span className="text-sm font-medium text-muted-foreground dark:text-slate-400 mt-0.5">
-              {typeFilter === 'Call'
-                ? 'Track client phone calls and interactions'
-                : typeFilter === 'Meeting'
-                ? 'Track client meetings and structured schedules'
-                : 'Track calls, meetings, and customer interactions'}
-            </span>
-          </div>
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
+      {/* Clean Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            {typeFilter === 'Call' ? 'Calls' : typeFilter === 'Meeting' ? 'Meetings' : 'Activities'}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {typeFilter === 'Call'
+              ? 'Track client phone calls and interactions'
+              : typeFilter === 'Meeting'
+              ? 'Track client meetings and structured schedules'
+              : 'Track calls, meetings, and customer interactions'}
+          </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={downloadReport} className="h-10 rounded-xl border-border dark:border-slate-700 bg-card dark:bg-slate-800 hover:bg-muted dark:hover:bg-slate-800/80 text-foreground dark:text-slate-200 font-semibold gap-2 shadow-sm cursor-pointer transition-colors">
-            <Download className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-            Export
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" onClick={downloadReport} className="h-10 gap-2 bg-card hover:bg-muted text-foreground border-border shadow-sm rounded-xl font-medium px-4 cursor-pointer">
+            <Download className="h-4 w-4" />
+            Export CSV
           </Button>
           <Link to={`/dashboard/${businessId}/activities/new${typeFilter !== 'All' ? `?type=${typeFilter}` : ''}`}>
-            <Button className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm cursor-pointer transition-colors">
+            <Button className="h-10 cursor-pointer gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-xl border-none font-medium px-5">
               <Plus className="h-4 w-4" />
               New {typeFilter !== 'All' ? typeFilter : 'Activity'}
             </Button>
@@ -265,54 +261,56 @@ export default function ActivitiesPageClient() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border dark:border-slate-800 bg-card dark:bg-slate-900 shadow-sm overflow-hidden transition-colors">
-        <div className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between border-b border-border dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-muted dark:bg-slate-800/50 text-muted-foreground dark:text-slate-400 rounded-lg">
-              <Filter className="h-5 w-5" />
-            </div>
+      <Card className="w-full min-w-0 max-w-full rounded-2xl border-border bg-card shadow-sm overflow-hidden flex-1 flex flex-col">
+        <CardHeader className="border-b border-border bg-muted/50 pb-5 pt-6 px-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-foreground dark:text-slate-100 flex items-center gap-2">
-                Directory
-                <span className="bg-muted dark:bg-slate-800 text-muted-foreground dark:text-slate-300 font-semibold px-2 py-0.5 rounded-md text-xs">
-                  {filteredActivities.length}
-                </span>
-              </h2>
+              <CardTitle className="text-lg font-bold text-foreground">
+                {typeFilter === 'Call' ? 'Calls' : typeFilter === 'Meeting' ? 'Meetings' : 'Activities'} Directory
+              </CardTitle>
+              <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
+                Showing <span className="text-foreground font-semibold">{filteredActivities.length}</span> of {activities.length} records
+              </CardDescription>
+            </div>
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search by title or related contact..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-10 rounded-xl border-border bg-card w-full focus-visible:ring-blue-500 text-sm shadow-sm"
+              />
             </div>
           </div>
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-muted-foreground" />
-            <Input
-              placeholder="Search by title or related contact..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-10 rounded-xl border-border dark:border-slate-700 bg-muted dark:bg-slate-950 focus-visible:ring-blue-500 dark:text-slate-100 transition-colors shadow-sm"
-            />
-          </div>
-        </div>
-
-        {filteredActivities.length === 0 ? (
-          <div className="text-center py-16 flex flex-col items-center">
-            <div className="p-4 bg-muted dark:bg-slate-800/50 rounded-full mb-4">
-              <MessageCircle className="h-8 w-8 text-slate-400 dark:text-muted-foreground" />
+        </CardHeader>
+        <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
+          {filteredActivities.length === 0 ? (
+            <div className="text-center py-16 flex flex-col items-center">
+              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <MessageCircle className="h-8 w-8 text-slate-400" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground">No activities found</h3>
+              <p className="mt-1 text-sm text-muted-foreground max-w-sm">
+                Create your first {typeFilter !== 'All' ? typeFilter.toLowerCase() : 'activity'} to get started tracking interactions.
+              </p>
+              <Link to={`/dashboard/${businessId}/activities/new${typeFilter !== 'All' ? `?type=${typeFilter}` : ''}`}>
+                <Button className="mt-4 h-10 cursor-pointer rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm font-medium px-5">
+                  <Plus className="h-4 w-4" />
+                  Create First {typeFilter !== 'All' ? typeFilter : 'Activity'}
+                </Button>
+              </Link>
             </div>
-            <h3 className="text-base font-bold text-foreground dark:text-slate-200">No activities found</h3>
-            <p className="mt-1 text-sm text-muted-foreground dark:text-slate-400 max-w-sm">
-              Create your first {typeFilter !== 'All' ? typeFilter.toLowerCase() : 'activity'} to get started tracking interactions.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-muted/80 dark:bg-slate-900/50">
-                <TableRow className="hover:bg-background border-border dark:border-slate-800">
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-6">Type</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Title</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Related To</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Date</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Duration</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Status</TableHead>
-                  <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-6 text-right">Actions</TableHead>
+          ) : (
+            <Table className="w-full min-w-[850px]">
+              <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-10 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <TableRow className="hover:bg-muted dark:hover:bg-[#181a20] border-b border-border">
+                  <TableHead className="pl-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Type</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Title</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Related To</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Date</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Duration</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                  <TableHead className="pr-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -369,11 +367,11 @@ export default function ActivitiesPageClient() {
                 ))}
               </TableBody>
             </Table>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </Card>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="rounded-2xl dark:bg-slate-900 dark:border-slate-800">
           <AlertDialogTitle className="dark:text-slate-100">Delete Activity</AlertDialogTitle>
           <AlertDialogDescription className="dark:text-slate-400">

@@ -210,7 +210,7 @@ export default function BillsPageClient() {
   }
 
   return (
-    <div className="flex flex-col gap-8 p-6 animate-in fade-in duration-500 pb-20">
+    <div className="flex flex-col gap-8 p-6 animate-in fade-in duration-500 pb-20 w-full min-w-0 max-w-full overflow-x-hidden">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-primary/10 rounded-2xl shadow-sm border border-primary/20">
@@ -253,14 +253,14 @@ export default function BillsPageClient() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
           {filteredBills.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
               <p className="text-muted-foreground">No bills found. Create your first bill to get started.</p>
             </div>
           ) : (
-            <Table>
+            <Table className="w-full min-w-[850px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Bill #</TableHead>

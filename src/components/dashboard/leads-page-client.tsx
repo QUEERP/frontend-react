@@ -165,56 +165,51 @@ export function LeadsPageClient({ businessId }: LeadsPageClientProps) {
       </div>
 
       {/* CRM Workflow Banner */}
-      <div className="relative w-full max-w-full min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-50/80 via-white to-blue-50/80 pointer-events-none" />
-        <div className="relative flex flex-wrap items-center justify-between p-5">
-          <div className="flex w-full overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
-            <div className="flex w-max items-center justify-between gap-4 pr-4">
-              {[
-                { icon: Zap, label: 'Lead Capture', sub: 'Identify prospects', color: 'text-blue-600', bg: 'bg-blue-100', border: 'ring-blue-200' },
-                { icon: TrendingUp, label: 'Deals', sub: 'Create deal & quote', color: 'text-sky-600', bg: 'bg-sky-100', border: 'ring-sky-200' },
-                { icon: Users, label: 'Customer', sub: 'Win & onboard client', color: 'text-emerald-600', bg: 'bg-emerald-100', border: 'ring-emerald-200' },
-              ].map((step, i, arr) => (
-                <React.Fragment key={step.label}>
-                  <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-4 min-w-[140px] flex-1 group cursor-default">
-                    <div className={`flex items-center justify-center rounded-full ${step.bg} p-3.5 shadow-sm ring-1 ring-inset ${step.border} transition-transform group-hover:scale-110 duration-300`}>
-                      <step.icon className={`h-5 w-5 ${step.color}`} />
-                    </div>
-                    <div className="text-center sm:text-left">
-                      <p className="text-sm font-bold text-foreground">{step.label}</p>
-                      <p className="text-xs font-medium text-muted-foreground mt-0.5">{step.sub}</p>
-                    </div>
-                  </div>
-                  {i < arr.length - 1 && (
-                    <div className="hidden flex-shrink-0 text-slate-300 sm:block">
-                      <ChevronRight className="h-6 w-6" />
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
+      <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm px-6 py-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-0">
+          {[
+            { icon: Zap, label: 'Lead Capture', sub: 'Identify prospects', color: 'text-blue-600', bg: 'bg-blue-50 border border-blue-100', active: true },
+            { icon: Target, label: 'Opportunity', sub: 'Deal in progress', color: 'text-muted-foreground', bg: 'bg-muted/50 border border-border', active: false },
+            { icon: Users, label: 'Customer', sub: 'Win & onboard client', color: 'text-muted-foreground', bg: 'bg-muted/50 border border-border', active: false },
+          ].map((step, i, arr) => (
+            <React.Fragment key={step.label}>
+              <div className={`flex items-center gap-3 py-1 ${step.active ? 'opacity-100' : 'opacity-60'}`}>
+                <div className={`flex items-center justify-center h-10 w-10 rounded-full ${step.bg} ${step.active ? 'ring-4 ring-blue-500/20 scale-105' : ''}`}>
+                  <step.icon className={`h-4 w-4 ${step.color}`} />
+                </div>
+                <div>
+                  <p className={`text-sm font-bold ${step.active ? 'text-foreground' : 'text-muted-foreground'}`}>{step.label}</p>
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{step.sub}</p>
+                </div>
+              </div>
+              {i < arr.length - 1 && (
+                <ChevronRight className="mx-4 h-5 w-5 text-muted-foreground/40 hidden sm:block" />
+              )}
+            </React.Fragment>
+          ))}
+          <div className="ml-auto hidden lg:block text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+            Managing Leads
           </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Total Leads', value: leads.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', border: 'ring-blue-100' },
-          { label: 'Active Leads', value: activeCount, icon: Activity, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'ring-indigo-100' },
-          { label: 'Converted', value: convertedCount, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'ring-emerald-100' },
-          { label: 'Conversion Rate', value: `${conversionRate}%`, icon: TrendingUp, color: 'text-sky-600', bg: 'bg-sky-50', border: 'ring-sky-100' },
+          { label: 'Total Leads', value: leads.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' },
+          { label: 'Active Leads', value: activeCount, icon: Activity, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-100' },
+          { label: 'Converted', value: convertedCount, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' },
+          { label: 'Conversion Rate', value: `${conversionRate}%`, icon: TrendingUp, color: 'text-sky-600', bg: 'bg-sky-50 border-sky-100' },
         ].map(stat => (
-          <Card key={stat.label} className="group relative overflow-hidden border-border bg-card shadow-sm transition-all hover:shadow-md hover:border-blue-200">
-            <div className={`absolute right-0 top-0 h-full w-1 ${stat.bg} transition-all group-hover:w-2`} />
-            <CardContent className="p-6">
+          <Card key={stat.label} className="border-border bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
               <div className="flex items-center justify-between">
-                <div className="space-y-1.5">
-                  <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                  <p className="text-3xl font-bold tracking-tight text-foreground">{stat.value}</p>
+                <div>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-2xl font-black text-foreground mt-1">{stat.value}</p>
                 </div>
-                <div className={`rounded-xl ${stat.bg} p-3 ring-1 ring-inset ${stat.border}`}>
-                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg} ${stat.color} shadow-sm`}>
+                  <stat.icon className="h-6 w-6" />
                 </div>
               </div>
             </CardContent>
