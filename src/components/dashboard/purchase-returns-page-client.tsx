@@ -2,12 +2,12 @@ import { toast } from 'sonner';
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom';
 import {  useLocation  } from 'react-router-dom';
-import { Undo2, Search, Plus, ArrowUpRight } from 'lucide-react'
+import { Undo2, Search, Plus, ArrowUpRight, CheckCircle2, Clock, DollarSign } from 'lucide-react'
 import { purchaseReturnsAPI, PurchaseReturn } from '@/lib/api/purchase'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -59,55 +59,147 @@ export default function PurchaseReturnsPageClient() {
 
   const filtered = returns.filter(r => !search || r.returnNumber.toLowerCase().includes(search.toLowerCase()) || (r.vendor?.name || '').toLowerCase().includes(search.toLowerCase()))
 
+  const totalAmount = returns.reduce((s, r) => s + Number(r.totalAmount || 0), 0)
+  const settled = returns.filter(r => ['REFUNDED', 'SETTLED'].includes((r.refundStatus || '').toUpperCase())).length
+  const pending = returns.filter(r => ['PENDING', 'PARTIAL', 'DRAFT'].includes((r.refundStatus || '').toUpperCase()) || r.status === 'DRAFT').length
   return (
-    <div className="flex min-h-svh flex-col gap-6 bg-background dark:bg-[#121418] px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0">
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
       
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card dark:bg-[#181a20] p-6 rounded-2xl border border-border dark:border-[#23272c] shadow-sm">
-        <div className="flex items-center gap-4">
-          <SidebarTrigger className="sm:hidden -ml-2 size-9 rounded-full relative cursor-pointer border border-border/60 bg-muted hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 shadow-sm transition-all dark:bg-[#181a20] dark:border-[#23272c] dark:hover:bg-[#1c2128] dark:hover:border-blue-900/50" />
-          <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl hidden sm:flex items-center justify-center">
-            <Undo2 className="h-6 w-6" />
-          </div>
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <SidebarTrigger className="sm:hidden -ml-2 size-9 rounded-full relative cursor-pointer border border-border/60 bg-muted hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 shadow-sm transition-all" />
           <div>
-            <h1 className="text-2xl font-bold text-foreground dark:text-slate-100 tracking-tight">Purchase Returns</h1>
-            <p className="text-sm font-medium text-muted-foreground dark:text-slate-400 mt-0.5">Manage goods returned to vendors and refunds</p>
+            <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
+              Purchase Returns
+            </h1>
+            <p className="text-sm font-medium text-muted-foreground mt-1">
+              Manage goods returned to vendors and refunds.
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Link to={`/dashboard/${businessId}/purchase-returns/new`} className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm gap-2">
+        <div className="flex items-center gap-3">
+          <Link to={`/dashboard/${businessId}/purchase-returns/new`}>
+            <Button className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm gap-2">
               <Plus className="h-4 w-4" />
-              <span className="font-semibold">New Return</span>
+              <span>New Return</span>
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Main Content */}
-      <Card className="rounded-2xl border-border dark:border-[#23272c] shadow-sm bg-card dark:bg-[#181a20] overflow-hidden flex-1 flex flex-col min-w-0">
-        <div className="p-6 border-b border-border dark:border-[#23272c] bg-muted/50 dark:bg-[#181a20] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Search return # or vendor…" 
-              value={search} 
-              onChange={e => setSearch(e.target.value)} 
-              className="pl-9 h-10 rounded-xl border-border dark:border-[#23272c] bg-card dark:bg-[#121418] w-full focus-visible:ring-blue-500" 
-            />
-          </div>
-        </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Total Returns
+                </p>
+                <div className="text-2xl font-black text-foreground">
+                  {isLoading ? <Skeleton className="h-8 w-20" /> : returns.length}
+                </div>
+                <p className="text-xs font-medium text-muted-foreground">All returned goods</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-900/50">
+                <Undo2 className="h-6 w-6" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="p-0 border-t-0 flex-1 overflow-auto custom-scrollbar">
-          <Table>
-            <TableHeader className="bg-muted/80 dark:bg-[#121418]/80 sticky top-0 z-10 backdrop-blur-sm">
-              <TableRow className="hover:bg-background border-b border-border dark:border-[#23272c]">
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 pl-6">Return #</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400">Vendor</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400">Status</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400">Refund Status</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 text-right">Amount</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 pr-6">Date</TableHead>
+        <Card className="rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Settled / Refunded
+                </p>
+                <div className="text-2xl font-black text-foreground">
+                  {isLoading ? <Skeleton className="h-8 w-20" /> : settled}
+                </div>
+                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Refund completed</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/50">
+                <CheckCircle2 className="h-6 w-6" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Pending Refund
+                </p>
+                <div className="text-2xl font-black text-amber-600 dark:text-amber-500">
+                  {isLoading ? <Skeleton className="h-8 w-20" /> : pending}
+                </div>
+                <p className="text-xs font-medium text-amber-600 dark:text-amber-500">Awaiting credit note/refund</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 flex items-center justify-center border border-amber-100 dark:border-amber-900/50">
+                <Clock className="h-6 w-6" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Total Value
+                </p>
+                <div className="text-2xl font-black text-foreground truncate max-w-[170px]" title={`₹${totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}>
+                  {isLoading ? <Skeleton className="h-8 w-32" /> : `₹${totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+                </div>
+                <p className="text-xs font-medium text-muted-foreground">Total value returned</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/50">
+                <DollarSign className="h-6 w-6" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Area */}
+      <Card className="rounded-2xl border-border bg-card shadow-sm overflow-hidden flex-1 flex flex-col w-full min-w-0 max-w-full">
+        <CardHeader className="border-b border-border bg-muted/50 pb-5 pt-6 px-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold text-foreground">Directory</CardTitle>
+              <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
+                Showing <span className="text-foreground font-semibold">{filtered.length}</span> of {returns.length} returns
+              </CardDescription>
+            </div>
+            
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input 
+                placeholder="Search return # or vendor…" 
+                value={search} 
+                onChange={e => setSearch(e.target.value)} 
+                className="pl-9 h-10 rounded-xl border-border bg-card focus-visible:ring-blue-500 text-sm shadow-sm" 
+              />
+            </div>
+          </div>
+        </CardHeader>
+
+        <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
+          <Table className="w-full min-w-[850px]">
+            <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-10 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <TableRow className="hover:bg-muted dark:hover:bg-[#181a20] border-b border-border">
+                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground pl-6">Return #</TableHead>
+                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Vendor</TableHead>
+                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Refund Status</TableHead>
+                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Amount</TableHead>
+                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground pr-6 text-right">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -123,18 +215,18 @@ export default function PurchaseReturnsPageClient() {
                 <TableRow>
                   <TableCell colSpan={6} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
-                      <div className="h-16 w-16 rounded-full bg-muted dark:bg-[#121418] flex items-center justify-center mb-2">
-                        <Undo2 className="h-8 w-8 text-slate-400 dark:text-muted-foreground" />
+                      <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-2">
+                        <Undo2 className="h-8 w-8 text-muted-foreground" />
                       </div>
-                      <p className="text-base font-semibold text-foreground dark:text-slate-200">No purchase returns found</p>
-                      <p className="text-sm text-muted-foreground dark:text-slate-400 max-w-sm mx-auto">
+                      <p className="text-base font-semibold text-foreground">No purchase returns found</p>
+                      <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                         {search ? 'Try adjusting your search query.' : 'Create a new purchase return to track returned goods.'}
                       </p>
                       {search && (
                         <Button
                           variant="outline"
                           onClick={() => setSearch('')}
-                          className="mt-4 rounded-xl border-border dark:border-[#23272c]"
+                          className="mt-4 rounded-xl border-border"
                         >
                           Clear Search
                         </Button>
@@ -144,14 +236,14 @@ export default function PurchaseReturnsPageClient() {
                 </TableRow>
               ) : (
                 filtered.map(r => (
-                  <TableRow key={r.id} className="group hover:bg-muted/50 dark:hover:bg-[#1c2128]/50 border-b border-border dark:border-[#23272c] transition-colors">
+                  <TableRow key={r.id} className="group hover:bg-muted/50 border-b border-border transition-colors">
                     <TableCell className="pl-6 py-4">
                       <Link to={`/dashboard/${businessId}/purchase-returns/${r.id}`} className="font-mono font-bold text-sm text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1">
                         {r.returnNumber}
                         <ArrowUpRight className="size-3 opacity-50" />
                       </Link>
                     </TableCell>
-                    <TableCell className="py-4 font-semibold text-foreground dark:text-slate-200 text-sm">
+                    <TableCell className="py-4 font-semibold text-foreground text-sm">
                       {r.vendor?.name || '—'}
                     </TableCell>
                     <TableCell className="py-4">
@@ -160,10 +252,10 @@ export default function PurchaseReturnsPageClient() {
                     <TableCell className="py-4">
                       <RefundStatusBadge status={r.refundStatus} />
                     </TableCell>
-                    <TableCell className="py-4 text-right font-bold text-sm text-foreground dark:text-slate-200">
+                    <TableCell className="py-4 text-right font-bold text-sm text-foreground">
                       ₹{Number(r.totalAmount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </TableCell>
-                    <TableCell className="pr-6 py-4 text-sm font-medium text-muted-foreground dark:text-slate-400">
+                    <TableCell className="pr-6 py-4 text-right text-sm font-medium text-muted-foreground">
                       {new Date(r.createdAt).toLocaleDateString()}
                     </TableCell>
                   </TableRow>
@@ -173,8 +265,8 @@ export default function PurchaseReturnsPageClient() {
           </Table>
         </div>
         {filtered.length > 0 && (
-          <div className="border-t border-border dark:border-[#23272c] px-6 py-4 bg-muted/50 dark:bg-[#181a20]">
-            <p className="text-xs font-medium text-muted-foreground dark:text-slate-400">Showing <span className="font-bold text-foreground dark:text-slate-200">{filtered.length}</span> of {returns.length} returns</p>
+          <div className="border-t border-border px-6 py-4">
+            <p className="text-xs font-medium text-muted-foreground">Showing <span className="font-bold text-foreground">{filtered.length}</span> of {returns.length} returns</p>
           </div>
         )}
       </Card>

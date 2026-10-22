@@ -266,23 +266,19 @@ export function VendorPageClient({ businessId }: { businessId: string }) {
   }
 
   return (
-    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 transition-colors">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card p-6 rounded-2xl border border-border shadow-sm transition-colors">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl hidden sm:block">
-            <StoreIcon className="h-6 w-6" />
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-2xl font-bold text-foreground tracking-tight">Vendors</span>
-            <span className="text-sm font-medium text-muted-foreground mt-0.5">Manage procurement and supplier accounts</span>
-          </div>
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Vendors</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage procurement and supplier accounts</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={handleExport} disabled={exporting || pageLoading} className="h-10 rounded-xl border-border bg-card hover:bg-muted text-foreground font-semibold gap-2 shadow-sm transition-colors">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" onClick={handleExport} disabled={exporting || pageLoading} className="h-10 rounded-xl border-border bg-card hover:bg-muted text-foreground font-medium gap-2 shadow-sm cursor-pointer px-4">
             {exporting ? <Loader2Icon className="h-4 w-4 animate-spin" /> : <FileDownIcon className="h-4 w-4 text-emerald-600" />}
             Export
           </Button>
-          <Button onClick={handleOpenCreate} className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm transition-colors">
+          <Button onClick={handleOpenCreate} className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium gap-2 shadow-sm cursor-pointer px-5">
             <PlusIcon className="h-4 w-4" />
             Add Vendor
           </Button>
@@ -329,7 +325,7 @@ export function VendorPageClient({ businessId }: { businessId: string }) {
           </div>
         </div>
 
-        <div className="p-0 border-t-0 flex-1 overflow-auto custom-scrollbar">
+        <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
           {pageLoading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2Icon className="h-8 w-8 animate-spin text-blue-600" />
@@ -345,8 +341,8 @@ export function VendorPageClient({ businessId }: { businessId: string }) {
               </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader className="bg-muted/80 sticky top-0 z-10 backdrop-blur-sm">
+            <Table className="w-full min-w-[800px]">
+              <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-10 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                 <TableRow className="hover:bg-background border-border">
                   <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-6">Vendor Details</TableHead>
                   <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-4">Contact Info</TableHead>

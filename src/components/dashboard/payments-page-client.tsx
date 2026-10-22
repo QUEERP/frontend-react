@@ -271,34 +271,27 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
   }
 
   return (
-    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
-        <header className="flex items-center justify-between gap-4 w-full">
-          <div className="flex min-w-0 items-center gap-4">
-            <SidebarTrigger className="sm:hidden -ml-2 size-9 rounded-full relative cursor-pointer border border-border/60 bg-muted hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 shadow-sm transition-all" />
-            <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl hidden sm:block">
-              <DollarSignIcon className="h-6 w-6" />
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-2xl font-bold text-foreground tracking-tight">Payments</span>
-              <span className="text-sm font-medium text-muted-foreground mt-0.5">View all recorded payments</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              className="h-10 rounded-xl cursor-pointer border-border text-muted-foreground hover:bg-muted gap-2 shadow-sm"
-              onClick={handleExport}
-              disabled={exportLoading}
-            >
-              {exportLoading ? <Loader2Icon className="size-4 animate-spin text-blue-600" /> : <FileDownIcon className="size-4" />}
-              <span className="hidden sm:inline font-semibold">Export Payments</span>
-            </Button>
-          </div>
-        </header>
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
+      {/* Clean Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Payments</h1>
+          <p className="text-sm text-muted-foreground mt-1">View and manage all recorded payments</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button 
+            variant="outline" 
+            className="h-10 gap-2 bg-card hover:bg-muted text-foreground border-border shadow-sm rounded-xl font-medium px-4 cursor-pointer"
+            onClick={handleExport}
+            disabled={exportLoading}
+          >
+            {exportLoading ? <Loader2Icon className="h-4 w-4 animate-spin text-blue-600" /> : <FileDownIcon className="h-4 w-4" />}
+            Export Payments
+          </Button>
+        </div>
       </div>
 
-      <Card className="rounded-2xl border-border shadow-sm bg-card overflow-hidden flex-1 flex flex-col">
+      <Card className="w-full min-w-0 max-w-full rounded-2xl border-border shadow-sm bg-card overflow-hidden flex-1 flex flex-col">
         <div className="p-6 border-b border-border bg-muted/50 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
           <div className="relative w-full xl:w-80">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -306,7 +299,7 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
               placeholder="Search invoice #, transaction ref..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-10 rounded-xl border-border bg-card w-full focus-visible:ring-blue-500 shadow-sm"
+              className="pl-9 h-10 rounded-xl border-border bg-card w-full focus-visible:ring-blue-500 shadow-sm text-sm"
             />
           </div>
           <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
@@ -314,19 +307,19 @@ export function PaymentsPageClient({ businessId }: { businessId: string }) {
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="h-10 w-[140px] rounded-xl border-border text-sm shadow-sm"
+              className="h-10 w-[140px] rounded-xl border-border bg-card text-sm shadow-sm"
             />
             <Input
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="h-10 w-[140px] rounded-xl border-border text-sm shadow-sm"
+              className="h-10 w-[140px] rounded-xl border-border bg-card text-sm shadow-sm"
             />
           </div>
         </div>
-        <div className="p-0 border-t-0 flex-1 overflow-auto custom-scrollbar">
+        <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
           <Table className="w-full min-w-[950px]">
-            <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-20 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-10 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
               <TableRow className="hover:bg-muted dark:hover:bg-[#181a20] border-b border-border bg-muted dark:bg-[#181a20]">
                 <TableHead className="pl-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Reference / Project</TableHead>
                 <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Amount / Remaining</TableHead>

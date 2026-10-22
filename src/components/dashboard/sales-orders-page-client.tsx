@@ -3,7 +3,7 @@ import {  useNavigate  } from 'react-router-dom';
 import { salesOrdersAPI, SalesOrder } from '@/lib/api/sales-orders'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -171,121 +171,80 @@ export function SalesOrdersPageClient({ businessId }: SalesOrdersPageClientProps
   }
 
   return (
-    <div className="grid min-h-svh grid-cols-1 content-start gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
+      {/* Clean Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3 text-foreground">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-              <ReceiptText className="h-6 w-6 sm:h-8 sm:w-8" />
-            </div>
-            Sales Orders
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base font-medium">
-            Manage sales orders, track fulfillment, and delivery timelines.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Sales Orders</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage sales orders, track fulfillment, and delivery timelines</p>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             variant="outline"
             onClick={handleExport}
             disabled={exportLoading || filteredOrders.length === 0}
-            className="h-11 px-6 rounded-xl cursor-pointer border-border bg-card hover:bg-muted text-foreground shadow-sm font-semibold flex-1 sm:flex-none"
+            className="h-10 gap-2 bg-card hover:bg-muted text-foreground border-border shadow-sm rounded-xl font-medium px-4 cursor-pointer"
           >
-            {exportLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <FileDown className="mr-2 h-5 w-5" />}
-            Export
+            {exportLoading ? <Loader2 className="h-4 w-4 animate-spin text-blue-600" /> : <FileDown className="h-4 w-4" />}
+            Export CSV
           </Button>
           <Button
             onClick={() => navigate(`/dashboard/${businessId}/sales-orders/add`)}
-            className="h-11 px-6 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold flex-1 sm:flex-none"
+            className="h-10 cursor-pointer gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-xl border-none font-medium px-5"
           >
-            <Plus className="mr-2 h-5 w-5" />
+            <Plus className="h-4 w-4" />
             New Order
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden col-span-2 lg:col-span-1">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-              <ReceiptText className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Total Orders</p>
-              <p className="text-2xl font-black text-foreground">{stats.total}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hidden sm:block">
-              <PackageCheck className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Fulfilled</p>
-              <p className="text-2xl font-black text-emerald-600">{stats.fulfilled}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hidden sm:block">
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Confirmed</p>
-              <p className="text-2xl font-black text-indigo-600">{stats.confirmed}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-rose-50 text-rose-600 rounded-xl hidden sm:block">
-              <XCircle className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Cancelled</p>
-              <p className="text-2xl font-black text-rose-600">{stats.cancelled}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-muted text-muted-foreground rounded-xl hidden sm:block">
-              <Clock className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Drafts</p>
-              <p className="text-2xl font-black text-muted-foreground">{stats.draft}</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPI Cards */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+        {[
+          { label: 'Total Orders', value: stats.total, icon: ReceiptText, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800' },
+          { label: 'Fulfilled', value: stats.fulfilled, icon: PackageCheck, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' },
+          { label: 'Confirmed', value: stats.confirmed, icon: CheckCircle2, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800' },
+          { label: 'Cancelled', value: stats.cancelled, icon: XCircle, color: 'text-rose-600', bg: 'bg-rose-50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800' },
+          { label: 'Drafts', value: stats.draft, icon: Clock, color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-50 border-slate-100 dark:bg-slate-800/40 dark:border-slate-700' },
+        ].map(stat => (
+          <Card key={stat.label} className="border-border bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-2xl font-black text-foreground mt-1">{stat.value}</p>
+                </div>
+                <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg} ${stat.color} shadow-sm`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Filter and Table Card */}
-      <Card className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
-        {/* Search & Filter Bar */}
-        <div className="p-5 border-b border-border bg-muted/50 flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Search by Order # or Customer..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 h-10 rounded-xl bg-card border-border focus:bg-card transition-colors"
-            />
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-xl">
-              <Filter className="h-4 w-4 text-slate-400" />
+      {/* Orders Directory Card */}
+      <Card className="w-full min-w-0 max-w-full rounded-2xl border-border bg-card shadow-sm overflow-hidden flex flex-col">
+        <CardHeader className="border-b border-border bg-muted/50 pb-5 pt-6 px-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold text-foreground">Orders Directory</CardTitle>
+              <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
+                Showing <span className="text-foreground font-semibold">{filteredOrders.length}</span> of {safeOrders.length} orders
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search order #, customer..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full sm:w-64 pl-9 rounded-xl border-border bg-card focus-visible:ring-blue-500 h-10 text-sm shadow-sm"
+                />
+              </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-7 border-0 bg-background p-0 text-sm font-medium text-foreground focus:ring-0 w-[120px]">
+                <SelectTrigger className="w-[160px] h-10 rounded-xl border-border bg-card font-medium text-foreground text-sm cursor-pointer shadow-sm">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-border">
@@ -301,41 +260,41 @@ export function SalesOrdersPageClient({ businessId }: SalesOrdersPageClientProps
               </Select>
             </div>
           </div>
-        </div>
+        </CardHeader>
 
         <CardContent className="p-0">
           {filteredOrders.length === 0 ? (
             <div className="py-16 text-center flex flex-col items-center">
-              <ReceiptText className="h-12 w-12 text-slate-200 mb-4" />
-              <p className="text-lg font-bold text-foreground">No Sales Orders Found</p>
-              <p className="text-muted-foreground max-w-sm mt-2 mb-6">
+              <ReceiptText className="h-12 w-12 text-slate-400 mb-4" />
+              <p className="text-lg font-semibold text-foreground">No Sales Orders Found</p>
+              <p className="text-muted-foreground max-w-sm mt-1 mb-6 text-sm">
                 {searchTerm || statusFilter !== 'all' 
                   ? "We couldn't find any orders matching your current filters."
                   : "You haven't created any sales orders yet. Create your first order to get started."}
               </p>
               {searchTerm || statusFilter !== 'all' ? (
-                <Button variant="outline" className="rounded-xl cursor-pointer" onClick={() => { setSearchTerm(''); setStatusFilter('all'); }}>
+                <Button variant="outline" className="rounded-xl font-medium cursor-pointer" onClick={() => { setSearchTerm(''); setStatusFilter('all'); }}>
                   Clear Filters
                 </Button>
               ) : (
-                <Button className="rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white" onClick={() => navigate(`/dashboard/${businessId}/sales-orders/add`)}>
+                <Button className="rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-medium" onClick={() => navigate(`/dashboard/${businessId}/sales-orders/add`)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create First Order
                 </Button>
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border bg-muted/80 hover:bg-muted/80">
-                    <TableHead className="font-bold text-muted-foreground">Order #</TableHead>
-                    <TableHead className="font-bold text-muted-foreground">Customer</TableHead>
-                    <TableHead className="font-bold text-muted-foreground">Status</TableHead>
-                    <TableHead className="font-bold text-muted-foreground">Total</TableHead>
-                    <TableHead className="font-bold text-muted-foreground">Order Date</TableHead>
-                    <TableHead className="font-bold text-muted-foreground">Delivery Date</TableHead>
-                    <TableHead className="text-right font-bold text-muted-foreground">Actions</TableHead>
+            <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
+              <Table className="w-full min-w-[850px]">
+                <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-10 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                  <TableRow className="hover:bg-muted dark:hover:bg-[#181a20] border-b border-border">
+                    <TableHead className="pl-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Order #</TableHead>
+                    <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Customer</TableHead>
+                    <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                    <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Total</TableHead>
+                    <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Order Date</TableHead>
+                    <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Delivery Date</TableHead>
+                    <TableHead className="pr-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

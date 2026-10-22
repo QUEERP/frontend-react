@@ -98,25 +98,25 @@ export function ContactList({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 overflow-x-auto bg-white">
+    <div>
+      <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="bg-slate-50">
-            <TableRow>
-              <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Name</TableHead>
-              <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Email</TableHead>
-              <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Phone</TableHead>
-              <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Position</TableHead>
-              <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Customer</TableHead>
-              <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Status</TableHead>
-              <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Created</TableHead>
-              <TableHead className="w-[70px] text-right"></TableHead>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+              <TableHead className="h-11 px-6 text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Name</TableHead>
+              <TableHead className="h-11 px-6 text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Email</TableHead>
+              <TableHead className="h-11 px-6 text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Phone</TableHead>
+              <TableHead className="h-11 px-6 text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Position</TableHead>
+              <TableHead className="h-11 px-6 text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Customer</TableHead>
+              <TableHead className="h-11 px-6 text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Status</TableHead>
+              <TableHead className="h-11 px-6 text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Created</TableHead>
+              <TableHead className="h-11 px-6 text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {contacts.map((contact) => (
-              <TableRow key={contact.id} className="hover:bg-slate-50/50">
-                <TableCell className="font-medium text-slate-900 whitespace-nowrap">
+              <TableRow key={contact.id} className="hover:bg-muted/80 border-b border-border group transition-colors">
+                <TableCell className="px-6 py-4 font-medium text-foreground whitespace-nowrap">
                   <div 
                     className="flex items-center gap-2.5 cursor-pointer group"
                     onClick={() => onView?.(contact)}
@@ -134,10 +134,10 @@ export function ContactList({
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
+                <TableCell className="px-6 py-4 whitespace-nowrap">
                   {contact.email ? (
                     <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-slate-400" />
+                      <Mail className="h-4 w-4 text-muted-foreground" />
                       <a 
                         href={`mailto:${contact.email}`}
                         className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
@@ -146,59 +146,59 @@ export function ContactList({
                       </a>
                     </div>
                   ) : (
-                    <span className="text-slate-400">-</span>
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
+                <TableCell className="px-6 py-4 whitespace-nowrap">
                   {contact.phone ? (
                     <div className="flex items-center gap-2 max-w-[170px]">
-                      <Phone className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                      <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <a 
                         href={`tel:${contact.phone}`}
-                        className="text-slate-700 hover:text-slate-900 hover:underline font-medium truncate"
+                        className="text-foreground hover:text-blue-600 hover:underline font-medium truncate"
                         title={contact.phone}
                       >
                         {contact.phone}
                       </a>
                     </div>
                   ) : (
-                    <span className="text-slate-400">-</span>
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                    {contact.position || 'N/A'}
+                <TableCell className="px-6 py-4 whitespace-nowrap">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-muted text-foreground border border-border">
+                    {contact.position || '—'}
                   </span>
                 </TableCell>
-                <TableCell className="whitespace-nowrap text-sm font-medium text-slate-700">
-                  {customersMap[contact.customerId] || '-'}
+                <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
+                  {customersMap[contact.customerId] || '—'}
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
+                <TableCell className="px-6 py-4 whitespace-nowrap">
                   <Badge 
                     variant={contact.isActive ? 'default' : 'secondary'}
-                    className={`text-xs ${contact.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'}`}
+                    className={`text-xs ${contact.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-muted text-muted-foreground border-border'}`}
                   >
                     {contact.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <span className="text-sm text-slate-500 font-medium">
+                <TableCell className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm text-muted-foreground font-medium">
                     {new Date(contact.createdAt).toLocaleDateString()}
                   </span>
                 </TableCell>
-                <TableCell className="text-right whitespace-nowrap">
+                <TableCell className="px-6 py-4 text-right whitespace-nowrap">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0 text-slate-500 hover:text-slate-900 rounded-lg">
+                      <Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-lg">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="rounded-xl shadow-lg border-slate-200">
-                      <DropdownMenuItem onClick={() => onView?.(contact)} className="cursor-pointer font-medium text-slate-700 rounded-lg focus:bg-slate-50">
+                    <DropdownMenuContent align="end" className="rounded-xl shadow-lg border-border">
+                      <DropdownMenuItem onClick={() => onView?.(contact)} className="cursor-pointer font-medium rounded-lg">
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onEdit?.(contact)} className="cursor-pointer font-medium text-slate-700 rounded-lg focus:bg-slate-50">
+                      <DropdownMenuItem onClick={() => onEdit?.(contact)} className="cursor-pointer font-medium rounded-lg">
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Profile
                       </DropdownMenuItem>
@@ -219,10 +219,10 @@ export function ContactList({
       </div>
       
       {contacts.length === 0 && !loading && (
-        <div className="text-center py-12 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-          <User className="mx-auto h-12 w-12 text-slate-300" />
-          <h3 className="mt-4 text-sm font-semibold text-slate-900">No contacts found</h3>
-          <p className="mt-2 text-sm text-slate-500">
+        <div className="text-center py-12 bg-muted/20 border-t border-border">
+          <User className="mx-auto h-12 w-12 text-muted-foreground" />
+          <h3 className="mt-4 text-sm font-semibold text-foreground">No contacts found</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
             {customerId ? 'This customer has no contacts yet.' : 'Get started by adding a new contact.'}
           </p>
         </div>

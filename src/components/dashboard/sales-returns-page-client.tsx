@@ -237,21 +237,17 @@ export function SalesReturnsPageClient({ businessId }: Props) {
   }
 
   return (
-    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
-        <header className="flex items-center justify-between gap-4 w-full">
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="p-3 bg-orange-50 text-orange-600 rounded-xl hidden sm:block">
-              <Undo2 className="h-6 w-6" />
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-2xl font-bold text-foreground tracking-tight">Sales Returns</span>
-              <span className="text-sm font-medium text-muted-foreground mt-0.5">Customer return requests &middot; RMA management</span>
-            </div>
-          </div>
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
+      {/* Clean Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Sales Returns</h1>
+          <p className="text-sm text-muted-foreground mt-1">Customer return requests · RMA management</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm cursor-pointer">
+              <Button className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm cursor-pointer font-medium px-5">
                 <Plus className="h-4 w-4" />
                 Log Sales Return
               </Button>
@@ -473,75 +469,56 @@ export function SalesReturnsPageClient({ businessId }: Props) {
               </div>
             </DialogContent>
           </Dialog>
-        </header>
+        </div>
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="rounded-2xl border-border shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Items Received</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center">
-              <ArrowUpLeft className="h-4 w-4 text-blue-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{stats.received}</div>
-            <p className="text-xs text-muted-foreground font-medium mt-1">Pending review</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl border-border shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Approved Returns</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-emerald-50 flex items-center justify-center">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{stats.approved}</div>
-            <p className="text-xs text-muted-foreground font-medium mt-1">Verified &amp; processed</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl border-border shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Credits Issued</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-violet-50 flex items-center justify-center">
-              <RotateCcw className="h-4 w-4 text-violet-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{stats.creditIssued}</div>
-            <p className="text-xs text-muted-foreground font-medium mt-1">Credit notes sent</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl border-border shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Total Returned Value</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center">
-              <Undo2 className="h-4 w-4 text-orange-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{formatCurrency(stats.totalReturned, baseCurrency)}</div>
-            <p className="text-xs text-muted-foreground font-medium mt-1">All time returns</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: 'Items Received', value: stats.received, sub: 'Pending review', icon: ArrowUpLeft, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800' },
+          { label: 'Approved Returns', value: stats.approved, sub: 'Verified & processed', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' },
+          { label: 'Credits Issued', value: stats.creditIssued, sub: 'Credit notes sent', icon: RotateCcw, color: 'text-violet-600', bg: 'bg-violet-50 border-violet-100 dark:bg-violet-900/20 dark:border-violet-800' },
+          { label: 'Total Returned Value', value: formatCurrency(stats.totalReturned, baseCurrency), sub: 'All time returns', icon: Undo2, color: 'text-orange-600', bg: 'bg-orange-50 border-orange-100 dark:bg-orange-900/20 dark:border-orange-800' },
+        ].map(stat => (
+          <Card key={stat.label} className="border-border bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-2xl font-black text-foreground mt-1">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground font-medium mt-1">{stat.sub}</p>
+                </div>
+                <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg} ${stat.color} shadow-sm shrink-0`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* ── Returns Table ── */}
-      <Card className="rounded-2xl border-border shadow-sm bg-card overflow-hidden flex-1 flex flex-col">
-        <div className="p-6 border-b border-border bg-muted/50 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
-          <div className="relative w-full xl:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Search return #, customer, invoice..."
-              className="pl-9 h-10 rounded-xl border-border bg-card w-full focus-visible:ring-blue-500 shadow-sm"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+      <Card className="w-full min-w-0 max-w-full rounded-2xl border-border bg-card shadow-sm overflow-hidden flex-1 flex flex-col">
+        <CardHeader className="border-b border-border bg-muted/50 pb-5 pt-6 px-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold text-foreground">Sales Returns Directory</CardTitle>
+              <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
+                Showing <span className="text-foreground font-semibold">{filtered.length}</span> of {returns.length} returns
+              </CardDescription>
+            </div>
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search return #, customer, invoice..."
+                className="pl-9 h-10 rounded-xl border-border bg-card w-full focus-visible:ring-blue-500 text-sm shadow-sm"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
-        </div>
-        <div className="p-0 border-t-0 flex-1 overflow-auto custom-scrollbar">
+        </CardHeader>
+        <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
           {filtered.length === 0 ? (
             <div className="py-16 text-center flex flex-col items-center justify-center">
               <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -551,23 +528,23 @@ export function SalesReturnsPageClient({ businessId }: Props) {
               <p className="mt-1 text-sm text-muted-foreground max-w-sm">
                 Log a return when a customer sends back goods or requests a credit.
               </p>
-              <Button className="mt-4 h-10 cursor-pointer rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm" onClick={() => setCreateOpen(true)}>
+              <Button className="mt-4 h-10 cursor-pointer rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm font-medium px-5" onClick={() => setCreateOpen(true)}>
                 <Plus className="h-4 w-4" />
                 Log First Return
               </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader className="bg-muted/80 sticky top-0 z-10 backdrop-blur-sm">
-                <TableRow className="hover:bg-background border-b border-border">
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Return #</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Customer</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Invoice Ref</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Refund Status</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Date</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Return Value</TableHead>
-                  <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
+            <Table className="w-full min-w-[850px]">
+              <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-10 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <TableRow className="hover:bg-muted dark:hover:bg-[#181a20] border-b border-border">
+                  <TableHead className="pl-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Return #</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Customer</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Invoice Ref</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Refund Status</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Date</TableHead>
+                  <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Return Value</TableHead>
+                  <TableHead className="pr-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

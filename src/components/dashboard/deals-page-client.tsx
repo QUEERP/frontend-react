@@ -203,29 +203,29 @@ export function DealsPageClient({ businessId }: DealsPageClientProps) {
       </div>
 
       {/* CRM Workflow Banner */}
-      <div className="relative overflow-hidden rounded-xl border border-border dark:border-border bg-card dark:bg-card shadow-sm px-6 py-4">
+      <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm px-6 py-4">
         <div className="flex flex-wrap items-center gap-2 sm:gap-0">
           {[
-            { icon: Zap, label: 'Lead', sub: 'Prospect captured', color: 'text-slate-400 dark:text-muted-foreground', bg: 'bg-muted dark:bg-muted/50 border border-border dark:border-border', done: true },
+            { icon: Zap, label: 'Lead Capture', sub: 'Prospect captured', color: 'text-emerald-600', bg: 'bg-emerald-50 border border-emerald-100', done: true },
             { icon: Target, label: 'Opportunity', sub: 'Deal in progress', color: 'text-blue-600', bg: 'bg-blue-50 border border-blue-100', done: true, active: true },
-            { icon: Users, label: 'Customer', sub: 'Won & onboarded', color: 'text-slate-400 dark:text-muted-foreground', bg: 'bg-muted dark:bg-muted/50 border border-border dark:border-border', done: false },
+            { icon: Users, label: 'Customer', sub: 'Won & onboarded', color: 'text-muted-foreground', bg: 'bg-muted/50 border border-border', done: false },
           ].map((step, i, arr) => (
             <React.Fragment key={step.label}>
-              <div className={`flex items-center gap-3 py-1 ${step.active ? 'opacity-100' : 'opacity-60'}`}>
-                <div className={`flex items-center justify-center h-10 w-10 rounded-full ${step.bg} ${step.active ? 'ring-4 ring-blue-50/50 scale-105' : ''}`}>
+              <div className={`flex items-center gap-3 py-1 ${step.active || step.done ? 'opacity-100' : 'opacity-60'}`}>
+                <div className={`flex items-center justify-center h-10 w-10 rounded-full ${step.bg} ${step.active ? 'ring-4 ring-blue-500/20 scale-105' : ''}`}>
                   <step.icon className={`h-4 w-4 ${step.color}`} />
                 </div>
                 <div>
-                  <p className={`text-sm font-bold ${step.active ? 'text-foreground dark:text-slate-100' : 'text-muted-foreground dark:text-slate-400'}`}>{step.label}</p>
-                  <p className="text-[11px] font-medium text-muted-foreground dark:text-slate-400 uppercase tracking-wider">{step.sub}</p>
+                  <p className={`text-sm font-bold ${step.active ? 'text-foreground' : 'text-muted-foreground'}`}>{step.label}</p>
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{step.sub}</p>
                 </div>
               </div>
               {i < arr.length - 1 && (
-                <ChevronRight className="mx-4 h-5 w-5 text-slate-300 hidden sm:block" />
+                <ChevronRight className="mx-4 h-5 w-5 text-muted-foreground/40 hidden sm:block" />
               )}
             </React.Fragment>
           ))}
-          <div className="ml-auto hidden lg:block text-[11px] font-bold text-slate-400 dark:text-muted-foreground uppercase tracking-wider">
+          <div className="ml-auto hidden lg:block text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
             Managing Deals
           </div>
         </div>
@@ -239,15 +239,15 @@ export function DealsPageClient({ businessId }: DealsPageClientProps) {
           { label: 'Won Value', value: fmt(totalWonValue), icon: Trophy, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' },
           { label: 'Win Rate', value: `${winRate}%`, icon: TrendingUp, color: 'text-sky-600', bg: 'bg-sky-50 border-sky-100' },
         ].map(stat => (
-          <Card key={stat.label} className="border-border dark:border-border bg-card dark:bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <Card key={stat.label} className="border-border bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] font-bold text-slate-400 dark:text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                  <p className="text-2xl font-black text-foreground dark:text-slate-200 mt-1">{stat.value}</p>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-2xl font-black text-foreground mt-1">{stat.value}</p>
                 </div>
-                <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg}`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg} ${stat.color} shadow-sm`}>
+                  <stat.icon className="h-6 w-6" />
                 </div>
               </div>
             </CardContent>

@@ -1,4 +1,3 @@
-import { toast } from 'sonner';
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom';
 import {  useNavigate  } from 'react-router-dom';
@@ -20,6 +19,7 @@ import {
   TrashIcon,
   EyeIcon,
   DollarSignIcon,
+  DownloadIcon,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -243,6 +243,44 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
     window.location.href = 'https://www.queinfotech.com/contact'
   }
 
+  const downloadReport = () => {
+    if (filteredCustomers.length === 0) {
+      toast({
+        title: 'No customer data',
+        description: 'There are no customers matching the filter to export.',
+        variant: 'destructive',
+      })
+      return
+    }
+    const headers = ['Customer Name', 'Region', 'Phone', 'Location', 'Invoices', 'Revenue', 'Status', 'Last Invoice', 'Join Date']
+    const csv = [
+      headers.join(','),
+      ...filteredCustomers.map((c: any) => [
+        `"${(c.name || '').replace(/"/g, '""')}"`,
+        `"${(c.region || '').replace(/"/g, '""')}"`,
+        `"${(c.phone || '').replace(/"/g, '""')}"`,
+        `"${(c.address || '').replace(/"/g, '""')}"`,
+        c.totalInvoices || 0,
+        `"${(c.totalRevenue || '-').replace(/"/g, '""')}"`,
+        `"${(c.status || 'Active').replace(/"/g, '""')}"`,
+        `"${(c.lastInvoice || '-').replace(/"/g, '""')}"`,
+        `"${(c.joinDate || '').replace(/"/g, '""')}"`
+      ].join(','))
+    ].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.setAttribute('href', URL.createObjectURL(blob))
+    link.setAttribute('download', `Customers_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast({
+      title: 'Report downloaded',
+      description: 'Customer list exported successfully.',
+    })
+  }
+
   if (loading) {
     return <DashboardPageSkeleton />
   }
@@ -256,8 +294,18 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Customers</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage your customer database and track revenue</p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={handleAddCustomerClick} className="h-10 cursor-pointer gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-xl border-none font-medium px-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={downloadReport}
+            className="h-10 gap-2 bg-card hover:bg-muted text-foreground border-border shadow-sm rounded-xl font-medium px-4 cursor-pointer"
+          >
+            <DownloadIcon className="h-4 w-4" /> Export CSV
+          </Button>
+          <Button
+            onClick={handleAddCustomerClick}
+            className="h-10 cursor-pointer gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-xl border-none font-medium px-5"
+          >
             <PlusIcon className="h-4 w-4" /> Add Customer
           </Button>
         </div>
@@ -273,13 +321,13 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
         ].map(stat => (
           <Card key={stat.label} className="border-border bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border ${stat.bg} ${stat.color} shadow-sm`}>
-                  <stat.icon className="h-6 w-6" />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-2xl font-black text-foreground mt-1">{stat.value}</p>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-muted-foreground">{stat.label}</p>
-                  <p className="mt-1 text-2xl font-bold text-foreground">{stat.value}</p>
+                <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg} ${stat.color} shadow-sm`}>
+                  <stat.icon className="h-6 w-6" />
                 </div>
               </div>
             </CardContent>

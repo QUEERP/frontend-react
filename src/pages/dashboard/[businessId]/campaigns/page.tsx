@@ -231,19 +231,17 @@ export default function CampaignsPage() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col gap-6 bg-[#f8fafc] dark:bg-slate-950 px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 transition-colors">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="p-3 bg-amber-50 dark:bg-amber-500/10 text-amber-500 rounded-xl hidden sm:block">
-            <Megaphone className="h-6 w-6" />
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">CRM Campaigns</span>
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Design, execute, and monitor sales marketing initiatives.</span>
-          </div>
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">CRM Campaigns</h1>
+          <p className="text-sm text-muted-foreground mt-1">Design, execute, and monitor sales marketing initiatives.</p>
         </div>
-        <Button onClick={() => setShowAddForm(!showAddForm)} className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm cursor-pointer transition-colors shrink-0">
+        <Button 
+          onClick={() => setShowAddForm(!showAddForm)} 
+          className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium gap-2 shadow-sm cursor-pointer px-5"
+        >
           {showAddForm ? 'Close Form' : (
             <>
               <Plus className="h-4 w-4" />
@@ -255,53 +253,53 @@ export default function CampaignsPage() {
 
       {/* QUICK ADD FORM */}
       {showAddForm && (
-        <div className="rounded-2xl border-t-4 border-t-amber-500 border-x border-b border-x-slate-200 border-b-slate-200 dark:border-x-slate-800 dark:border-b-slate-800 bg-white dark:bg-slate-900 shadow-md animate-in fade-in slide-in-from-top-2 duration-200 transition-colors overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center gap-3">
-            <Sparkles className="h-5 w-5 text-amber-500" />
+        <div className="rounded-2xl border border-border bg-card shadow-sm animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+          <div className="px-6 py-5 border-b border-border bg-muted/40 flex items-center gap-3">
+            <Sparkles className="h-5 w-5 text-blue-600" />
             <div>
-              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Launch Marketing Campaign</h3>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Setup parameters, budgets, and milestones.</p>
+              <h3 className="text-lg font-bold text-foreground">Launch Marketing Campaign</h3>
+              <p className="text-xs font-medium text-muted-foreground mt-0.5">Setup parameters, budgets, and milestones.</p>
             </div>
           </div>
           <div className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1.5">
-                  <Label htmlFor="name" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Campaign Name <span className="text-rose-500">*</span></Label>
+                  <Label htmlFor="name" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Campaign Name <span className="text-rose-500">*</span></Label>
                   <Input 
                     id="name" 
                     value={formData.name} 
                     onChange={(e) => handleInputChange('name', e.target.value)} 
                     placeholder="e.g. Summer Special 2026"
-                    className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
+                    className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="type" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Campaign Channel</Label>
+                  <Label htmlFor="type" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Campaign Channel</Label>
                   <Select value={formData.type} onValueChange={(val) => handleInputChange('type', val)}>
-                    <SelectTrigger id="type" className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100">
+                    <SelectTrigger id="type" className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm">
                       <SelectValue placeholder="Select channel" />
                     </SelectTrigger>
-                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">
-                      <SelectItem value="EMAIL" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Email Marketing</SelectItem>
-                      <SelectItem value="SOCIAL_MEDIA" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Social Media Post/Ads</SelectItem>
-                      <SelectItem value="PPC" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Google PPC Adwords</SelectItem>
-                      <SelectItem value="EVENT" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Trade Event / Webinar</SelectItem>
-                      <SelectItem value="OTHER" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Other Channel</SelectItem>
+                    <SelectContent className="rounded-xl border-border">
+                      <SelectItem value="EMAIL" className="cursor-pointer rounded-lg">Email Marketing</SelectItem>
+                      <SelectItem value="SOCIAL_MEDIA" className="cursor-pointer rounded-lg">Social Media Post/Ads</SelectItem>
+                      <SelectItem value="PPC" className="cursor-pointer rounded-lg">Google PPC Adwords</SelectItem>
+                      <SelectItem value="EVENT" className="cursor-pointer rounded-lg">Trade Event / Webinar</SelectItem>
+                      <SelectItem value="OTHER" className="cursor-pointer rounded-lg">Other Channel</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="status" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Execution Status</Label>
+                  <Label htmlFor="status" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Execution Status</Label>
                   <Select value={formData.status} onValueChange={(val) => handleInputChange('status', val)}>
-                    <SelectTrigger id="status" className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100">
+                    <SelectTrigger id="status" className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
-                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">
-                      <SelectItem value="PLANNING" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Planning / Warmup</SelectItem>
-                      <SelectItem value="ACTIVE" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Currently Running</SelectItem>
-                      <SelectItem value="COMPLETED" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Ended / Finished</SelectItem>
-                      <SelectItem value="CANCELLED" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Stopped / Cancelled</SelectItem>
+                    <SelectContent className="rounded-xl border-border">
+                      <SelectItem value="PLANNING" className="cursor-pointer rounded-lg">Planning / Warmup</SelectItem>
+                      <SelectItem value="ACTIVE" className="cursor-pointer rounded-lg">Currently Running</SelectItem>
+                      <SelectItem value="COMPLETED" className="cursor-pointer rounded-lg">Ended / Finished</SelectItem>
+                      <SelectItem value="CANCELLED" className="cursor-pointer rounded-lg">Stopped / Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -309,78 +307,78 @@ export default function CampaignsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1.5">
-                  <Label htmlFor="budget" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Allocated Budget ($)</Label>
+                  <Label htmlFor="budget" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Allocated Budget ($)</Label>
                   <Input 
                     id="budget" 
                     type="number" 
                     value={formData.budget} 
                     onChange={(e) => handleInputChange('budget', e.target.value)} 
                     placeholder="e.g. 5000"
-                    className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
+                    className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="actualCost" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Actual Spent ($)</Label>
+                  <Label htmlFor="actualCost" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Actual Spent ($)</Label>
                   <Input 
                     id="actualCost" 
                     type="number" 
                     value={formData.actualCost} 
                     onChange={(e) => handleInputChange('actualCost', e.target.value)} 
                     placeholder="e.g. 4200"
-                    className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
+                    className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="expectedRevenue" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Expected Revenue ($)</Label>
+                  <Label htmlFor="expectedRevenue" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Expected Revenue ($)</Label>
                   <Input 
                     id="expectedRevenue" 
                     type="number" 
                     value={formData.expectedRevenue} 
                     onChange={(e) => handleInputChange('expectedRevenue', e.target.value)} 
                     placeholder="e.g. 25000"
-                    className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
+                    className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <Label htmlFor="startDate" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Initiation Date</Label>
+                  <Label htmlFor="startDate" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Initiation Date</Label>
                   <Input 
                     id="startDate" 
                     type="date" 
                     value={formData.startDate} 
-                    onChange={(e) => handleInputChange('startDate', e.target.value)}
-                    className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 [&::-webkit-calendar-picker-indicator]:dark:invert"
+                    onChange={(e) => handleInputChange('startDate', e.target.value)} 
+                    className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm [&::-webkit-calendar-picker-indicator]:dark:invert"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="endDate" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Closing Date</Label>
+                  <Label htmlFor="endDate" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Closing Date</Label>
                   <Input 
                     id="endDate" 
                     type="date" 
                     value={formData.endDate} 
-                    onChange={(e) => handleInputChange('endDate', e.target.value)}
-                    className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 [&::-webkit-calendar-picker-indicator]:dark:invert"
+                    onChange={(e) => handleInputChange('endDate', e.target.value)} 
+                    className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm [&::-webkit-calendar-picker-indicator]:dark:invert"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="description" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Core Description &amp; Targets</Label>
+                <Label htmlFor="description" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Core Description &amp; Targets</Label>
                 <Textarea 
                   id="description" 
                   value={formData.description} 
                   onChange={(e) => handleInputChange('description', e.target.value)} 
                   placeholder="Map out key conversion funnels or criteria..."
                   rows={4}
-                  className="rounded-xl border-slate-200 dark:border-slate-700 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 resize-none"
+                  className="rounded-xl border-border focus-visible:ring-blue-500 bg-background text-foreground resize-none shadow-sm"
                 />
               </div>
 
-              <div className="flex gap-3 justify-end pt-2 border-t border-slate-100 dark:border-slate-800 mt-6">
-                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)} className="rounded-xl h-10 px-6 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold cursor-pointer">Cancel</Button>
-                <Button type="submit" disabled={formLoading} className="rounded-xl h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm cursor-pointer">
+              <div className="flex gap-3 justify-end pt-2 border-t border-border mt-6">
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)} className="rounded-xl h-10 px-6 border-border text-foreground hover:bg-muted font-medium cursor-pointer shadow-sm">Cancel</Button>
+                <Button type="submit" disabled={formLoading} className="rounded-xl h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium gap-2 shadow-sm cursor-pointer">
                   {formLoading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null}
                   Deploy Campaign
                 </Button>
@@ -396,12 +394,12 @@ export default function CampaignsPage() {
           <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
         </div>
       ) : campaigns.length === 0 ? (
-        <div className="text-center py-24 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-dashed rounded-2xl shadow-sm">
-          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-full w-max mx-auto mb-4 border border-slate-100 dark:border-slate-800">
-            <Megaphone className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+        <div className="text-center py-24 bg-card border border-border border-dashed rounded-2xl shadow-sm">
+          <div className="p-4 bg-muted rounded-full w-max mx-auto mb-4 border border-border">
+            <Megaphone className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">No Campaigns Configured</h3>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto text-sm font-medium">
+          <h3 className="text-lg font-bold text-foreground">No Campaigns Configured</h3>
+          <p className="text-muted-foreground mt-1 max-w-sm mx-auto text-sm font-medium">
             Launch structured multi-channel marketing campaigns to track sales acquisition channels.
           </p>
         </div>
@@ -413,10 +411,10 @@ export default function CampaignsPage() {
               ? Math.min((c.actualCost! / c.budget!) * 100, 100) 
               : 0;
             return (
-              <div key={c.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group">
-                <div className="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-start relative">
+              <div key={c.id} className="bg-card border border-border rounded-2xl shadow-sm hover:border-blue-500/50 hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group">
+                <div className="p-5 border-b border-border bg-muted/40 flex justify-between items-start relative">
                   <div className="space-y-2 pr-6">
-                    <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 tracking-tight truncate max-w-[220px]">{c.name}</h3>
+                    <h3 className="font-bold text-base text-foreground tracking-tight truncate max-w-[220px]">{c.name}</h3>
                     <div className="flex flex-wrap gap-2">
                       {getStatusBadge(c.status)}
                       {getTypeBadge(c.type)}
@@ -426,7 +424,7 @@ export default function CampaignsPage() {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg shrink-0 cursor-pointer"
+                      className="h-8 w-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg shrink-0 cursor-pointer"
                       onClick={() => handleOpenEdit(c)}
                       title="Edit Campaign"
                     >
@@ -435,7 +433,7 @@ export default function CampaignsPage() {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg shrink-0 cursor-pointer"
+                      className="h-8 w-8 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg shrink-0 cursor-pointer"
                       onClick={() => handleDelete(c.id)}
                       title="Archive Campaign"
                     >
@@ -446,40 +444,40 @@ export default function CampaignsPage() {
 
                 <div className="p-5 space-y-5 flex-1 flex flex-col">
                   {c.description && (
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed">{c.description}</p>
+                    <p className="text-sm font-medium text-muted-foreground line-clamp-3 leading-relaxed">{c.description}</p>
                   )}
 
                   <div className="grid grid-cols-2 gap-3 text-xs pt-1">
-                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-semibold">
+                    <div className="flex items-center gap-1.5 text-muted-foreground font-semibold">
                       <Calendar className="h-3.5 w-3.5" />
                       <span>Start: {c.startDate ? new Date(c.startDate).toLocaleDateString() : 'N/A'}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-semibold justify-end">
+                    <div className="flex items-center gap-1.5 text-muted-foreground font-semibold justify-end">
                       <Calendar className="h-3.5 w-3.5" />
                       <span>End: {c.endDate ? new Date(c.endDate).toLocaleDateString() : 'N/A'}</span>
                     </div>
                   </div>
 
                   {/* Financial Progress */}
-                  <div className="space-y-2.5 border-t border-slate-100 dark:border-slate-700 pt-4 mt-auto">
-                    <div className="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <div className="space-y-2.5 border-t border-border pt-4 mt-auto">
+                    <div className="flex justify-between text-xs font-bold text-foreground">
                       <span>Cost Utilization</span>
                       <span>{costPercentage.toFixed(0)}%</span>
                     </div>
-                    <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden shadow-inner">
                       <div 
                         className={`h-full rounded-full transition-all ${costPercentage > 90 ? 'bg-rose-500 dark:bg-rose-600' : 'bg-blue-600 dark:bg-blue-500'}`}
                         style={{ width: `${costPercentage}%` }}
                       />
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-[11px] text-slate-500 dark:text-slate-400 pt-2">
+                    <div className="grid grid-cols-3 gap-2 text-[11px] text-muted-foreground pt-2">
                       <div>
                         <p className="font-semibold uppercase tracking-wider mb-0.5">Budget</p>
-                        <p className="font-bold text-slate-800 dark:text-slate-100 text-xs">{formatCurrency(c.budget)}</p>
+                        <p className="font-bold text-foreground text-xs">{formatCurrency(c.budget)}</p>
                       </div>
                       <div className="text-center">
                         <p className="font-semibold uppercase tracking-wider mb-0.5">Spent</p>
-                        <p className="font-bold text-slate-800 dark:text-slate-100 text-xs">{formatCurrency(c.actualCost)}</p>
+                        <p className="font-bold text-foreground text-xs">{formatCurrency(c.actualCost)}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold uppercase tracking-wider mb-0.5">Expected</p>
@@ -496,9 +494,9 @@ export default function CampaignsPage() {
 
       {/* EDIT CAMPAIGN MODAL */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl dark:bg-slate-900 dark:border-slate-800">
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border-border bg-card">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-foreground dark:text-slate-100 flex items-center gap-2">
+            <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
               <Edit2 className="h-5 w-5 text-blue-600" />
               Edit Marketing Campaign
             </DialogTitle>
@@ -510,7 +508,7 @@ export default function CampaignsPage() {
                 value={editFormData.name} 
                 onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g. Q4 Omni-channel Awareness Drive"
-                className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
+                className="rounded-xl border-border h-11 focus-visible:ring-blue-500 bg-background text-foreground"
                 required
               />
             </div>
@@ -519,10 +517,10 @@ export default function CampaignsPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Channel Type</Label>
                 <Select value={editFormData.type} onValueChange={(val) => setEditFormData(prev => ({ ...prev, type: val }))}>
-                  <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus:ring-blue-500 dark:bg-slate-950 dark:text-slate-100">
+                  <SelectTrigger className="rounded-xl border-border h-11 focus:ring-blue-500 bg-background text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl dark:bg-slate-900 dark:border-slate-800">
+                  <SelectContent className="rounded-xl border-border">
                     <SelectItem value="EMAIL">Email Marketing</SelectItem>
                     <SelectItem value="SOCIAL_MEDIA">Social Media</SelectItem>
                     <SelectItem value="PPC">PPC Advertising</SelectItem>
@@ -535,10 +533,10 @@ export default function CampaignsPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</Label>
                 <Select value={editFormData.status} onValueChange={(val) => setEditFormData(prev => ({ ...prev, status: val }))}>
-                  <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus:ring-blue-500 dark:bg-slate-950 dark:text-slate-100">
+                  <SelectTrigger className="rounded-xl border-border h-11 focus:ring-blue-500 bg-background text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl dark:bg-slate-900 dark:border-slate-800">
+                  <SelectContent className="rounded-xl border-border">
                     <SelectItem value="PLANNING">Planning</SelectItem>
                     <SelectItem value="ACTIVE">Active (Live)</SelectItem>
                     <SelectItem value="COMPLETED">Completed</SelectItem>
@@ -550,38 +548,38 @@ export default function CampaignsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Budget (₹)</Label>
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Budget ($)</Label>
                 <Input 
                   type="number"
                   step="0.01"
                   value={editFormData.budget} 
                   onChange={(e) => setEditFormData(prev => ({ ...prev, budget: e.target.value }))}
                   placeholder="0.00"
-                  className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 font-mono"
+                  className="rounded-xl border-border h-11 focus-visible:ring-blue-500 bg-background text-foreground font-mono"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Actual Cost (₹)</Label>
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Actual Cost ($)</Label>
                 <Input 
                   type="number"
                   step="0.01"
                   value={editFormData.actualCost} 
                   onChange={(e) => setEditFormData(prev => ({ ...prev, actualCost: e.target.value }))}
                   placeholder="0.00"
-                  className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 font-mono"
+                  className="rounded-xl border-border h-11 focus-visible:ring-blue-500 bg-background text-foreground font-mono"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Expected Rev (₹)</Label>
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Expected Rev ($)</Label>
                 <Input 
                   type="number"
                   step="0.01"
                   value={editFormData.expectedRevenue} 
                   onChange={(e) => setEditFormData(prev => ({ ...prev, expectedRevenue: e.target.value }))}
                   placeholder="0.00"
-                  className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 font-mono"
+                  className="rounded-xl border-border h-11 focus-visible:ring-blue-500 bg-background text-foreground font-mono"
                 />
               </div>
             </div>
@@ -593,7 +591,7 @@ export default function CampaignsPage() {
                   type="date"
                   value={editFormData.startDate} 
                   onChange={(e) => setEditFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                  className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
+                  className="rounded-xl border-border h-11 focus-visible:ring-blue-500 bg-background text-foreground"
                 />
               </div>
 
@@ -603,7 +601,7 @@ export default function CampaignsPage() {
                   type="date"
                   value={editFormData.endDate} 
                   onChange={(e) => setEditFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                  className="rounded-xl border-slate-200 dark:border-slate-700 h-11 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
+                  className="rounded-xl border-border h-11 focus-visible:ring-blue-500 bg-background text-foreground"
                 />
               </div>
             </div>
@@ -615,15 +613,15 @@ export default function CampaignsPage() {
                 onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))} 
                 placeholder="Map out key conversion funnels or criteria..."
                 rows={3}
-                className="rounded-xl border-slate-200 dark:border-slate-700 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 resize-none"
+                className="rounded-xl border-border focus-visible:ring-blue-500 bg-background text-foreground resize-none"
               />
             </div>
 
-            <div className="flex gap-3 justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
-              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)} className="rounded-xl h-10 px-5 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer">
+            <div className="flex gap-3 justify-end pt-3 border-t border-border">
+              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)} className="rounded-xl h-10 px-5 border-border text-foreground font-medium cursor-pointer">
                 Cancel
               </Button>
-              <Button type="submit" disabled={editLoading} className="rounded-xl h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm cursor-pointer">
+              <Button type="submit" disabled={editLoading} className="rounded-xl h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium gap-2 shadow-sm cursor-pointer">
                 {editLoading ? <Loader2 className="animate-spin h-4 w-4" /> : null}
                 Save Changes
               </Button>

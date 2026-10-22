@@ -359,97 +359,60 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
   }
 
   return (
-    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0">
-      {/* Top bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl hidden sm:block">
-            <FileTextIcon className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Invoices</h1>
-            <p className="text-sm font-medium text-muted-foreground mt-0.5">
-              Create, track, and manage your invoices.
-            </p>
-          </div>
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
+      {/* Clean Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Invoices</h1>
+          <p className="text-sm text-muted-foreground mt-1">Create, track, and manage your invoices</p>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-3">
           <Button 
             variant="outline" 
-            className="flex-1 sm:flex-none items-center gap-2 h-10 px-4 rounded-xl border-border hover:bg-muted cursor-pointer" 
+            className="h-10 gap-2 bg-card hover:bg-muted text-foreground border-border shadow-sm rounded-xl font-medium px-4 cursor-pointer"
             onClick={handleBulkSync}
             disabled={syncLoading}
           >
             {syncLoading ? <Loader2Icon className="size-4 animate-spin text-blue-600" /> : <RefreshCwIcon className="size-4 text-blue-600" />}
-            <span className="text-sm font-semibold text-foreground">Sync Old Records</span>
+            Sync Old Records
           </Button>
           <Button 
-            className="flex-1 sm:flex-none items-center gap-2 h-10 px-4 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
             onClick={handleAddInvoiceClick}
+            className="h-10 cursor-pointer gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-xl border-none font-medium px-5"
           >
             <PlusIcon className="size-4" />
-            <span className="text-sm font-semibold">New Invoice</span>
+            New Invoice
           </Button>
         </div>
       </div>
 
       {/* KPI cards */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="rounded-2xl border-border shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Total Invoices</CardTitle>
-            <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center">
-              <FileTextIcon className="h-4 w-4 text-blue-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{stats.totalInvoices}</div>
-            <p className="text-xs font-medium text-muted-foreground mt-1">All-time invoice count</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border-border shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Paid Invoices</CardTitle>
-            <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <CheckIcon className="h-4 w-4 text-emerald-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{stats.paidInvoices}</div>
-            <p className="text-xs font-medium text-emerald-600 mt-1">Successfully paid</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border-border shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Outstanding</CardTitle>
-            <div className="h-8 w-8 rounded-lg bg-amber-50 flex items-center justify-center">
-              <ClockIcon className="h-4 w-4 text-amber-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{stats.outstandingAmount}</div>
-            <p className="text-xs font-medium text-amber-600 mt-1">{stats.pendingInvoices + stats.partiallyPaidInvoices} invoices pending</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border-border shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Total Revenue</CardTitle>
-            <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-              <TrendingUpIcon className="h-4 w-4 text-indigo-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{stats.totalRevenue}</div>
-            <p className="text-xs font-medium text-muted-foreground mt-1">From paid invoices</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: 'Total Invoices', value: stats.totalInvoices, sub: 'All-time invoice count', icon: FileTextIcon, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800' },
+          { label: 'Paid Invoices', value: stats.paidInvoices, sub: 'Successfully paid', icon: CheckIcon, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' },
+          { label: 'Outstanding', value: stats.outstandingAmount, sub: `${stats.pendingInvoices + stats.partiallyPaidInvoices} invoices pending`, icon: ClockIcon, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800' },
+          { label: 'Total Revenue', value: stats.totalRevenue, sub: 'From paid invoices', icon: TrendingUpIcon, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800' },
+        ].map(stat => (
+          <Card key={stat.label} className="border-border bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-2xl font-black text-foreground mt-1">{stat.value}</p>
+                  <p className="text-xs font-medium text-muted-foreground mt-1">{stat.sub}</p>
+                </div>
+                <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg} ${stat.color} shadow-sm shrink-0`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Main content */}
-      <Card className="rounded-2xl border-border shadow-sm bg-card overflow-hidden flex-1 flex flex-col">
+      <Card className="w-full min-w-0 max-w-full rounded-2xl border-border bg-card shadow-sm overflow-hidden flex-1 flex flex-col">
         <div className="p-6 border-b border-border bg-muted/50 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
           <div className="relative w-full xl:w-80">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -457,7 +420,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
               placeholder="Search invoices..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-10 rounded-xl border-border bg-card w-full focus-visible:ring-blue-500"
+              className="pl-9 h-10 rounded-xl border-border bg-card w-full focus-visible:ring-blue-500 text-sm shadow-sm"
             />
           </div>
           <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
@@ -465,19 +428,19 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="h-10 w-[140px] rounded-xl border-border text-sm"
+              className="h-10 w-[140px] rounded-xl border-border bg-card text-sm shadow-sm"
             />
             <Input
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="h-10 w-[140px] rounded-xl border-border text-sm"
+              className="h-10 w-[140px] rounded-xl border-border bg-card text-sm shadow-sm"
             />
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
-              <SelectTrigger className="h-10 w-[160px] rounded-xl border-border font-medium bg-card">
+              <SelectTrigger className="h-10 w-[160px] rounded-xl border-border font-medium bg-card text-sm shadow-sm">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
+              <SelectContent className="rounded-xl border-border">
                 <SelectItem value="all">All Statuses</SelectItem>
                 {INVOICE_STATUSES.map((status) => (
                   <SelectItem key={status} value={status}>{invoiceStatusLabel(status)}</SelectItem>
@@ -486,26 +449,26 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
             </Select>
             <Button 
               variant="outline" 
-              className="h-10 rounded-xl cursor-pointer border-border text-muted-foreground hover:bg-muted gap-2"
+              className="h-10 rounded-xl cursor-pointer border-border bg-card text-foreground hover:bg-muted gap-2 font-medium px-4 shadow-sm"
               onClick={handleExport}
               disabled={exportLoading}
             >
               {exportLoading ? <Loader2Icon className="size-4 animate-spin text-blue-600" /> : <FileDownIcon className="size-4" />}
-              <span className="hidden sm:inline font-semibold">Export</span>
+              <span className="hidden sm:inline">Export</span>
             </Button>
           </div>
         </div>
-        <div className="p-0 border-t-0 flex-1 overflow-auto custom-scrollbar">
-          <Table>
-            <TableHeader className="bg-muted/80 sticky top-0 z-10 backdrop-blur-sm">
-              <TableRow className="hover:bg-background border-b border-border">
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Invoice</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Customer</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Amount</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Due Date</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Items</TableHead>
-                <TableHead className="h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
+        <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
+          <Table className="w-full min-w-[850px]">
+            <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-10 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <TableRow className="hover:bg-muted dark:hover:bg-[#181a20] border-b border-border">
+                <TableHead className="pl-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Invoice</TableHead>
+                <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Customer</TableHead>
+                <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Amount</TableHead>
+                <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Due Date</TableHead>
+                <TableHead className="px-4 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Items</TableHead>
+                <TableHead className="pr-6 h-12 text-[11px] font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -148,14 +148,14 @@ export default function CrmTasksPage() {
 
   const renderTaskCard = (task: CrmTask) => {
     return (
-      <div key={task.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-md transition-all group overflow-hidden">
+      <div key={task.id} className="bg-card border border-border rounded-xl shadow-sm hover:border-blue-500/50 hover:shadow-md transition-all group overflow-hidden">
         <div className="p-4 space-y-3">
           <div className="flex justify-between items-start gap-2">
-            <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-snug line-clamp-2">{task.title}</h4>
+            <h4 className="font-bold text-sm text-foreground leading-snug line-clamp-2">{task.title}</h4>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-7 w-7 text-slate-400 dark:text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg cursor-pointer"
+              className="h-7 w-7 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg cursor-pointer"
               onClick={() => handleDelete(task.id)}
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -163,11 +163,11 @@ export default function CrmTasksPage() {
           </div>
 
           {task.description && (
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">{task.description}</p>
+            <p className="text-xs font-medium text-muted-foreground line-clamp-2 leading-relaxed">{task.description}</p>
           )}
 
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
               <CalendarDays className="h-3.5 w-3.5" />
               <span>{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No Date'}</span>
             </div>
@@ -192,19 +192,17 @@ export default function CrmTasksPage() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col gap-6 bg-[#f8fafc] dark:bg-slate-950 px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 transition-colors">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="p-3 bg-sky-50 dark:bg-sky-500/10 text-sky-500 rounded-xl hidden sm:block">
-            <CheckSquare className="h-6 w-6" />
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">CRM Pipeline Tasks</span>
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Orchestrate operational tasks for Leads and Sales Deals.</span>
-          </div>
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">CRM Pipeline Tasks</h1>
+          <p className="text-sm text-muted-foreground mt-1">Orchestrate operational tasks for Leads and Sales Deals.</p>
         </div>
-        <Button onClick={() => setShowAddForm(!showAddForm)} className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm cursor-pointer transition-colors shrink-0">
+        <Button 
+          onClick={() => setShowAddForm(!showAddForm)} 
+          className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium gap-2 shadow-sm cursor-pointer px-5"
+        >
           {showAddForm ? 'Close Form' : (
             <>
               <Plus className="h-4 w-4" />
@@ -216,34 +214,34 @@ export default function CrmTasksPage() {
 
       {/* QUICK ADD FORM */}
       {showAddForm && (
-        <div className="rounded-2xl border-t-4 border-t-sky-500 border-x border-b border-x-slate-200 border-b-slate-200 dark:border-x-slate-800 dark:border-b-slate-800 bg-white dark:bg-slate-900 shadow-md animate-in fade-in slide-in-from-top-2 duration-200 transition-colors overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Schedule Operational Task</h3>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Allocate task parameters, prioritizations, and timeline milestones.</p>
+        <div className="rounded-2xl border border-border bg-card shadow-sm animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+          <div className="px-6 py-5 border-b border-border bg-muted/40">
+            <h3 className="text-lg font-bold text-foreground">Schedule Operational Task</h3>
+            <p className="text-xs font-medium text-muted-foreground mt-0.5">Allocate task parameters, prioritizations, and timeline milestones.</p>
           </div>
           <div className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1.5 col-span-2">
-                  <Label htmlFor="title" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Task Title <span className="text-rose-500">*</span></Label>
+                  <Label htmlFor="title" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Task Title <span className="text-rose-500">*</span></Label>
                   <Input 
                     id="title" 
                     value={formData.title} 
                     onChange={(e) => handleInputChange('title', e.target.value)} 
                     placeholder="e.g. Draft proposal document"
-                    className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100"
+                    className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="priority" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Task Priority</Label>
+                  <Label htmlFor="priority" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Task Priority</Label>
                   <Select value={formData.priority} onValueChange={(val) => handleInputChange('priority', val)}>
-                    <SelectTrigger id="priority" className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100">
+                    <SelectTrigger id="priority" className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm">
                       <SelectValue placeholder="Priority" />
                     </SelectTrigger>
-                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">
-                      <SelectItem value="LOW" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Low priority</SelectItem>
-                      <SelectItem value="MEDIUM" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Medium priority</SelectItem>
-                      <SelectItem value="HIGH" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">High priority</SelectItem>
+                    <SelectContent className="rounded-xl border-border">
+                      <SelectItem value="LOW" className="cursor-pointer rounded-lg">Low priority</SelectItem>
+                      <SelectItem value="MEDIUM" className="cursor-pointer rounded-lg">Medium priority</SelectItem>
+                      <SelectItem value="HIGH" className="cursor-pointer rounded-lg">High priority</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -251,45 +249,45 @@ export default function CrmTasksPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <Label htmlFor="dueDate" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Target Due Date</Label>
+                  <Label htmlFor="dueDate" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Target Due Date</Label>
                   <Input 
                     id="dueDate" 
                     type="date" 
                     value={formData.dueDate} 
                     onChange={(e) => handleInputChange('dueDate', e.target.value)}
-                    className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 [&::-webkit-calendar-picker-indicator]:dark:invert"
+                    className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm [&::-webkit-calendar-picker-indicator]:dark:invert"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="status" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Initial Status</Label>
+                  <Label htmlFor="status" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Initial Status</Label>
                   <Select value={formData.status} onValueChange={(val) => handleInputChange('status', val)}>
-                    <SelectTrigger id="status" className="rounded-xl border-slate-200 dark:border-slate-700 h-10 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100">
+                    <SelectTrigger id="status" className="rounded-xl border-border h-10 focus-visible:ring-blue-500 bg-background text-foreground shadow-sm">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
-                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800 rounded-xl">
-                      <SelectItem value="TODO" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">To Do</SelectItem>
-                      <SelectItem value="IN_PROGRESS" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">In Progress</SelectItem>
-                      <SelectItem value="DONE" className="dark:focus:bg-slate-800 cursor-pointer rounded-lg">Completed</SelectItem>
+                    <SelectContent className="rounded-xl border-border">
+                      <SelectItem value="TODO" className="cursor-pointer rounded-lg">To Do</SelectItem>
+                      <SelectItem value="IN_PROGRESS" className="cursor-pointer rounded-lg">In Progress</SelectItem>
+                      <SelectItem value="DONE" className="cursor-pointer rounded-lg">Completed</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="description" className="text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider">Details / Summary</Label>
+                <Label htmlFor="description" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Details / Summary</Label>
                 <Textarea 
                   id="description" 
                   value={formData.description} 
                   onChange={(e) => handleInputChange('description', e.target.value)} 
                   placeholder="Draft context, links, or criteria..."
                   rows={4}
-                  className="rounded-xl border-slate-200 dark:border-slate-700 focus-visible:ring-blue-500 dark:bg-slate-950 dark:text-slate-100 resize-none"
+                  className="rounded-xl border-border focus-visible:ring-blue-500 bg-background text-foreground resize-none shadow-sm"
                 />
               </div>
 
-              <div className="flex gap-3 justify-end pt-2 border-t border-slate-100 dark:border-slate-800 mt-6">
-                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)} className="rounded-xl h-10 px-6 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold cursor-pointer">Cancel</Button>
-                <Button type="submit" disabled={formLoading} className="rounded-xl h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm cursor-pointer">
+              <div className="flex gap-3 justify-end pt-2 border-t border-border mt-6">
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)} className="rounded-xl h-10 px-6 border-border text-foreground hover:bg-muted font-medium cursor-pointer shadow-sm">Cancel</Button>
+                <Button type="submit" disabled={formLoading} className="rounded-xl h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium gap-2 shadow-sm cursor-pointer">
                   {formLoading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null}
                   Deploy Task
                 </Button>
@@ -308,17 +306,17 @@ export default function CrmTasksPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* Column 1: TODO */}
-          <div className="flex flex-col gap-4 bg-slate-50/80 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm min-h-[400px]">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="font-bold text-sm tracking-tight flex items-center gap-2 text-slate-800 dark:text-slate-100">
-                <AlertCircle className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+          <div className="flex flex-col gap-4 bg-muted/30 p-4 rounded-2xl border border-border shadow-sm min-h-[400px]">
+            <div className="flex justify-between items-center pb-3 border-b border-border">
+              <h3 className="font-bold text-sm tracking-tight flex items-center gap-2 text-foreground">
+                <AlertCircle className="h-4 w-4 text-muted-foreground" />
                 <span>To Do</span>
               </h3>
-              <Badge variant="secondary" className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold shadow-none rounded-md px-2">{todoTasks.length}</Badge>
+              <Badge variant="secondary" className="bg-muted text-muted-foreground font-semibold shadow-none rounded-md px-2">{todoTasks.length}</Badge>
             </div>
             <div className="space-y-3 flex-1">
               {todoTasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-500 py-10">
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-10">
                   <CheckSquare className="h-8 w-8 mb-2 opacity-50" />
                   <p className="text-xs font-medium">No tasks in backlog</p>
                 </div>
@@ -327,17 +325,17 @@ export default function CrmTasksPage() {
           </div>
 
           {/* Column 2: IN PROGRESS */}
-          <div className="flex flex-col gap-4 bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/50 shadow-sm min-h-[400px]">
+          <div className="flex flex-col gap-4 bg-blue-50/40 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/40 shadow-sm min-h-[400px]">
             <div className="flex justify-between items-center pb-3 border-b border-blue-200 dark:border-blue-800">
-              <h3 className="font-bold text-sm tracking-tight flex items-center gap-2 text-blue-800 dark:text-blue-100">
+              <h3 className="font-bold text-sm tracking-tight flex items-center gap-2 text-blue-700 dark:text-blue-300">
                 <Clock className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                 <span>In Progress</span>
               </h3>
-              <Badge variant="secondary" className="bg-blue-200 dark:bg-blue-800/50 text-blue-800 dark:text-blue-300 font-semibold shadow-none rounded-md px-2">{progressTasks.length}</Badge>
+              <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-semibold shadow-none rounded-md px-2">{progressTasks.length}</Badge>
             </div>
             <div className="space-y-3 flex-1">
               {progressTasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-blue-400 dark:text-blue-600/50 py-10">
+                <div className="flex flex-col items-center justify-center h-full text-blue-400 dark:text-blue-500/50 py-10">
                   <Clock className="h-8 w-8 mb-2 opacity-50" />
                   <p className="text-xs font-medium">No active tasks</p>
                 </div>
@@ -346,17 +344,17 @@ export default function CrmTasksPage() {
           </div>
 
           {/* Column 3: DONE */}
-          <div className="flex flex-col gap-4 bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 shadow-sm min-h-[400px]">
+          <div className="flex flex-col gap-4 bg-emerald-50/40 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 shadow-sm min-h-[400px]">
             <div className="flex justify-between items-center pb-3 border-b border-emerald-200 dark:border-emerald-800">
-              <h3 className="font-bold text-sm tracking-tight flex items-center gap-2 text-emerald-800 dark:text-emerald-100">
+              <h3 className="font-bold text-sm tracking-tight flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
                 <CheckSquare className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
                 <span>Completed</span>
               </h3>
-              <Badge variant="secondary" className="bg-emerald-200 dark:bg-emerald-800/50 text-emerald-800 dark:text-emerald-300 font-semibold shadow-none rounded-md px-2">{doneTasks.length}</Badge>
+              <Badge variant="secondary" className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold shadow-none rounded-md px-2">{doneTasks.length}</Badge>
             </div>
             <div className="space-y-3 flex-1">
               {doneTasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-emerald-400 dark:text-emerald-600/50 py-10">
+                <div className="flex flex-col items-center justify-center h-full text-emerald-400 dark:text-emerald-500/50 py-10">
                   <CheckSquare className="h-8 w-8 mb-2 opacity-50" />
                   <p className="text-xs font-medium">No completed tasks</p>
                 </div>

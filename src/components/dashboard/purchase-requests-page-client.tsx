@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   DRAFT: { label: 'Draft', color: 'bg-muted text-foreground dark:bg-slate-800 dark:text-slate-300 border-border dark:border-slate-700', icon: FileText },
@@ -33,23 +34,31 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function WorkflowPipeline({ counts }: { counts: Record<string, number> }) {
-  const steps = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'CONVERTED_TO_PO']
+  const kpis = [
+    { label: 'Draft', value: counts['DRAFT'] || 0, sub: 'Initial requests', icon: FileText, color: 'text-slate-600 dark:text-slate-300', bg: 'bg-slate-50 border-slate-100 dark:bg-slate-800/40 dark:border-slate-700' },
+    { label: 'Pending Approval', value: counts['PENDING_APPROVAL'] || 0, sub: 'Awaiting manager signoff', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800' },
+    { label: 'Approved', value: counts['APPROVED'] || 0, sub: 'Ready for purchase order', icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' },
+    { label: 'Converted to PO', value: counts['CONVERTED_TO_PO'] || 0, sub: 'Fulfillment in progress', icon: ArrowRightCircle, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800' },
+  ]
+
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-3">
-      {steps.map((s, i) => {
-        const cfg = STATUS_CONFIG[s]
-        const Icon = cfg.icon
-        return (
-          <React.Fragment key={s}>
-            <div className={`flex flex-1 w-full flex-col items-center justify-center rounded-2xl border px-4 py-5 shadow-sm transition-colors ${cfg.color}`}>
-              <Icon className="h-6 w-6 mb-2 opacity-80" />
-              <span className="text-3xl font-bold">{counts[s] || 0}</span>
-              <span className="text-[11px] font-bold uppercase tracking-wider mt-1 opacity-90">{cfg.label}</span>
+    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {kpis.map(stat => (
+        <Card key={stat.label} className="border-border bg-card shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                <p className="text-2xl font-black text-foreground mt-1">{stat.value}</p>
+                <p className="text-xs text-muted-foreground font-medium mt-1">{stat.sub}</p>
+              </div>
+              <div className={`flex items-center justify-center h-12 w-12 rounded-xl border ${stat.bg} ${stat.color} shadow-sm shrink-0`}>
+                <stat.icon className="h-6 w-6" />
+              </div>
             </div>
-            {i < steps.length - 1 && <ChevronRight className="hidden sm:block h-5 w-5 shrink-0 text-slate-300 dark:text-muted-foreground mx-1" />}
-          </React.Fragment>
-        )
-      })}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }
@@ -138,98 +147,87 @@ export default function PurchaseRequestsPageClient() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col gap-6 bg-background dark:bg-slate-950 px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 transition-colors">
-      {/* Modernized Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card dark:bg-slate-900 p-6 rounded-2xl border border-border dark:border-slate-800 shadow-sm transition-colors">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl hidden sm:block">
-            <ClipboardList className="h-6 w-6" />
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-2xl font-bold text-foreground dark:text-slate-100 tracking-tight">Purchase Requests</span>
-            <span className="text-sm font-medium text-muted-foreground dark:text-slate-400 mt-0.5">Manage and approve internal purchase requisitions</span>
-          </div>
+    <div className="flex min-h-svh flex-col gap-6 bg-background px-4 pb-12 pt-6 sm:px-6 lg:px-8 w-full min-w-0 max-w-full overflow-x-hidden">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Purchase Requests</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage and approve internal purchase requisitions</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={downloadReport} className="h-10 rounded-xl border-border dark:border-slate-700 bg-card dark:bg-slate-800 hover:bg-muted dark:hover:bg-slate-800/80 text-foreground dark:text-slate-200 font-semibold gap-2 shadow-sm cursor-pointer transition-colors">
-            <DownloadIcon className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" onClick={downloadReport} className="h-10 rounded-xl border-border bg-card hover:bg-muted text-foreground font-medium gap-2 shadow-sm cursor-pointer px-4">
+            <DownloadIcon className="h-4 w-4 text-blue-600" />
             Export
           </Button>
-          <Link to={`/dashboard/${businessId}/purchase-requests/new`}>
-            <Button className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2 shadow-sm cursor-pointer transition-colors">
+          <Button asChild className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium gap-2 shadow-sm cursor-pointer px-5">
+            <Link to={`/dashboard/${businessId}/purchase-requests/new`}>
               <Plus className="h-4 w-4" />
               New Request
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
       {!isLoading && <WorkflowPipeline counts={counts} />}
 
       {/* Main Content Area */}
-      <div className="rounded-2xl border border-border dark:border-slate-800 bg-card dark:bg-slate-900 shadow-sm overflow-hidden transition-colors">
-        <div className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between border-b border-border dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-muted dark:bg-slate-800/50 text-muted-foreground dark:text-slate-400 rounded-lg">
-              <Filter className="h-5 w-5" />
-            </div>
+      <Card className="rounded-2xl border-border bg-card shadow-sm overflow-hidden flex-1 flex flex-col w-full min-w-0 max-w-full">
+        <CardHeader className="border-b border-border bg-muted/50 pb-5 pt-6 px-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-foreground dark:text-slate-100 flex items-center gap-2">
-                Directory
-                <span className="bg-muted dark:bg-slate-800 text-muted-foreground dark:text-slate-300 font-semibold px-2 py-0.5 rounded-md text-xs">
-                  {filtered.length}
-                </span>
-              </h2>
+              <CardTitle className="text-lg font-bold text-foreground">Directory</CardTitle>
+              <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
+                Showing <span className="text-foreground font-semibold">{filtered.length}</span> of {requests.length} total requests
+              </CardDescription>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search by request number..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-9 h-10 rounded-xl border-border bg-card focus-visible:ring-blue-500 text-sm shadow-sm"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-10 w-full sm:w-44 rounded-xl border-border bg-card shadow-sm">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border">
+                  <SelectItem value="all">All Status</SelectItem>
+                  {PR_STATUS.map(s => <SelectItem key={s} value={s}>{STATUS_CONFIG[s]?.label || s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative w-full max-w-sm sm:w-64">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-muted-foreground" />
-              <Input
-                placeholder="Search by request number..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9 h-10 rounded-xl border-border dark:border-slate-700 bg-muted dark:bg-slate-950 focus-visible:ring-blue-500 dark:text-slate-100 transition-colors shadow-sm"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-10 w-full sm:w-44 rounded-xl border-border dark:border-slate-700 bg-muted dark:bg-slate-950 dark:text-slate-100 focus:ring-blue-500 transition-colors shadow-sm">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-border dark:border-slate-800 dark:bg-slate-900">
-                <SelectItem value="all">All Status</SelectItem>
-                {PR_STATUS.map(s => <SelectItem key={s} value={s}>{STATUS_CONFIG[s]?.label || s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        </CardHeader>
 
-        <div className="p-0">
+        <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">
           {isLoading ? (
             <div className="space-y-4 p-6">
-              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl dark:bg-slate-800" />)}
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-16 flex flex-col items-center">
-              <div className="p-4 bg-muted dark:bg-slate-800/50 rounded-full mb-4">
-                <ClipboardList className="h-8 w-8 text-slate-400 dark:text-muted-foreground" />
+              <div className="p-4 bg-muted rounded-full mb-4">
+                <ClipboardList className="h-8 w-8 text-slate-400" />
               </div>
-              <h3 className="text-base font-bold text-foreground dark:text-slate-200">No purchase requests found</h3>
-              <p className="mt-1 text-sm text-muted-foreground dark:text-slate-400 max-w-sm mb-4">
+              <h3 className="text-base font-bold text-foreground">No purchase requests found</h3>
+              <p className="mt-1 text-sm text-muted-foreground max-w-sm mb-4">
                 {search || statusFilter !== 'all' ? 'Try adjusting your search or status filters.' : 'Create your first purchase request to get started.'}
               </p>
               {!(search || statusFilter !== 'all') && (
                 <Link to={`/dashboard/${businessId}/purchase-requests/new`}>
-                  <Button variant="outline" className="rounded-xl border-border dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Create First Request</Button>
+                  <Button variant="outline" className="rounded-xl border-border">Create First Request</Button>
                 </Link>
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-muted/80 dark:bg-slate-900/50">
-                  <TableRow className="hover:bg-background border-border dark:border-slate-800">
+            <Table className="w-full min-w-[850px]">
+              <TableHeader className="bg-muted dark:bg-[#181a20] sticky top-0 z-10 border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <TableRow className="hover:bg-muted dark:hover:bg-[#181a20] border-b border-border">
                     <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-6">Request #</TableHead>
                     <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Requester</TableHead>
                     <TableHead className="h-11 text-[11px] font-bold uppercase tracking-wider text-muted-foreground dark:text-slate-400 px-4">Priority</TableHead>
@@ -342,7 +340,6 @@ export default function PurchaseRequestsPageClient() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
           )}
           {filtered.length > 0 && (
             <div className="border-t border-border dark:border-slate-800 px-6 py-4">
@@ -352,7 +349,7 @@ export default function PurchaseRequestsPageClient() {
             </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   )
 }
