@@ -2,20 +2,21 @@ import * as React from 'react'
 import { contactsAPI, Contact, Customer } from '@/lib/api/contacts'
 import { DEAL_STAGES, CreateDealData } from '@/lib/api/deals'
 import { BusinessUser, usersAPI } from '@/lib/api/users'
+import { leadsAPI, Lead } from '@/lib/api/leads'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, UserPlus, Check, ChevronsUpDown, X } from 'lucide-react'
+import { Loader2, UserPlus, Check, ChevronsUpDown, X, Sparkles } from 'lucide-react'
 import { CreateCustomerModal } from '@/components/dashboard/create-customer-modal'
 import { toast } from 'sonner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
-import { CURRENCIES, getCurrencyByCountry } from '@/lib/currencies'
+import { CURRENCIES, getCurrencyByCountry, getCurrencySymbol } from '@/lib/currencies'
 
 interface DealFormProps {
   businessId: string
@@ -24,6 +25,7 @@ interface DealFormProps {
   submitLabel: string
   initialData?: Partial<CreateDealData>
   onSubmit: (data: CreateDealData) => Promise<void>
+  showLeadDropdown?: boolean
 }
 
 const LEAD_SOURCES = [
@@ -44,6 +46,8 @@ const DEFAULT_FORM_DATA: CreateDealData = {
   probability: undefined,
   source: '',
   description: '',
+  currency: 'INR',
+  leadId: '',
 }
 
 export function DealForm({
@@ -53,10 +57,12 @@ export function DealForm({
   submitLabel,
   initialData,
   onSubmit,
+  showLeadDropdown = true,
 }: DealFormProps) {
   const [formData, setFormData] = React.useState<CreateDealData>({
     ...DEFAULT_FORM_DATA,
     ...initialData,
+    currency: initialData?.currency || DEFAULT_FORM_DATA.currency || 'INR',
   })
   const { business } = useBusinessData()
   const [customers, setCustomers] = React.useState<Customer[]>([])
@@ -67,12 +73,96 @@ export function DealForm({
   const [submitting, setSubmitting] = React.useState(false)
   const [showCreateCustomer, setShowCreateCustomer] = React.useState(false)
 
+  // Lead dropdown state
+  const [leads, setLeads] = React.useState<Lead[]>([])
+  const [loadingLeads, setLoadingLeads] = React.useState(false)
+  const [selectedLeadId, setSelectedLeadId] = React.useState<string>(initialData?.leadId || '')
+
+  // Popover open states
+  const [openSource, setOpenSource] = React.useState(false)
+  const [openCurrency, setOpenCurrency] = React.useState(false)
+
   React.useEffect(() => {
     setFormData({
       ...DEFAULT_FORM_DATA,
       ...initialData,
+      currency: initialData?.currency || DEFAULT_FORM_DATA.currency || 'INR',
     })
+    if (initialData?.leadId !== undefined) {
+      setSelectedLeadId(initialData.leadId)
+    }
   }, [initialData])
+
+  React.useEffect(() => {
+    if (!showLeadDropdown) return
+    const loadLeads = async () => {
+      try {
+        setLoadingLeads(true)
+        const res = await leadsAPI.getAllLeads(businessId, { type: 'LEAD', limit: 500 })
+        if (res.success && Array.isArray(res.data)) {
+          setLeads(res.data)
+        }
+      } catch (err) {
+        console.error('Failed to load leads for deal form:', err)
+      } finally {
+        setLoadingLeads(false)
+      }
+    }
+    loadLeads()
+  }, [businessId, showLeadDropdown])
+
+  const availableLeads = React.useMemo(() => {
+    return leads.filter((l) => {
+      if (selectedLeadId && l.id === selectedLeadId) return true
+      const hasDeal = Boolean(l.conversionLog?.dealId)
+      return !hasDeal
+    })
+  }, [leads, selectedLeadId])
+
+  const handleLeadChange = (newLeadId: string) => {
+    if (newLeadId === 'none' || !newLeadId) {
+      setSelectedLeadId('')
+      setFormData(prev => ({
+        ...prev,
+        leadId: undefined,
+      }))
+      return
+    }
+
+    setSelectedLeadId(newLeadId)
+    const chosenLead = leads.find(l => l.id === newLeadId)
+    if (!chosenLead) return
+
+    let targetCustomerId = chosenLead.customerId || ''
+    if (!targetCustomerId && (chosenLead.company || chosenLead.name)) {
+      const nameToMatch = (chosenLead.company || chosenLead.name || '').trim().toLowerCase()
+      const matchedCustomer = customers.find(c => 
+        (c.company || c.name || '').trim().toLowerCase() === nameToMatch
+      )
+      if (matchedCustomer) {
+        targetCustomerId = matchedCustomer.id
+      }
+    }
+
+    const closeDate = (chosenLead as any).expectedDecisionDate
+      ? new Date((chosenLead as any).expectedDecisionDate).toISOString().split('T')[0]
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+    setFormData(prev => ({
+      ...prev,
+      leadId: chosenLead.id,
+      name: prev.name && prev.name !== 'Delton' && !prev.name.endsWith(' - Deal')
+        ? prev.name
+        : (chosenLead.company ? `${chosenLead.company} - Deal` : `${chosenLead.name} - Deal`),
+      amount: chosenLead.leadValue ? Number(chosenLead.leadValue) : prev.amount,
+      currency: chosenLead.currency || prev.currency || 'INR',
+      source: chosenLead.source || prev.source,
+      description: chosenLead.description || prev.description || '',
+      assignedToId: chosenLead.assignedToId || prev.assignedToId,
+      expectedCloseDate: prev.expectedCloseDate || closeDate,
+      customerId: targetCustomerId || prev.customerId,
+    }))
+  }
 
   React.useEffect(() => {
     const loadLookups = async () => {
@@ -163,7 +253,8 @@ export function DealForm({
             : undefined,
         source: formData.source?.trim() || undefined,
         description: formData.description?.trim() || undefined,
-        currency: formData.currency?.trim() || undefined,
+        currency: formData.currency?.trim() || 'INR',
+        leadId: formData.leadId || selectedLeadId || undefined,
       })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to save deal')
@@ -181,6 +272,60 @@ export function DealForm({
       <CardContent className="p-8">
         <form onSubmit={handleSubmit} className="space-y-10">
 
+          {/* Lead Selector for Add Deal */}
+          {showLeadDropdown && (
+            <div className="space-y-3 p-5 rounded-2xl border border-blue-100 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-900/40">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="leadSelect" className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-blue-600" />
+                  Lead
+                </Label>
+                {selectedLeadId && (
+                  <button
+                    type="button"
+                    onClick={() => handleLeadChange('none')}
+                    className="text-xs text-muted-foreground hover:text-foreground font-semibold cursor-pointer transition-colors"
+                  >
+                    Clear Lead
+                  </button>
+                )}
+              </div>
+              <Select
+                value={selectedLeadId || 'none'}
+                onValueChange={handleLeadChange}
+                disabled={loadingLeads}
+              >
+                <SelectTrigger id="leadSelect" className="w-full rounded-xl border-border bg-card h-11 focus:ring-blue-500 shadow-sm font-medium">
+                  <SelectValue placeholder={loadingLeads ? "Loading available leads..." : "Select lead..."} />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border shadow-lg max-h-72">
+                  <SelectItem value="none" className="cursor-pointer text-muted-foreground font-medium">
+                    No lead (Direct Deal)
+                  </SelectItem>
+                  {availableLeads.map((l) => (
+                    <SelectItem key={l.id} value={l.id} className="cursor-pointer">
+                      <span className="font-semibold text-foreground">{l.name}</span>
+                      {l.company && <span className="text-muted-foreground"> · {l.company}</span>}
+                      {l.leadValue && l.leadValue > 0 ? (
+                        <span className="text-emerald-600 font-semibold text-xs ml-2">
+                          ({getCurrencySymbol(l.currency)} {Number(l.leadValue).toLocaleString()})
+                        </span>
+                      ) : null}
+                      {l.customerId && (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-1.5 py-0.5 rounded ml-2 font-medium">
+                          Customer linked
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Showing active leads not yet converted to deals. Selecting a lead auto-fills opportunity details, values, and customer accounts.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-6">
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider border-b border-border pb-2">Core Information</h3>
             <div className="grid gap-6 md:grid-cols-2">
@@ -197,9 +342,11 @@ export function DealForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="amount" className="text-sm font-semibold text-foreground">Amount *</Label>
-                <div className="relative">
+                <div className="relative flex items-center">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <span className="text-slate-400 font-medium">₹</span>
+                    <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">
+                      {getCurrencySymbol(formData.currency) || '₹'}
+                    </span>
                   </div>
                   <Input
                     id="amount"
@@ -216,80 +363,83 @@ export function DealForm({
                       }))
                     }}
                     placeholder="25000"
-                    className="rounded-xl border-border bg-muted/50 h-11 pl-8 focus-visible:ring-blue-500 shadow-sm"
+                    style={{
+                      paddingLeft: `${Math.max(2.4, (getCurrencySymbol(formData.currency) || '₹').length * 0.75 + 1.2)}rem`
+                    }}
+                    className="rounded-xl border-border bg-muted/50 h-11 focus-visible:ring-blue-500 shadow-sm"
                     required
                   />
                 </div>
               </div>
-              {business?.businessType === 'Trading' && (
-                <div className="space-y-2 flex flex-col">
-                  <Label htmlFor="currency" className="text-sm font-semibold text-foreground">Currency</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className={cn(
-                          "w-full justify-between rounded-xl border-border bg-muted/50 h-11 focus:ring-blue-500 shadow-sm font-normal",
-                          !formData.currency && "text-muted-foreground"
+              <div className="space-y-2 flex flex-col">
+                <Label htmlFor="currency" className="text-sm font-semibold text-foreground">Currency</Label>
+                <Popover open={openCurrency} onOpenChange={setOpenCurrency}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openCurrency}
+                      className={cn(
+                        "w-full justify-between rounded-xl border-border bg-muted/50 h-11 focus:ring-blue-500 shadow-sm font-normal",
+                        !formData.currency && "text-muted-foreground"
+                      )}
+                    >
+                      {formData.currency
+                        ? (() => {
+                            const curr = CURRENCIES.find((c) => c.code.toUpperCase() === (formData.currency || '').toUpperCase())
+                            return curr ? `${curr.flag} ${curr.code} - ${curr.name} (${curr.symbol})` : formData.currency
+                          })()
+                        : "Select currency"}
+                      <div className="flex items-center gap-1">
+                        {formData.currency && (
+                          <div
+                            role="button"
+                            className="px-1 hover:text-foreground text-muted-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setFormData((prev) => ({ ...prev, currency: 'INR' }))
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </div>
                         )}
-                      >
-                        {formData.currency
-                          ? (() => {
-                              const curr = CURRENCIES.find((c) => c.code === formData.currency)
-                              return curr ? `${curr.flag} ${curr.code} - ${curr.name} (${curr.symbol})` : formData.currency
-                            })()
-                          : "Select currency"}
-                        <div className="flex items-center gap-1">
-                          {formData.currency && (
-                            <div
-                              role="button"
-                              className="px-1 hover:text-foreground text-muted-foreground"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setFormData((prev) => ({ ...prev, currency: '' }))
+                        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                      </div>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl border-border shadow-lg pointer-events-auto" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search currency..." />
+                      <CommandList>
+                        <CommandEmpty>No currency found.</CommandEmpty>
+                        <CommandGroup>
+                          {CURRENCIES.map((curr) => (
+                            <CommandItem
+                              key={curr.code}
+                              value={`${curr.code} ${curr.name}`}
+                              onSelect={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  currency: curr.code
+                                }))
+                                setOpenCurrency(false)
                               }}
                             >
-                              <X className="h-4 w-4" />
-                            </div>
-                          )}
-                          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-                        </div>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl border-border shadow-lg pointer-events-auto" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search currency..." />
-                        <CommandList>
-                          <CommandEmpty>No currency found.</CommandEmpty>
-                          <CommandGroup>
-                            {CURRENCIES.map((curr) => (
-                              <CommandItem
-                                key={curr.code}
-                                value={`${curr.code} ${curr.name}`}
-                                onSelect={() => {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    currency: curr.code === prev.currency ? '' : curr.code
-                                  }))
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    formData.currency === curr.code ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {curr.flag} {curr.code} - {curr.name} ({curr.symbol})
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              )}
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.currency === curr.code ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {curr.flag} {curr.code} - {curr.name} ({curr.symbol})
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           </div>
 
@@ -460,18 +610,19 @@ export function DealForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="source" className="text-sm font-semibold text-foreground">Lead Source</Label>
-              <Popover>
+              <Label htmlFor="source" className="text-sm font-semibold text-foreground">Source</Label>
+              <Popover open={openSource} onOpenChange={setOpenSource}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
+                    aria-expanded={openSource}
                     className={cn(
                       "w-full justify-between rounded-xl border-border bg-muted/50 h-11 focus:ring-blue-500 shadow-sm font-normal",
                       !formData.source && "text-muted-foreground"
                     )}
                   >
-                    {formData.source ? formData.source : "Select Lead Source"}
+                    {formData.source ? formData.source : "Select Source"}
                     <div className="flex items-center gap-1">
                       {formData.source && (
                         <div
@@ -491,21 +642,21 @@ export function DealForm({
                 </PopoverTrigger>
                 <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl border-border shadow-lg pointer-events-auto" align="start">
                   <Command>
-                    <CommandInput placeholder="Search lead source..." />
+                    <CommandInput placeholder="Search source..." />
                     <CommandList>
-                      <CommandEmpty>No lead source found.</CommandEmpty>
+                      <CommandEmpty>No source found.</CommandEmpty>
                       <CommandGroup>
                         {LEAD_SOURCES.map((source) => (
                           <CommandItem
                             key={source}
                             value={source}
                             onSelect={(currentValue) => {
-                              // currentValue from CommandItem is always lowercase
                               const newSource = currentValue.toLowerCase() === formData.source?.toLowerCase() ? '' : source
                               setFormData((prev) => ({
                                 ...prev,
                                 source: newSource
                               }))
+                              setOpenSource(false)
                             }}
                           >
                             <Check

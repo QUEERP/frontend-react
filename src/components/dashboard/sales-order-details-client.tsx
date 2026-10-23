@@ -12,6 +12,7 @@ import {
   FileSignature,
   FileText,
   Loader2,
+  Download,
   Package,
   RotateCcw,
   Sparkles,
@@ -106,6 +107,21 @@ export function SalesOrderDetailsClient({ businessId, orderId }: SalesOrderDetai
 
   const handleConvertToInvoice = () => {
     navigate(`/dashboard/${businessId}/invoices/add?salesOrderId=${orderId}`)
+  }
+
+  const [pdfLoading, setPdfLoading] = React.useState(false)
+
+  const handleDownloadPdf = async () => {
+    if (!order) return
+    try {
+      setPdfLoading(true)
+      await salesOrdersAPI.downloadSalesOrderPdf(businessId, orderId, order.orderNumber)
+      toast.success('Sales Order PDF downloaded successfully')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to download PDF')
+    } finally {
+      setPdfLoading(false)
+    }
   }
 
   if (loading) {
@@ -203,6 +219,17 @@ export function SalesOrderDetailsClient({ businessId, orderId }: SalesOrderDetai
               Convert to Invoice
             </Button>
           )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading}
+            className="gap-2 border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold bg-card cursor-pointer shadow-sm"
+          >
+            {pdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            Download PDF
+          </Button>
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { API_ROOT } from "@/config/api";
 
 
 // Lead types
+// Lead types
 export interface Lead {
   id: string
   name: string
@@ -12,6 +13,26 @@ export interface Lead {
   status: string
   customerId?: string
   stageId?: string
+  currency?: string
+  leadValue?: number
+  source?: string
+  description?: string
+  position?: string
+  website?: string
+  city?: string
+  state?: string
+  country?: string
+  zipCode?: string
+  assignedToId?: string
+  expectedDecisionDate?: string
+  assignedTo?: any
+  conversionLog?: {
+    id?: string
+    dealId?: string | null
+    customerId?: string | null
+    convertedAt?: string
+  } | null
+  customer?: any
   stage?: {
     id: string
     name: string
@@ -126,14 +147,18 @@ export interface CreateLeadData {
 // API Functions
 export const leadsAPI = {
   // Get all leads
-  async getAllLeads(businessId: string, filters?: { type?: string }) {
+  async getAllLeads(businessId: string, filters?: { type?: string; limit?: number; search?: string; status?: string }) {
     const token = getCookie('token') || getCookie('accessToken')
     if (!token) throw new Error('No authentication token found')
 
-    let url = `${API_ROOT}/leads`
-    if (filters?.type) {
-      url += `?type=${filters.type}`
-    }
+    const params = new URLSearchParams()
+    if (filters?.type) params.append('type', filters.type)
+    if (filters?.limit) params.append('limit', String(filters.limit))
+    if (filters?.search) params.append('search', filters.search)
+    if (filters?.status) params.append('status', filters.status)
+
+    const queryString = params.toString()
+    const url = `${API_ROOT}/leads${queryString ? `?${queryString}` : ''}`
 
     const response = await fetch(url, {
       headers: {

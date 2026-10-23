@@ -153,6 +153,21 @@ export function SalesOrdersPageClient({ businessId }: SalesOrdersPageClientProps
     }
   }
 
+  const [downloadingId, setDownloadingId] = React.useState<string | null>(null)
+
+  const handleDownloadPdf = async (e: React.MouseEvent, order: SalesOrder) => {
+    e.stopPropagation()
+    try {
+      setDownloadingId(order.id)
+      await salesOrdersAPI.downloadSalesOrderPdf(businessId, order.id, order.orderNumber)
+      toast.success('Sales Order PDF downloaded successfully')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to download PDF')
+    } finally {
+      setDownloadingId(null)
+    }
+  }
+
 
   const stats = {
     total: safeOrders.length,
@@ -373,6 +388,14 @@ export function SalesOrdersPageClient({ businessId }: SalesOrdersPageClientProps
                               <DropdownMenuItem className="cursor-pointer rounded-lg" onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/sales-orders/${order.id}/edit`); }}>
                                 <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
                                 Edit Order
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer rounded-lg" onClick={(e) => handleDownloadPdf(e, order)}>
+                                {downloadingId === order.id ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin text-muted-foreground" />
+                                ) : (
+                                  <FileDown className="mr-2 h-4 w-4 text-muted-foreground" />
+                                )}
+                                Download PDF
                               </DropdownMenuItem>
                               <DropdownMenuItem className="cursor-pointer rounded-lg text-rose-600 focus:text-rose-700 focus:bg-rose-50" onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}>
                                 <Trash2 className="mr-2 h-4 w-4" />

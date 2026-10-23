@@ -43,6 +43,7 @@ export default function AddSalesOrderPage() {
                 quantity: i.quantity,
                 price: i.price,
                 taxPercent: i.taxPercent || 0,
+                unit: i.unit || (i as any).product?.unit || (i.itemType === 'SERVICE' ? 'hr' : 'pcs'),
               })) || []
             })
           }
