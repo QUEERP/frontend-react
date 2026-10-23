@@ -166,9 +166,30 @@ export const CURRENCIES: Currency[] = [
 ];
 
 export const getCurrencySymbol = (code: string | undefined | null): string => {
-  if (!code) return '$';
-  const c = CURRENCIES.find(curr => curr.code === code);
-  return c ? c.symbol : '$';
+  if (!code) return '₹';
+  const trimmed = String(code).trim();
+  if (!trimmed) return '₹';
+  
+  // Direct code match
+  const byCode = CURRENCIES.find(curr => curr.code.toUpperCase() === trimmed.toUpperCase());
+  if (byCode) return byCode.symbol;
+
+  // Match by symbol already
+  const bySymbol = CURRENCIES.find(curr => curr.symbol === trimmed);
+  if (bySymbol) return bySymbol.symbol;
+
+  // Match by currency name
+  const byName = CURRENCIES.find(curr => curr.name.toLowerCase() === trimmed.toLowerCase());
+  if (byName) return byName.symbol;
+
+  // Try country name lookup
+  const countryCode = getCurrencyByCountry(trimmed);
+  if (countryCode) {
+    const byCountryCode = CURRENCIES.find(curr => curr.code === countryCode);
+    if (byCountryCode) return byCountryCode.symbol;
+  }
+
+  return trimmed;
 };
 
 export const getCurrencyFlag = (code: string | undefined | null): string => {

@@ -296,4 +296,36 @@ export const salesOrdersAPI = {
 
     const result = await response.json(); return { ...result, order: result.data || result.order, orders: result.data || result.orders || [] }
   },
-}
+
+  async downloadSalesOrderPdf(
+    businessId: string,
+    orderId: string,
+    orderNumber: string
+  ): Promise<void> {
+    const token = getCookie('token') || getCookie('accessToken');
+    if (!token) throw new Error('No authentication token found');
+
+    const response = await fetch(`${API_ROOT}/salesorder/${orderId}/download-pdf`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-business-id': businessId,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to download sales order PDF');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `SalesOrder_${orderNumber || orderId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  },
+};

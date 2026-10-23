@@ -57,7 +57,8 @@ const defaultItems: QuotationItemInput[] = [{
   hsnSacCode: '',
   quantity: 1,
   price: 0,
-  taxPercent: 0
+  taxPercent: 0,
+  unit: 'pcs'
 }]
 
 export function QuotationForm({
@@ -191,6 +192,48 @@ export function QuotationForm({
     })
   }, [businessId])
 
+  const customerDeals = React.useMemo(() => {
+    if (!formData.customerId) return []
+    return deals.filter(deal => deal.customerId === formData.customerId)
+  }, [deals, formData.customerId])
+
+  // If dealId was passed via initialData or URL but customerId was empty, auto-fill customerId
+  React.useEffect(() => {
+    if (formData.dealId && !formData.customerId && deals.length > 0) {
+      const matchedDeal = deals.find(d => d.id === formData.dealId)
+      if (matchedDeal?.customerId) {
+        setFormData(prev => ({ ...prev, customerId: matchedDeal.customerId }))
+      }
+    }
+  }, [deals, formData.dealId, formData.customerId])
+
+  const handleCustomerChange = (newCustomerId: string) => {
+    setFormData((prev) => {
+      const currentDealBelongs = deals.some(
+        (d) => d.id === prev.dealId && d.customerId === newCustomerId
+      )
+      return {
+        ...prev,
+        customerId: newCustomerId,
+        dealId: currentDealBelongs ? prev.dealId : '',
+      }
+    })
+  }
+
+  const handleDealChange = (newDealId: string) => {
+    if (newDealId === 'none' || !newDealId) {
+      setFormData(prev => ({ ...prev, dealId: '' }))
+      return
+    }
+    const chosenDeal = deals.find(d => d.id === newDealId)
+    setFormData(prev => ({
+      ...prev,
+      dealId: newDealId,
+      ...(chosenDeal?.customerId && !prev.customerId ? { customerId: chosenDeal.customerId } : {}),
+      ...(chosenDeal?.currency ? { currency: chosenDeal.currency } : {}),
+    }))
+  }
+
   const addItem = () => {
     setFormData((prev) => ({
       ...prev,
@@ -229,6 +272,16 @@ export function QuotationForm({
     }
     const stockLevels: any[] = (product as any).stockDetails || product.stockLevels || []
     const defaultWarehouseId = stockLevels.find(s => Number(s.quantity) > 0)?.warehouseId || stockLevels[0]?.warehouseId || ''
+    
+    let productUnit: string = 'pcs'
+    if (typeof product.unit === 'string' && product.unit) {
+      productUnit = product.unit
+    } else if (product.unit && typeof product.unit === 'object') {
+      productUnit = (product.unit as any).abbreviation || (product.unit as any).name || 'pcs'
+    } else if (product.type === 'SERVICE') {
+      productUnit = 'hr'
+    }
+
     setFormData(prev => ({
       ...prev,
       items: prev.items.map((item, i) => i === index ? {
@@ -239,7 +292,8 @@ export function QuotationForm({
         price: product.price ?? product.sellingPrice ?? 0,
         taxPercent: product.taxPercent ?? product.taxRate ?? 0,
         hsnSacCode: product.taxCode || '',
-        itemType: product.type ?? (product.brandId ? 'GOODS' : 'SERVICE')
+        itemType: product.type ?? (product.brandId ? 'GOODS' : 'SERVICE'),
+        unit: productUnit,
       } : item)
     }))
   }
@@ -359,7 +413,7 @@ export function QuotationForm({
                 </Label>
                 <Select
                   value={formData.customerId}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, customerId: value }))}
+                  onValueChange={handleCustomerChange}
                 >
                   <SelectTrigger id="customer" className="h-11 rounded-xl border-border bg-muted/50 focus:bg-card transition-colors">
                     <SelectValue placeholder="Select customer" />
@@ -428,22 +482,24 @@ export function QuotationForm({
                   <Label htmlFor="deal" className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Linked Deal</Label>
                   <Select
                     value={formData.dealId || 'none'}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, dealId: value === 'none' ? '' : value }))
-                    }
+                    onValueChange={handleDealChange}
+                    disabled={!formData.customerId}
                   >
                     <SelectTrigger id="deal" className="h-11 rounded-xl border-border bg-muted/50 focus:bg-card transition-colors">
-                      <SelectValue placeholder="Select deal" />
+                      <SelectValue placeholder={formData.customerId ? (customerDeals.length > 0 ? "Select deal" : "No deals for this customer") : "Select customer first"} />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-border shadow-lg">
                       <SelectItem value="none" className="rounded-lg cursor-pointer">No deal</SelectItem>
-                      {deals.map((deal) => (
+                      {customerDeals.map((deal) => (
                         <SelectItem key={deal.id} value={deal.id} className="rounded-lg cursor-pointer">
                           {deal.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {!formData.customerId && (
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Select a customer to view connected deals.</p>
+                  )}
                 </div>
               )}
               <div className="space-y-2">
@@ -718,12 +774,18 @@ export function QuotationForm({
 
                           {!isBasic && (
                             <TableCell className="py-3 px-2">
-                              <Select value={item.unit || 'pcs'} onValueChange={v => updateItem(index, 'unit', v)}>
+                              <Select
+                                value={(item.unit || (item.itemType === 'SERVICE' ? 'hr' : 'pcs')).toLowerCase()}
+                                onValueChange={v => updateItem(index, 'unit', v)}
+                              >
                                 <SelectTrigger className="h-8 w-full bg-background text-xs px-2"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                   {['pcs', 'kg', 'ltr', 'm', 'box', 'set', 'hr', 'day'].map(u => (
                                     <SelectItem key={u} value={u}>{u}</SelectItem>
                                   ))}
+                                  {item.unit && !['pcs', 'kg', 'ltr', 'm', 'box', 'set', 'hr', 'day'].includes(item.unit.toLowerCase()) && (
+                                    <SelectItem value={item.unit.toLowerCase()}>{item.unit}</SelectItem>
+                                  )}
                                 </SelectContent>
                               </Select>
                             </TableCell>

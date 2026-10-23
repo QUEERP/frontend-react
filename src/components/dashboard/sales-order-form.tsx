@@ -97,7 +97,7 @@ export function SalesOrderForm({
         cgstPercent: it.cgstPercent || ((it.taxPercent || 0) / 2) || 0,
         sgstPercent: it.sgstPercent || ((it.taxPercent || 0) / 2) || 0,
         igstPercent: it.igstPercent || it.taxPercent || 0,
-        unit: it.unit || 'pcs',
+        unit: it.unit || (it.itemType === 'SERVICE' ? 'hr' : 'pcs'),
       }))
     }
     return [{
@@ -324,6 +324,40 @@ export function SalesOrderForm({
     load().catch(() => toast.error('Failed to load sales order lookups'))
   }, [businessId])
 
+  // Sync initialData changes into items and formData
+  React.useEffect(() => {
+    if (initialData?.items && Array.isArray(initialData.items) && initialData.items.length > 0) {
+      setItems(initialData.items.map((it: any) => ({
+        id: it.id || Math.random().toString(36).substr(2, 9),
+        productId: it.productId || '',
+        warehouseId: it.warehouseId || '',
+        description: it.description || '',
+        itemType: it.itemType || 'GOODS',
+        hsnSacCode: it.hsnSacCode || '',
+        quantity: it.quantity || 1,
+        price: it.price || 0,
+        taxPercent: it.taxPercent || 0,
+        cgstPercent: it.cgstPercent || ((it.taxPercent || 0) / 2) || 0,
+        sgstPercent: it.sgstPercent || ((it.taxPercent || 0) / 2) || 0,
+        igstPercent: it.igstPercent || it.taxPercent || 0,
+        unit: it.unit || (it.itemType === 'SERVICE' ? 'hr' : 'pcs'),
+      })))
+    }
+    if (initialData) {
+      setFormData(prev => ({
+        ...prev,
+        customerId: initialData.customerId || prev.customerId,
+        quotationId: initialData.quotationId || prev.quotationId,
+        dealId: initialData.dealId || prev.dealId,
+        assignedToId: initialData.assignedToId || prev.assignedToId,
+        currency: (initialData as any).currency || prev.currency,
+        notes: initialData.notes || prev.notes,
+        tax: initialData.tax ?? prev.tax,
+        discount: initialData.discount ?? prev.discount,
+      }))
+    }
+  }, [initialData])
+
   const doFetchQuotation = React.useCallback(async (qId: string) => {
     if (!qId || qId === 'none') {
       setFormData(p => ({ ...p, quotationId: '' }))
@@ -511,9 +545,9 @@ export function SalesOrderForm({
     }
 
     // Safety check for product.unit which can be null, string, or object
-    let unitName = 'pcs'
-    if (product.unit) {
-      unitName = typeof product.unit === 'object' ? (product.unit as any).name || (product.unit as any).abbreviation || 'pcs' : product.unit
+    let unitName = product.unit || ((product.type as any) === 'SERVICE' ? 'hr' : 'pcs')
+    if (typeof unitName === 'object') {
+      unitName = (unitName as any).abbreviation || (unitName as any).name || 'pcs'
     }
 
     setItems((prev) =>
@@ -1025,12 +1059,18 @@ export function SalesOrderForm({
 
                               {!isBasic && (
                                 <TableCell className="py-3 px-2">
-                                  <Select value={item.unit || 'pcs'} onValueChange={v => updateItem(index, 'unit', v)}>
+                                  <Select
+                                    value={(item.unit || (item.itemType === 'SERVICE' ? 'hr' : 'pcs')).toLowerCase()}
+                                    onValueChange={v => updateItem(index, 'unit', v)}
+                                  >
                                     <SelectTrigger className="h-8 w-full bg-background text-xs px-2"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                       {['pcs', 'kg', 'ltr', 'm', 'box', 'set', 'hr', 'day'].map(u => (
                                         <SelectItem key={u} value={u}>{u}</SelectItem>
                                       ))}
+                                      {item.unit && !['pcs', 'kg', 'ltr', 'm', 'box', 'set', 'hr', 'day'].includes(item.unit.toLowerCase()) && (
+                                        <SelectItem value={item.unit.toLowerCase()}>{item.unit}</SelectItem>
+                                      )}
                                     </SelectContent>
                                   </Select>
                                 </TableCell>

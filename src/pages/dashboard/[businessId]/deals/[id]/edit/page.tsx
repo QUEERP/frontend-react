@@ -36,6 +36,7 @@ const dealId = id as string
             probability: deal.probability ?? undefined,
             source: deal.source || '',
             description: deal.description || '',
+            currency: deal.currency || (deal as any).customer?.currency || 'INR',
           })
         }
       } catch (error) {
@@ -85,6 +86,7 @@ const dealId = id as string
         submitLabel="Save Changes"
         initialData={initialData}
         onSubmit={handleSubmit}
+        showLeadDropdown={false}
       />
     </div>
   )

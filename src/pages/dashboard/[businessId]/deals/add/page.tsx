@@ -97,16 +97,17 @@ export default function AddDealPage() {
   }, [businessId, leadId]);
 
   const handleSubmit = async (data: CreateDealData) => {
+    const effectiveLeadId = data.leadId || leadId;
     const payload = {
       ...data,
-      ...(leadId ? { leadId } : {}),
+      ...(effectiveLeadId ? { leadId: effectiveLeadId } : {}),
     };
 
     const response = await dealsAPI.createDeal(businessId, payload);
     if (response.success) {
-      if (leadId) {
+      if (effectiveLeadId) {
         try {
-          await leadsAPI.updateLead(businessId, leadId, {
+          await leadsAPI.updateLead(businessId, effectiveLeadId, {
             status: 'CONVERTED',
             customerId: data.customerId,
           });

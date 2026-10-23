@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import {  useParams, useNavigate  } from 'react-router-dom';
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { leadsAPI, Lead, LeadActivity } from '@/lib/api/leads'
+import { getCurrencySymbol } from '@/lib/currencies'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -199,7 +200,9 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
     )
   }
 
-  const isConverted = lead.status === 'CONVERTED'
+  const isConvertedToCustomer = Boolean(lead.customerId || (lead as any).conversionLog?.customerId)
+  const isConvertedToDeal = Boolean((lead as any).conversionLog?.dealId)
+  const isFullyConverted = isConvertedToDeal
   const currentStageIdx = PIPELINE_STAGES.findIndex(s => s.key === lead.status)
 
   return (
@@ -237,25 +240,30 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
           >
             <Edit className="h-4 w-4" /> Edit Lead
           </Button>
-          {!isConverted && (
-            <>
-              <Button
-                size="sm"
-                onClick={() => navigate(`/dashboard/${businessId}/deals/add?leadId=${leadId}`)}
-                className="h-9 gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm rounded-lg border-none font-medium"
-              >
-                <Award className="h-4 w-4" /> Convert to Deal
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => navigate(`/dashboard/${businessId}/customers/add?leadId=${leadId}`)}
-                className="h-9 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm rounded-lg border-none font-medium"
-              >
-                <Sparkles className="h-4 w-4" /> Convert to Customer
-              </Button>
-            </>
+          {!isConvertedToDeal && (
+            <Button
+              size="sm"
+              onClick={() => navigate(`/dashboard/${businessId}/deals/add?leadId=${leadId}`)}
+              className="h-9 gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm rounded-lg border-none font-medium"
+            >
+              <Award className="h-4 w-4" /> Convert to Deal
+            </Button>
           )}
-          {isConverted && (
+          {!isConvertedToCustomer && (
+            <Button
+              size="sm"
+              onClick={() => navigate(`/dashboard/${businessId}/customers/add?leadId=${leadId}`)}
+              className="h-9 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm rounded-lg border-none font-medium"
+            >
+              <Sparkles className="h-4 w-4" /> Convert to Customer
+            </Button>
+          )}
+          {isConvertedToCustomer && !isConvertedToDeal && (
+            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 px-3 py-1.5 text-xs font-semibold rounded-lg shadow-sm">
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 inline" /> Customer Created
+            </Badge>
+          )}
+          {isConvertedToDeal && (
             <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 px-4 py-1.5 text-sm font-semibold rounded-lg shadow-sm">
               <CheckCircle2 className="h-4 w-4 mr-1.5 inline" /> Converted
             </Badge>
@@ -264,7 +272,7 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
       </div>
 
       {/* Pipeline Progress Stepper */}
-      {!isConverted && (
+      {!isFullyConverted && (
         <Card className="border-border bg-card shadow-sm overflow-hidden rounded-xl">
           <CardHeader className="bg-muted/50 border-b border-border pb-4 pt-5 px-6">
             <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
@@ -358,7 +366,8 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
                 { label: 'Position',   value: (lead as any).position || '—'    },
                 { label: 'Website',    value: (lead as any).website || '—'     },
                 { label: 'Source',     value: (lead as any).source || '—'      },
-                { label: 'Lead Value', value: (lead as any).leadValue > 0 ? `₹${Number((lead as any).leadValue).toLocaleString()}` : '—' },
+                { label: 'Lead Value', value: (lead as any).leadValue > 0 ? `${getCurrencySymbol((lead as any).currency)} ${Number((lead as any).leadValue).toLocaleString()}` : '—' },
+                { label: 'Currency',   value: (lead as any).currency ? `${(lead as any).currency} (${getCurrencySymbol((lead as any).currency)})` : '—' },
                 { label: 'City',       value: (lead as any).city || '—'        },
                 { label: 'Country',    value: (lead as any).country || '—'     },
                 { label: 'Assigned To',value: (lead as any).assignedTo?.user?.name || 'Unassigned' },
@@ -629,21 +638,21 @@ export function LeadDetailsClient({ businessId }: LeadDetailsClientProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-5">
-              {!isConverted && (
-                <>
-                  <Button
-                    className="w-full h-10 gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-none font-semibold rounded-lg"
-                    onClick={() => navigate(`/dashboard/${businessId}/deals/add?leadId=${leadId}`)}
-                  >
-                    <Award className="h-4 w-4" /> Convert to Deal
-                  </Button>
-                  <Button
-                    className="w-full h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm border-none font-semibold rounded-lg"
-                    onClick={() => navigate(`/dashboard/${businessId}/customers/add?leadId=${leadId}`)}
-                  >
-                    <Sparkles className="h-4 w-4" /> Convert to Customer
-                  </Button>
-                </>
+              {!isConvertedToDeal && (
+                <Button
+                  className="w-full h-10 gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-none font-semibold rounded-lg"
+                  onClick={() => navigate(`/dashboard/${businessId}/deals/add?leadId=${leadId}`)}
+                >
+                  <Award className="h-4 w-4" /> Convert to Deal
+                </Button>
+              )}
+              {!isConvertedToCustomer && (
+                <Button
+                  className="w-full h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm border-none font-semibold rounded-lg"
+                  onClick={() => navigate(`/dashboard/${businessId}/customers/add?leadId=${leadId}`)}
+                >
+                  <Sparkles className="h-4 w-4" /> Convert to Customer
+                </Button>
               )}
               <Button
                 variant="outline"
