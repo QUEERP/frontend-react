@@ -4,6 +4,7 @@ import {  Link , useParams } from 'react-router-dom';
 import {  useNavigate, useSearchParams  } from 'react-router-dom';
 import { contactsAPI, Customer } from "@/lib/api/contacts";
 import { usersAPI, BusinessUser } from "@/lib/api/users";
+import { quotationsAPI } from "@/lib/api/quotations";
 import { 
   ArrowLeft, ChevronDown, CheckCircle, Info, FileText,
   Target, Calendar, Users, AlertTriangle, Paperclip, Plus, Trash2, 
@@ -128,8 +129,8 @@ const mockProposals: Record<string, any> = {};
 function CreateNegotiationContent({ businessId }: { businessId: string }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const editId = searchParams.get('edit');
-  const propId = searchParams.get('propId');
+  const editId = searchParams.get('edit') || searchParams.get('editId') || searchParams.get('id');
+  const propId = searchParams.get('propId') || searchParams.get('proposalId') || searchParams.get('quotationId');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState(() => {
@@ -175,15 +176,40 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
   }, [businessId]);
 
   useEffect(() => {
-    if (customers.length > 0 && propId && mockProposals[propId]) {
-      const p = mockProposals[propId];
-      const c = customers.find(x => ((x as any)?.company || x.name) === p.customerName);
-      setFormData(prev => {
-        let next = { ...prev, linkedProposal: propId, dealName: p.name, customer: c?.id || '', salesOwner: p.owner, origAmount: p.amount, negAmount: p.amount, origTimeline: p.timeline };
-        return recalculateCommercials(next);
-      });
-    }
-  }, [customers, propId]);
+    if (!propId) return;
+    const fetchProposal = async () => {
+      try {
+        const res = await quotationsAPI.getQuotationById(businessId, propId);
+        if (res.success && res.quotation) {
+          const q = res.quotation;
+          setFormData(prev => {
+            let next = {
+              ...prev,
+              linkedProposal: propId,
+              dealName: q.title || `Negotiation - ${q.quoteNumber || propId}`,
+              customer: q.customerId || prev.customer,
+              origAmount: Number(q.grandTotal || q.totalAmount || 0),
+              negAmount: Number(q.grandTotal || q.totalAmount || 0),
+              origTimeline: q.expiryDate ? new Date(q.expiryDate).toISOString().split('T')[0] : prev.origTimeline
+            };
+            return recalculateCommercials(next);
+          });
+          return;
+        }
+      } catch (e) {
+        // Fallback to mock
+      }
+      if (customers.length > 0 && mockProposals[propId]) {
+        const p = mockProposals[propId];
+        const c = customers.find(x => ((x as any)?.company || x.name) === p.customerName);
+        setFormData(prev => {
+          let next = { ...prev, linkedProposal: propId, dealName: p.name, customer: c?.id || '', salesOwner: p.owner, origAmount: p.amount, negAmount: p.amount, origTimeline: p.timeline };
+          return recalculateCommercials(next);
+        });
+      }
+    };
+    fetchProposal();
+  }, [customers, propId, businessId]);
   
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     general: true, commercial: true, scope: false, timeline: false, feedback: false, meetings: false, attachments: false, notes: false
@@ -504,7 +530,7 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
       </div>
 
       {/* RIGHT PANE: Sticky Live Summary Panel */}
-      <div className="hidden xl:flex flex-col w-[420px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl z-50 sticky top-0 h-[calc(100vh-theme(spacing.16))]">
+      <div className="hidden xl:flex flex-col w-[420px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl z-50 sticky top-0 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] overflow-y-auto">
         <div className="p-6 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/40 backdrop-blur-sm">
           <div className="flex justify-between items-end mb-3">
             <div>
@@ -667,7 +693,7 @@ export default function CreateNegotiationPage() {
   
   return (
     <Suspense fallback={
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.16))] bg-gray-50 dark:bg-gray-950">
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] bg-gray-50 dark:bg-gray-950">
         <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Initializing Negotiation Engine...</p>
       </div>

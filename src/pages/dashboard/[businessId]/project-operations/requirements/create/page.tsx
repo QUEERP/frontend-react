@@ -926,7 +926,7 @@ function RequirementFormContent({ businessId }: { businessId: string }) {
       </div>
 
       {/* RIGHT PANE: Sticky Summary & Actions */}
-      <div className="hidden lg:flex flex-col w-[360px] xl:w-[380px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-xl z-10 sticky top-0 h-[calc(100vh-theme(spacing.16))]">
+      <div className="hidden lg:flex flex-col w-[360px] xl:w-[380px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-xl z-10 sticky top-0 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] overflow-y-auto">
         
         {/* Progress Bar Header */}
         <div className="p-5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">

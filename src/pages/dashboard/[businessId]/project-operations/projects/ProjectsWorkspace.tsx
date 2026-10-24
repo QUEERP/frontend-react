@@ -1,24 +1,626 @@
 import { toast } from 'sonner';
-import React, { useState, useEffect, useMemo } from 'react';
-import {  useNavigate, useParams  } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   Search, Filter, MoreVertical, Layout, AlignLeft, Calendar as CalendarIcon,
   Map, CheckSquare, Flag, Users, Clock, Receipt, Package, ShoppingCart, 
   DollarSign, AlertCircle, ShieldAlert, GitPullRequest, HeadphonesIcon, 
-  BarChart, Activity, Download, FileText, LayoutGrid, List, SlidersHorizontal, X, ArrowRight, Eye, Edit, Copy, Trash2, CheckCircle2, Lock, Settings
+  BarChart, Activity, Download, FileText, LayoutGrid, List, SlidersHorizontal, X, ArrowRight, Eye, Edit, Copy, Trash2, CheckCircle2, Lock, Settings,
+  ChevronLeft, ChevronRight, Plus, ExternalLink
 } from 'lucide-react';
 import { StatusBadge } from '@/components/project-operations/StatusBadge';
 import { ProgressBar } from '@/components/project-operations/ProgressBar';
 import { useToast } from "@/components/ui/use-toast";
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import { useBusinessData } from '@/components/dashboard/business-data-provider';
 import { ProjectsTable } from './ProjectsTable';
 
-const TaskWorkspace = ({ project }: any) => <GenericWorkspaceTab title="Tasks" project={project} />;
-const MilestoneWorkspace = ({ project }: any) => <GenericWorkspaceTab title="Milestones" project={project} />;
-const IssueWorkspace = ({ project }: any) => <GenericWorkspaceTab title="Issues" project={project} />;
+// ------------------------------------------------------------------
+// TAB WORKSPACE COMPONENTS
+// ------------------------------------------------------------------
+
+const ResourceWorkspaceTab = ({ project, businessId, navigate }: any) => {
+  const allocations = project?.resourceAllocations || [];
+  return (
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">
+            Resource Allocations ({allocations.length})
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">Team members allocated to {project?.projectName || 'this project'}</p>
+        </div>
+        <button 
+          onClick={() => navigate(`/dashboard/${businessId}/project-operations/resources/create?projectId=${project?.id}`)}
+          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+        >
+          <Users className="w-3.5 h-3.5" /> + Allocate Resource
+        </button>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        {allocations.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Users className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">No resources allocated yet</h4>
+            <p className="text-xs text-gray-500 mb-4 max-w-sm mx-auto">Assign team members to this project to track capacity, hours, and responsibilities.</p>
+            <button 
+              onClick={() => navigate(`/dashboard/${businessId}/project-operations/resources/create?projectId=${project?.id}`)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              + Allocate First Resource
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                <tr>
+                  <th className="px-6 py-3.5 font-bold">Team Member</th>
+                  <th className="px-6 py-3.5 font-bold">Role & Dept</th>
+                  <th className="px-6 py-3.5 font-bold">Assigned Task</th>
+                  <th className="px-6 py-3.5 font-bold">Duration</th>
+                  <th className="px-6 py-3.5 font-bold">Allocation</th>
+                  <th className="px-6 py-3.5 font-bold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {allocations.map((alloc: any) => {
+                  const empName = alloc.employee?.name || alloc.employee?.email || 'Assigned Member';
+                  const initial = (empName || 'U').charAt(0).toUpperCase();
+                  const startDate = alloc.startDate ? new Date(alloc.startDate).toLocaleDateString() : 'Immediate';
+                  const endDate = alloc.endDate ? new Date(alloc.endDate).toLocaleDateString() : 'Ongoing';
+                  return (
+                    <tr key={alloc.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-black text-xs">
+                            {initial}
+                          </div>
+                          <div>
+                            <div className="font-bold text-gray-900 dark:text-gray-100">{empName}</div>
+                            <div className="text-xs text-gray-400">{alloc.employee?.email || ''}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-gray-800 dark:text-gray-200">{alloc.role || 'Team Member'}</div>
+                        <div className="text-xs text-gray-400">{alloc.department || '-'}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {alloc.task ? (
+                          <span className="text-xs font-semibold px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-gray-700 dark:text-gray-300">
+                            {alloc.task.taskNumber || alloc.task.title}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400">Project-wide</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                        {startDate} → {endDate}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-xs font-bold text-gray-900 dark:text-gray-100 mb-1">
+                          {alloc.allocationPercent || 100}% ({alloc.estimatedHours || 0} hrs)
+                        </div>
+                        <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                          <div 
+                            className={`h-1.5 rounded-full ${alloc.allocationPercent > 100 ? 'bg-red-500' : 'bg-blue-600'}`}
+                            style={{ width: `${Math.min(alloc.allocationPercent || 100, 100)}%` }}
+                          />
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-md ${
+                          alloc.status === 'Active' || alloc.status === 'ACTIVE'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                            : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                        }`}>
+                          {alloc.status || 'Active'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const TaskWorkspaceTab = ({ project, businessId, navigate }: any) => {
+  const tasks = project?.tasks || [];
+  return (
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">
+            Project Tasks ({tasks.length})
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">Tasks scheduled and assigned for {project?.projectName}</p>
+        </div>
+        <button 
+          onClick={() => navigate(`/dashboard/${businessId}/project-operations/tasks/create?projectId=${project?.id}`)}
+          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+        >
+          <CheckSquare className="w-3.5 h-3.5" /> + Create Task
+        </button>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        {tasks.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <CheckSquare className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">No tasks created yet</h4>
+            <p className="text-xs text-gray-500 mb-4 max-w-sm mx-auto">Create tasks to track deliverables, milestones, and assignments.</p>
+            <button 
+              onClick={() => navigate(`/dashboard/${businessId}/project-operations/tasks/create?projectId=${project?.id}`)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              + Create First Task
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                <tr>
+                  <th className="px-6 py-3.5 font-bold">Code / Title</th>
+                  <th className="px-6 py-3.5 font-bold">Assignee</th>
+                  <th className="px-6 py-3.5 font-bold">Milestone</th>
+                  <th className="px-6 py-3.5 font-bold">Due Date</th>
+                  <th className="px-6 py-3.5 font-bold">Priority</th>
+                  <th className="px-6 py-3.5 font-bold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {tasks.map((task: any) => {
+                  const assigneeName = task.assignedTo?.name || task.assignedTo?.email || 'Unassigned';
+                  const dueDate = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No date';
+                  return (
+                    <tr key={task.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-gray-900 dark:text-gray-100">{task.title}</div>
+                        <div className="text-xs text-gray-400">{task.taskNumber || 'TSK'}</div>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-semibold text-gray-800 dark:text-gray-200">
+                        {assigneeName}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-gray-500">
+                        {task.milestone?.title || '-'}
+                      </td>
+                      <td className="px-6 py-4 text-xs font-medium text-gray-600 dark:text-gray-300">
+                        {dueDate}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded ${
+                          task.priority === 'HIGH' || task.priority === 'CRITICAL' ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400' :
+                          task.priority === 'MEDIUM' ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' :
+                          'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                        }`}>
+                          {task.priority || 'NORMAL'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={task.status || 'PENDING'} size="sm" />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const MilestoneWorkspaceTab = ({ project, businessId, navigate }: any) => {
+  const milestones = project?.milestones || [];
+  return (
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">
+            Milestones ({milestones.length})
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">Key project target gates and deliverables</p>
+        </div>
+        <button 
+          onClick={() => navigate(`/dashboard/${businessId}/project-operations/milestones/create?projectId=${project?.id}`)}
+          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+        >
+          <Flag className="w-3.5 h-3.5" /> + Create Milestone
+        </button>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        {milestones.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Flag className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">No milestones recorded</h4>
+            <p className="text-xs text-gray-500 mb-4 max-w-sm mx-auto">Define critical project delivery milestones to ensure schedule compliance.</p>
+            <button 
+              onClick={() => navigate(`/dashboard/${businessId}/project-operations/milestones/create?projectId=${project?.id}`)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              + Create First Milestone
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                <tr>
+                  <th className="px-6 py-3.5 font-bold">Title</th>
+                  <th className="px-6 py-3.5 font-bold">Target Date</th>
+                  <th className="px-6 py-3.5 font-bold">Weight / Cost</th>
+                  <th className="px-6 py-3.5 font-bold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {milestones.map((m: any) => (
+                  <tr key={m.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-gray-900 dark:text-gray-100">{m.title}</td>
+                    <td className="px-6 py-4 text-xs font-medium text-gray-600 dark:text-gray-300">
+                      {m.targetDate ? new Date(m.targetDate).toLocaleDateString() : 'TBD'}
+                    </td>
+                    <td className="px-6 py-4 text-xs font-semibold text-gray-800 dark:text-gray-200">
+                      {m.cost ? `$${Number(m.cost).toLocaleString()}` : `${m.weight || 0}%`}
+                    </td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={m.status || 'PENDING'} size="sm" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const TimesheetWorkspaceTab = ({ project, businessId, navigate }: any) => {
+  const times = project?.timeEntries || [];
+  const totalLoggedHours = times.reduce((sum: number, t: any) => sum + (t.hours || 0), 0);
+  return (
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">
+            Timesheets & Logged Hours ({times.length})
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">Total hours logged: <span className="font-bold text-blue-600">{totalLoggedHours} hrs</span></p>
+        </div>
+        <button 
+          onClick={() => navigate(`/dashboard/${businessId}/project-operations/timesheets/create?projectId=${project?.id}`)}
+          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+        >
+          <Clock className="w-3.5 h-3.5" /> + Log Time
+        </button>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        {times.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Clock className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">No time logged yet</h4>
+            <p className="text-xs text-gray-500 mb-4 max-w-sm mx-auto">Track team hours, billable rates, and actual effort against this project.</p>
+            <button 
+              onClick={() => navigate(`/dashboard/${businessId}/project-operations/timesheets/create?projectId=${project?.id}`)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              + Log First Time Entry
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                <tr>
+                  <th className="px-6 py-3.5 font-bold">Team Member</th>
+                  <th className="px-6 py-3.5 font-bold">Date</th>
+                  <th className="px-6 py-3.5 font-bold">Hours</th>
+                  <th className="px-6 py-3.5 font-bold">Task</th>
+                  <th className="px-6 py-3.5 font-bold">Billable</th>
+                  <th className="px-6 py-3.5 font-bold">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {times.map((t: any) => {
+                  const empName = t.employee?.name || t.businessUser?.user?.name || 'Member';
+                  const date = t.date ? new Date(t.date).toLocaleDateString() : 'N/A';
+                  return (
+                    <tr key={t.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-gray-900 dark:text-gray-100">{empName}</td>
+                      <td className="px-6 py-4 text-xs font-medium text-gray-600 dark:text-gray-300">{date}</td>
+                      <td className="px-6 py-4 text-xs font-black text-blue-600">{t.hours} hrs</td>
+                      <td className="px-6 py-4 text-xs text-gray-500">{t.task?.title || '-'}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
+                          t.isBillable ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        }`}>
+                          {t.isBillable ? 'BILLABLE' : 'NON-BILLABLE'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-gray-500 truncate max-w-xs">{t.notes || '-'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const IssueWorkspaceTab = ({ project, businessId, navigate }: any) => {
+  const issues = project?.issues || [];
+  return (
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">
+            Issues & Bugs ({issues.length})
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">Track bugs, roadblocks, and issue resolutions</p>
+        </div>
+        <button 
+          onClick={() => navigate(`/dashboard/${businessId}/project-operations/issues/create?projectId=${project?.id}`)}
+          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+        >
+          <AlertCircle className="w-3.5 h-3.5" /> + Report Issue
+        </button>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        {issues.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">No open issues</h4>
+            <p className="text-xs text-gray-500 mb-4 max-w-sm mx-auto">All project systems are running without reported impediments.</p>
+            <button 
+              onClick={() => navigate(`/dashboard/${businessId}/project-operations/issues/create?projectId=${project?.id}`)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              + Report New Issue
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                <tr>
+                  <th className="px-6 py-3.5 font-bold">Issue Code / Title</th>
+                  <th className="px-6 py-3.5 font-bold">Severity</th>
+                  <th className="px-6 py-3.5 font-bold">Priority</th>
+                  <th className="px-6 py-3.5 font-bold">Assignee</th>
+                  <th className="px-6 py-3.5 font-bold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {issues.map((issue: any) => {
+                  const assigneeName = issue.assignee?.name || issue.assignee?.email || 'Unassigned';
+                  return (
+                    <tr key={issue.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-gray-900 dark:text-gray-100">{issue.title}</div>
+                        <div className="text-xs text-gray-400">{issue.issueCode || 'ISSUE'}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded ${
+                          issue.severity === 'CRITICAL' || issue.severity === 'High' ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400' :
+                          'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                        }`}>
+                          {issue.severity || 'Normal'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {issue.priority || 'Normal'}
+                      </td>
+                      <td className="px-6 py-4 text-xs font-semibold text-gray-800 dark:text-gray-200">
+                        {assigneeName}
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={issue.status || 'OPEN'} size="sm" />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const TeamWorkspaceTab = ({ project, businessId, navigate }: any) => {
+  const pm = project?.projectManager;
+  const allocations = project?.resourceAllocations || [];
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">
+            Project Team & Leadership
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">Managers and assigned team members for {project?.projectName}</p>
+        </div>
+        <button 
+          onClick={() => navigate(`/dashboard/${businessId}/project-operations/resources/create?projectId=${project?.id}`)}
+          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+        >
+          <Users className="w-3.5 h-3.5" /> + Add Team Member
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Project Manager Card */}
+        <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border-2 border-blue-200 dark:border-blue-900 shadow-sm relative">
+          <span className="absolute top-3 right-3 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded">
+            Project Lead
+          </span>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-base shadow-sm">
+              {((pm?.name || pm?.user?.name || 'P') as string).charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900 dark:text-gray-100 text-base">{pm?.name || pm?.user?.name || 'Unassigned PM'}</h4>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Project Manager</p>
+            </div>
+          </div>
+          <div className="text-xs text-gray-500 space-y-1 border-t border-gray-100 dark:border-gray-800 pt-3">
+            <div>Email: <span className="font-semibold text-gray-700 dark:text-gray-300">{pm?.email || pm?.user?.email || 'N/A'}</span></div>
+          </div>
+        </div>
+
+        {/* Allocated Members */}
+        {allocations.map((alloc: any) => {
+          const emp = alloc.employee;
+          const name = emp?.name || emp?.email || 'Member';
+          return (
+            <div key={alloc.id} className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center font-bold text-sm">
+                  {name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 dark:text-gray-100 text-sm">{name}</h4>
+                  <p className="text-xs text-gray-500 font-medium">{alloc.role || 'Team Member'}</p>
+                </div>
+              </div>
+              <div className="text-xs text-gray-500 space-y-1.5 border-t border-gray-100 dark:border-gray-800 pt-3">
+                <div className="flex justify-between">
+                  <span>Department:</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">{alloc.department || '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Allocation:</span>
+                  <span className="font-semibold text-blue-600">{alloc.allocationPercent || 100}% ({alloc.estimatedHours || 0} hrs)</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const TimelineWorkspaceTab = ({ project }: any) => {
+  const events: any[] = [];
+  if (project?.createdAt) {
+    events.push({
+      date: new Date(project.createdAt),
+      title: "Project Initialized",
+      desc: `${project.projectName} was created with code ${project.projectCode}.`,
+      icon: Activity,
+      color: "bg-blue-500"
+    });
+  }
+  (project?.resourceAllocations || []).forEach((a: any) => {
+    if (a.createdAt) {
+      events.push({
+        date: new Date(a.createdAt),
+        title: `Resource Allocated: ${a.employee?.name || 'Member'}`,
+        desc: `Allocated as ${a.role || 'Member'} (${a.estimatedHours || 0} hrs).`,
+        icon: Users,
+        color: "bg-emerald-500"
+      });
+    }
+  });
+  (project?.tasks || []).forEach((t: any) => {
+    if (t.createdAt) {
+      events.push({
+        date: new Date(t.createdAt),
+        title: `Task Created: ${t.title}`,
+        desc: `Status: ${t.status || 'PENDING'}, Priority: ${t.priority || 'Normal'}`,
+        icon: CheckSquare,
+        color: "bg-indigo-500"
+      });
+    }
+  });
+  (project?.milestones || []).forEach((m: any) => {
+    if (m.createdAt) {
+      events.push({
+        date: new Date(m.createdAt),
+        title: `Milestone Set: ${m.title}`,
+        desc: `Target Date: ${m.targetDate ? new Date(m.targetDate).toLocaleDateString() : 'TBD'}`,
+        icon: Flag,
+        color: "bg-amber-500"
+      });
+    }
+  });
+  (project?.issues || []).forEach((i: any) => {
+    if (i.createdAt) {
+      events.push({
+        date: new Date(i.createdAt),
+        title: `Issue Logged: ${i.title}`,
+        desc: `Severity: ${i.severity || 'Normal'}, Assignee: ${i.assignee?.name || 'Unassigned'}`,
+        icon: AlertCircle,
+        color: "bg-red-500"
+      });
+    }
+  });
+
+  events.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  return (
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">
+          Project Activity Timeline
+        </h3>
+        <p className="text-xs text-gray-500 mt-0.5">Chronological audit trail of milestone gates, tasks, and allocations</p>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+        {events.length === 0 ? (
+          <div className="text-center py-8 text-gray-400 text-sm">No activity events recorded yet.</div>
+        ) : (
+          <div className="relative pl-6 border-l-2 border-gray-200 dark:border-gray-800 space-y-6">
+            {events.map((evt, idx) => {
+              const Icon = evt.icon;
+              return (
+                <div key={idx} className="relative">
+                  <div className={`absolute -left-[31px] top-0.5 w-4 h-4 rounded-full ${evt.color} border-2 border-white dark:border-gray-900 flex items-center justify-center`} />
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">{evt.title}</h4>
+                      <p className="text-xs text-gray-500 mt-0.5">{evt.desc}</p>
+                    </div>
+                    <span className="text-[11px] font-bold text-gray-400">
+                      {evt.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const GenericWorkspaceTab = ({ title, project }: any) => (
   <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -26,41 +628,34 @@ const GenericWorkspaceTab = ({ title, project }: any) => (
       <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">{title} Management</h3>
       <div className="flex gap-2">
         <button className="px-3 py-1.5 bg-gray-50 text-gray-600 rounded text-xs font-bold border border-gray-200">Filter</button>
-        <button className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded text-xs font-bold border border-blue-200">+ Create {title.slice(0, -1)}</button>
       </div>
     </div>
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-      <table className="w-full text-sm text-left text-gray-500">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400">
-          <tr>
-            <th className="px-6 py-4">ID</th>
-            <th className="px-6 py-4">Name / Title</th>
-            <th className="px-6 py-4">Status</th>
-            <th className="px-6 py-4 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
-              No {title.toLowerCase()} records found for {project?.projectName}.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div className="p-12 text-center text-gray-400">
+        <p className="text-sm font-medium">No {title.toLowerCase()} records found for {project?.projectName || 'this project'}.</p>
+      </div>
     </div>
   </div>
 );
 
+// ------------------------------------------------------------------
+// MAIN PROJECTS WORKSPACE COMPONENT
+// ------------------------------------------------------------------
+
 export default function ProjectsWorkspace({ businessId: propBusinessId }: { businessId?: string }) {
   const navigate = useNavigate();
-  const params = useParams();const businessId = (propBusinessId || (params as any)?.businessId) as string;
+  const params = useParams();
+  const businessId = (propBusinessId || (params as any)?.businessId) as string;
   const { toast } = useToast();
   const { business } = useBusinessData();
   const isBasic = business?.businessType?.toLowerCase() === 'basic';
+  
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  
+  const tabContainerRef = useRef<HTMLDivElement>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -70,6 +665,13 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  const scrollTabs = (direction: 'left' | 'right') => {
+    if (tabContainerRef.current) {
+      const scrollAmount = direction === 'left' ? -250 : 250;
+      tabContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
@@ -102,8 +704,12 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
       const data = await res.json();
       if (data.success && Array.isArray(data.data || data.projects)) {
         const list = data.data || data.projects;
-        setProjects(list.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-        if (list.length > 0 && !selectedProject) setSelectedProject(list[0]);
+        const sorted = list.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setProjects(sorted);
+        setSelectedProject((prev: any) => {
+          if (!prev) return sorted[0] || null;
+          return sorted.find((p: any) => p.id === prev.id) || sorted[0] || null;
+        });
       } else {
         toast({ title: "API Error", description: data.message || JSON.stringify(data), variant: "destructive" });
       }
@@ -154,10 +760,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
     if (sortOrder === 'Newest First') return dateB - dateA;
     if (sortOrder === 'Oldest First') return dateA - dateB;
     if (sortOrder === 'Recently Updated') return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-    
-    // For Last 7/30 Days or Today, we handle it in filter if needed, but the prompt said "Recent button should support Today, Last 7 Days, Last 30 Days, Newest First, Oldest First, Recently Updated".
-    // We'll treat them as filters applied alongside sort.
-    return dateB - dateA; // default
+    return dateB - dateA;
   }).filter((a: any) => {
     if (sortOrder === 'Today') {
        return new Date(a.createdAt).toDateString() === new Date().toDateString();
@@ -231,22 +834,17 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
     if (!selectedProject) return [];
     return [
       { id: "overview", label: "Overview", icon: Layout },
-      { id: "planning", label: "Planning", icon: Map },
-      { id: "tasks", label: "Tasks", icon: CheckSquare },
-      { id: "milestones", label: "Milestones", icon: Flag },
-      { id: "resources", label: "Resources", icon: Users },
-      { id: "budget", label: "Budget", icon: DollarSign },
-      { id: "timesheets", label: "Timesheets", icon: Clock },
-      { id: "documents", label: "Documents", icon: FileText },
-      { id: "issues", label: "Issues", icon: AlertCircle },
-      { id: "risks", label: "Risks", icon: ShieldAlert },
-      { id: "meetings", label: "Meetings", icon: Users },
-      { id: "invoices", label: "Invoices", icon: Receipt },
-      { id: "billing", label: "Billing", icon: DollarSign },
-      { id: "activities", label: "Activities", icon: Activity },
-      { id: "team", label: "Team", icon: Users },
-      { id: "comments", label: "Comments", icon: AlignLeft },
+      { id: "resources", label: "Resources", icon: Users, count: (selectedProject.resourceAllocations || []).length },
+      { id: "tasks", label: "Tasks", icon: CheckSquare, count: (selectedProject.tasks || []).length },
+      { id: "milestones", label: "Milestones", icon: Flag, count: (selectedProject.milestones || []).length },
+      { id: "timesheets", label: "Timesheets", icon: Clock, count: (selectedProject.timeEntries || []).length },
+      { id: "issues", label: "Issues", icon: AlertCircle, count: (selectedProject.issues || []).length },
+      { id: "team", label: "Team", icon: Users, count: (selectedProject.resourceAllocations || []).length + (selectedProject.projectManager ? 1 : 0) },
       { id: "timeline", label: "Timeline", icon: Activity },
+      { id: "invoices", label: "Invoices", icon: Receipt, count: (selectedProject.invoices || []).length },
+      { id: "planning", label: "Planning", icon: Map, count: (selectedProject.plannings || []).length },
+      { id: "documents", label: "Documents", icon: FileText, count: (selectedProject.documents || []).length },
+      { id: "risks", label: "Risks", icon: ShieldAlert, count: (selectedProject.risks || []).length },
       { id: "reports", label: "Reports", icon: BarChart },
       { id: "settings", label: "Settings", icon: Settings },
     ];
@@ -265,8 +863,18 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
     );
   }
 
+  // Pre-calculated stats for the selected project
+  const completedTasks = (selectedProject?.tasks || []).filter((t: any) => t.status === 'COMPLETED').length;
+  const pendingTasks = (selectedProject?.tasks || []).filter((t: any) => t.status !== 'COMPLETED').length;
+  const totalTasks = (selectedProject?.tasks || []).length;
+  const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (selectedProject?.completionPercentage || 0);
+  const openIssues = (selectedProject?.issues || []).filter((i: any) => i.status !== 'CLOSED' && i.status !== 'RESOLVED').length;
+  const identifiedRisks = (selectedProject?.risks || []).length;
+  const hoursLogged = (selectedProject?.timeEntries || []).reduce((sum: number, t: any) => sum + (t.hours || 0), 0);
+  const allocatedResourcesCount = (selectedProject?.resourceAllocations || []).length;
+
   return (
-    <div className="flex flex-col h-full overflow-hidden relative bg-gray-50 dark:bg-gray-950">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden relative bg-gray-50 dark:bg-gray-950">
       
       {/* Header */}
       <div className="flex-none px-6 py-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm z-10">
@@ -282,7 +890,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
             <button 
               onClick={() => handleBackendExport('excel')} 
               disabled={isExportingExcel || isExportingPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 rounded-lg text-sm font-semibold border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors shadow-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 rounded-lg text-sm font-semibold border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
             >
               {isExportingExcel ? (
                 <div className="w-4 h-4 border-2 border-green-700 border-t-transparent rounded-full animate-spin"></div>
@@ -294,7 +902,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
             <button 
               onClick={() => handleBackendExport('pdf')} 
               disabled={isExportingExcel || isExportingPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 rounded-lg text-sm font-semibold border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 rounded-lg text-sm font-semibold border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
             >
               {isExportingPDF ? (
                 <div className="w-4 h-4 border-2 border-red-700 border-t-transparent rounded-full animate-spin"></div>
@@ -308,7 +916,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                 if (!businessId) return;
                 navigate(`/dashboard/${businessId}/project-operations/projects/create`);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm ml-2"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm ml-2 cursor-pointer"
             >
               + Create Project
             </button>
@@ -316,10 +924,10 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* LEFT PANE: List */}
-        <div className="w-[420px] flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col h-full shadow-sm relative z-20">
-          <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-3 bg-gray-50/50 dark:bg-gray-900/50">
+        <div className="w-[380px] lg:w-[420px] flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col h-full min-h-0 shadow-sm relative z-20">
+          <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-3 bg-gray-50/50 dark:bg-gray-900/50 flex-none">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input 
@@ -329,17 +937,17 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
               />
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setIsFilterOpen(true)} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold border rounded-lg transition-colors ${Object.keys(filters).length > 0 ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
+              <button onClick={() => setIsFilterOpen(true)} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold border rounded-lg transition-colors cursor-pointer ${Object.keys(filters).length > 0 ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
                 <Filter className="w-3.5 h-3.5" /> Filters {Object.keys(filters).length > 0 && `(${Object.keys(filters).length})`}
               </button>
               <div className="flex-1 relative">
-                <button onClick={() => setShowSortMenu(!showSortMenu)} className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold border border-gray-200 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-colors">
+                <button onClick={() => setShowSortMenu(!showSortMenu)} className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold border border-gray-200 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
                   <Clock className="w-3.5 h-3.5" /> Recent
                 </button>
                 {showSortMenu && (
                   <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg z-50 overflow-hidden py-1">
                     {['Today', 'Last 7 Days', 'Last 30 Days', 'Newest First', 'Oldest First', 'Recently Updated'].map(opt => (
-                      <button key={opt} onClick={() => { setSortOrder(opt); setShowSortMenu(false); }} className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-800 ${sortOrder === opt ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <button key={opt} onClick={() => { setSortOrder(opt); setShowSortMenu(false); }} className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer ${sortOrder === opt ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-700 dark:text-gray-300'}`}>
                         {opt}
                       </button>
                     ))}
@@ -349,7 +957,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto scrollbar-thin bg-gray-50 dark:bg-gray-950">
+          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin bg-gray-50 dark:bg-gray-950">
             {loading ? (
                <div className="flex flex-col items-center justify-center h-full p-8 text-center text-gray-500">
                  <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -365,7 +973,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                  <button onClick={() => {
                    if (!businessId) return;
                    navigate(`/dashboard/${businessId}/project-operations/projects/create`);
-                 }} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 transition-colors">
+                 }} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 transition-colors cursor-pointer">
                    Create First Project
                  </button>
                </div>
@@ -373,33 +981,34 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                <div className="flex flex-col items-center justify-center h-full p-10 text-center">
                  <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2">No matching projects</h3>
                  <p className="text-xs text-gray-500 mb-4">Try adjusting your search or filters.</p>
-                 <button onClick={() => { setSearchTerm(''); setFilters({}); setSortOrder('Newest First'); }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold">Clear Filters</button>
+                 <button onClick={() => { setSearchTerm(''); setFilters({}); setSortOrder('Newest First'); }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold cursor-pointer">Clear Filters</button>
                </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {filteredProjects.map(proj => {
                   const health = getHealth(proj);
+                  const isSelected = selectedProject?.id === proj.id;
                   return (
                     <div 
                       key={proj.id} 
                       onClick={() => setSelectedProject(proj)}
                       className={`p-4 cursor-pointer transition-all ${
-                        selectedProject?.id === proj.id 
+                        isSelected 
                           ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-600' 
                           : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border-l-4 border-l-transparent'
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-black text-gray-500 uppercase tracking-widest">{proj.projectCode}</span>
+                        <span className="text-xs font-black text-gray-500 uppercase tracking-widest">{proj.projectCode || 'PRJ'}</span>
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${health.color}`} title={health.text}></div>
-                          <StatusBadge status={proj.status} size="sm" />
+                          <StatusBadge status={proj.status || 'ACTIVE'} size="sm" />
                         </div>
                       </div>
                       <h4 className="text-sm font-black text-gray-900 dark:text-gray-100 mb-1 leading-tight">{proj.projectName}</h4>
                       <p className="text-xs text-gray-500 font-medium mb-3 truncate">{proj.customer?.name || proj.customer?.company || 'Internal'}</p>
                       <div className="flex justify-between items-center text-xs">
-                        <span className="font-black text-gray-900 dark:text-white">${(proj.budget || 0).toLocaleString()}</span>
+                        <span className="font-black text-gray-900 dark:text-white">${Number(proj.budget || 0).toLocaleString()}</span>
                         <span className="font-bold text-gray-400 flex items-center gap-1">
                           <CalendarIcon className="w-3 h-3" /> {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric'}) : 'N/A'}
                         </span>
@@ -420,121 +1029,163 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
         </div>
 
         {/* RIGHT PANE: Details Workspace */}
-        <div className="flex-1 min-w-0 flex flex-col h-full bg-gray-50/50 dark:bg-gray-950/30 overflow-hidden relative z-10">
+        <div className="flex-1 min-w-0 flex flex-col h-full min-h-0 bg-gray-50/50 dark:bg-gray-950/30 overflow-hidden relative z-10">
           {selectedProject ? (
             <>
               {/* Header */}
-              <div className="px-8 py-6 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-start flex-none">
+              <div className="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-start flex-none">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{selectedProject.projectName}</h2>
-                    <span className={`px-2 py-1 text-[10px] uppercase font-black rounded-md tracking-widest ${selectedProject.executionType === 'SERVICE' ? 'bg-indigo-100 text-indigo-700' : 'bg-orange-100 text-orange-700'}`}>
+                    <h2 className="text-2xl lg:text-3xl font-black text-gray-900 dark:text-white tracking-tight">{selectedProject.projectName}</h2>
+                    <span className={`px-2.5 py-1 text-[10px] uppercase font-black rounded-md tracking-widest ${selectedProject.executionType === 'SERVICE' ? 'bg-indigo-100 text-indigo-700' : 'bg-orange-100 text-orange-700'}`}>
                       {selectedProject.executionType || 'HYBRID'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400 font-medium">
-                    <span className="flex items-center gap-2"><LayoutGrid className="w-4 h-4 text-gray-400" /> {selectedProject.projectCode}</span>
-                    <span className="flex items-center gap-2"><Users className="w-4 h-4 text-gray-400" /> PM: {selectedProject.projectManager?.name || 'Unassigned'}</span>
+                  <div className="flex items-center gap-6 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    <span className="flex items-center gap-1.5"><LayoutGrid className="w-3.5 h-3.5 text-gray-400" /> {selectedProject.projectCode || 'PRJ'}</span>
+                    <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-gray-400" /> PM: {selectedProject.projectManager?.name || selectedProject.projectManager?.user?.name || 'Unassigned'}</span>
+                    <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-blue-500" /> {allocatedResourcesCount} Resources</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button className="px-5 py-2 text-sm font-bold bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors">
+                  <button 
+                    onClick={() => navigate(`/dashboard/${businessId}/project-operations/projects/${selectedProject.id}/edit`)}
+                    className="px-4 py-2 text-xs font-bold bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg transition-colors cursor-pointer"
+                  >
                     Edit Details
                   </button>
-                  <button className="px-5 py-2 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm transition-colors">
+                  <button 
+                    onClick={() => navigate(`/dashboard/${businessId}/project-operations/projects/${selectedProject.id}`)}
+                    className="px-4 py-2 text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer"
+                  >
                     Manage Project
                   </button>
                 </div>
               </div>
 
-              {/* Tabs Navigation */}
-              <div className="px-8 border-b border-gray-200 dark:border-gray-800 flex overflow-x-auto scrollbar-hide flex-none bg-white dark:bg-gray-900 shadow-sm z-10">
-                {tabs.map(tab => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center px-5 py-4 text-sm font-bold border-b-2 whitespace-nowrap transition-colors ${
-                        isActive 
-                          ? 'border-blue-600 text-blue-700 dark:text-blue-400 bg-gray-50/50 dark:bg-gray-800/50' 
-                          : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4 mr-2" />
-                      {tab.label}
-                    </button>
-                  );
-                })}
+              {/* Tabs Navigation with Horizontal Scroll Controls */}
+              <div className="relative border-b border-gray-200 dark:border-gray-800 flex items-center bg-white dark:bg-gray-900 shadow-sm z-10 flex-none px-2">
+                <button 
+                  onClick={() => scrollTabs('left')}
+                  aria-label="Scroll tabs left"
+                  className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-none cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                <div ref={tabContainerRef} className="flex-1 flex overflow-x-auto scrollbar-hide px-2">
+                  {tabs.map(tab => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    const count = (tab as any).count;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center px-4 py-3.5 text-xs font-bold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
+                          isActive 
+                            ? 'border-blue-600 text-blue-700 dark:text-blue-400 bg-blue-50/40 dark:bg-blue-900/20' 
+                            : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5 mr-2" />
+                        <span>{tab.label}</span>
+                        {typeof count === 'number' && (
+                          <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                            isActive ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                          }`}>
+                            {count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button 
+                  onClick={() => scrollTabs('right')}
+                  aria-label="Scroll tabs right"
+                  className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-none cursor-pointer"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
 
               {/* Tab Content */}
-              <div className="flex-1 overflow-y-auto p-8">
-                <div className="max-w-6xl mx-auto">
+              <div className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8">
+                <div className="max-w-6xl mx-auto space-y-6">
                   {activeTab === 'overview' && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-300">
                       
                       {/* Financials KPI */}
-                      <div className="col-span-1 md:col-span-3 grid grid-cols-4 gap-6">
-                        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                          <p className="text-xs text-gray-500 uppercase font-black tracking-widest mb-2 flex items-center gap-2"><DollarSign className="w-4 h-4" /> Total Budget</p>
-                          <h3 className="text-2xl font-black text-gray-900 dark:text-white">${(selectedProject.budget || 0).toLocaleString()}</h3>
+                      <div className="col-span-1 md:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                          <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1.5 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Total Budget</p>
+                          <h3 className="text-xl font-black text-gray-900 dark:text-white">${Number(selectedProject.budget || 0).toLocaleString()}</h3>
                         </div>
-                        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                          <p className="text-xs text-gray-500 uppercase font-black tracking-widest mb-2 flex items-center gap-2"><Receipt className="w-4 h-4 text-red-500" /> Spent Cost</p>
-                          <h3 className="text-2xl font-black text-red-600">${(selectedProject.actualCost || 0).toLocaleString()}</h3>
+                        <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                          <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1.5 flex items-center gap-1.5"><Receipt className="w-3.5 h-3.5 text-red-500" /> Spent Cost</p>
+                          <h3 className="text-xl font-black text-red-600">${Number(selectedProject.actualCost || 0).toLocaleString()}</h3>
                         </div>
-                        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                          <p className="text-xs text-gray-500 uppercase font-black tracking-widest mb-2 flex items-center gap-2"><BarChart className="w-4 h-4 text-green-500" /> Remaining</p>
-                          <h3 className="text-2xl font-black text-green-600">${((selectedProject.budget || 0) - (selectedProject.actualCost || 0)).toLocaleString()}</h3>
+                        <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                          <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1.5 flex items-center gap-1.5"><BarChart className="w-3.5 h-3.5 text-green-500" /> Remaining</p>
+                          <h3 className="text-xl font-black text-green-600">${(Number(selectedProject.budget || 0) - Number(selectedProject.actualCost || 0)).toLocaleString()}</h3>
                         </div>
-                        <div className="bg-gradient-to-br from-blue-900 to-blue-800 p-6 rounded-xl shadow-lg text-white">
-                          <p className="text-xs text-blue-300 uppercase font-black tracking-widest mb-2 flex items-center gap-2"><Activity className="w-4 h-4" /> Completion</p>
-                          <h3 className="text-3xl font-black">{selectedProject.completionPercentage || 0}%</h3>
+                        <div className="bg-gradient-to-br from-blue-900 to-blue-800 p-5 rounded-xl shadow-lg text-white">
+                          <p className="text-[10px] text-blue-300 uppercase font-black tracking-widest mb-1.5 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" /> Completion</p>
+                          <h3 className="text-2xl font-black">{selectedProject.completionPercentage ?? taskCompletionRate}%</h3>
                         </div>
                       </div>
 
                       {/* Work Items KPI */}
-                      <div className="col-span-2 grid grid-cols-2 gap-6">
-                        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                          <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white mb-6">Task Execution</h3>
-                          <div className="flex justify-between items-end mb-2">
-                             <div>
-                               <p className="text-4xl font-black text-blue-600">0</p>
-                               <p className="text-xs font-bold text-gray-500 uppercase mt-1">Completed</p>
-                             </div>
-                             <div className="text-right">
-                               <p className="text-3xl font-black text-gray-400">0</p>
-                               <p className="text-xs font-bold text-gray-500 uppercase mt-1">Pending</p>
-                             </div>
-                          </div>
-                          <div className="w-full bg-gray-100 rounded-full h-2 mt-4"><div className="bg-blue-600 h-2 rounded-full w-0"></div></div>
-                        </div>
-                        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                          <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white mb-6">Health Metrics</h3>
-                          <div className="space-y-4">
-                            <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                               <span className="text-xs font-bold text-gray-500 flex items-center gap-2"><AlertCircle className="w-4 h-4 text-red-500" /> Open Issues</span>
-                               <span className="text-sm font-black text-gray-900">0</span>
+                      <div className="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+                          <div>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white mb-4">Task Execution</h3>
+                            <div className="flex justify-between items-end mb-2">
+                               <div>
+                                 <p className="text-3xl font-black text-blue-600">{completedTasks}</p>
+                                 <p className="text-[10px] font-bold text-gray-500 uppercase mt-1">Completed</p>
+                               </div>
+                               <div className="text-right">
+                                 <p className="text-2xl font-black text-gray-400">{pendingTasks}</p>
+                                 <p className="text-[10px] font-bold text-gray-500 uppercase mt-1">Pending</p>
+                               </div>
                             </div>
-                            <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                               <span className="text-xs font-bold text-gray-500 flex items-center gap-2"><ShieldAlert className="w-4 h-4 text-orange-500" /> Identified Risks</span>
-                               <span className="text-sm font-black text-gray-900">0</span>
+                          </div>
+                          <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mt-4">
+                            <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${taskCompletionRate}%` }}></div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                          <h3 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white mb-4">Health & Operations</h3>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center pb-2.5 border-b border-gray-100 dark:border-gray-800">
+                               <span className="text-xs font-bold text-gray-500 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5 text-red-500" /> Open Issues</span>
+                               <span className="text-xs font-black text-gray-900 dark:text-white">{openIssues}</span>
+                            </div>
+                            <div className="flex justify-between items-center pb-2.5 border-b border-gray-100 dark:border-gray-800">
+                               <span className="text-xs font-bold text-gray-500 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5 text-orange-500" /> Identified Risks</span>
+                               <span className="text-xs font-black text-gray-900 dark:text-white">{identifiedRisks}</span>
+                            </div>
+                            <div className="flex justify-between items-center pb-2.5 border-b border-gray-100 dark:border-gray-800">
+                               <span className="text-xs font-bold text-gray-500 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-blue-500" /> Hours Logged</span>
+                               <span className="text-xs font-black text-gray-900 dark:text-white">{hoursLogged} hrs</span>
                             </div>
                             <div className="flex justify-between items-center">
-                               <span className="text-xs font-bold text-gray-500 flex items-center gap-2"><Clock className="w-4 h-4 text-blue-500" /> Hours Logged</span>
-                               <span className="text-sm font-black text-gray-900">0 hrs</span>
+                               <span className="text-xs font-bold text-gray-500 flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-indigo-500" /> Team Allocated</span>
+                               <span className="text-xs font-black text-gray-900 dark:text-white">{allocatedResourcesCount} members</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Details Sidebar */}
-                      <div className="col-span-1 space-y-6">
-                        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                          <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white mb-4">Project Meta</h3>
-                          <div className="space-y-4 text-sm">
+                      <div className="col-span-1 space-y-4">
+                        <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                          <h3 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white mb-4">Project Meta</h3>
+                          <div className="space-y-3.5 text-xs">
                             <div className="flex flex-col gap-1">
                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Start Date</span>
                               <span className="font-bold text-gray-900 dark:text-white">{selectedProject.startDate ? new Date(selectedProject.startDate).toLocaleDateString() : 'TBD'}</span>
@@ -549,7 +1200,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                             </div>
                             <div className="flex flex-col gap-1">
                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Customer</span>
-                              <span className="font-bold text-gray-900 dark:text-white">{selectedProject.customer?.name || '-'}</span>
+                              <span className="font-bold text-gray-900 dark:text-white">{selectedProject.customer?.name || selectedProject.customer?.company || 'Internal'}</span>
                             </div>
                           </div>
                         </div>
@@ -558,7 +1209,42 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                     </div>
                   )}
                   
-                  {activeTab !== 'overview' && (
+                  {activeTab === 'resources' && (
+                    <ResourceWorkspaceTab project={selectedProject} businessId={businessId} navigate={navigate} />
+                  )}
+
+                  {activeTab === 'tasks' && (
+                    <TaskWorkspaceTab project={selectedProject} businessId={businessId} navigate={navigate} />
+                  )}
+
+                  {activeTab === 'milestones' && (
+                    <MilestoneWorkspaceTab project={selectedProject} businessId={businessId} navigate={navigate} />
+                  )}
+
+                  {activeTab === 'timesheets' && (
+                    <TimesheetWorkspaceTab project={selectedProject} businessId={businessId} navigate={navigate} />
+                  )}
+
+                  {activeTab === 'issues' && (
+                    <IssueWorkspaceTab project={selectedProject} businessId={businessId} navigate={navigate} />
+                  )}
+
+                  {activeTab === 'team' && (
+                    <TeamWorkspaceTab project={selectedProject} businessId={businessId} navigate={navigate} />
+                  )}
+
+                  {activeTab === 'timeline' && (
+                    <TimelineWorkspaceTab project={selectedProject} />
+                  )}
+
+                  {activeTab !== 'overview' && 
+                   activeTab !== 'resources' && 
+                   activeTab !== 'tasks' && 
+                   activeTab !== 'milestones' && 
+                   activeTab !== 'timesheets' && 
+                   activeTab !== 'issues' && 
+                   activeTab !== 'team' && 
+                   activeTab !== 'timeline' && (
                     <GenericWorkspaceTab title={tabs.find(t => t.id === activeTab)?.label || 'Workspace'} project={selectedProject} />
                   )}
                 </div>
@@ -566,6 +1252,8 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
+              <LayoutGrid className="w-12 h-12 mb-3 text-gray-300" />
+              <p className="text-sm font-semibold">Select a project from the left pane to view details</p>
             </div>
           )}
         </div>
@@ -578,14 +1266,14 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
           <div className="relative w-full max-w-md bg-white dark:bg-gray-900 h-full shadow-2xl flex flex-col animate-in slide-in-from-right border-l border-gray-200 dark:border-gray-800">
             <div className="flex-none p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
               <h2 className="text-lg font-black tracking-tight flex items-center gap-2 text-gray-900 dark:text-white"><SlidersHorizontal className="w-5 h-5 text-blue-600" /> Advanced Filters</h2>
-              <button onClick={() => setIsFilterOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"><X className="w-5 h-5" /></button>
+              <button onClick={() => setIsFilterOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
             <div className="flex-1 p-6 space-y-8 overflow-y-auto">
               <div>
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Status</h3>
                 <div className="flex flex-wrap gap-2">
                   {['DRAFT', 'PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'ARCHIVED'].map(s => (
-                    <button key={s} onClick={() => setFilters({...filters, 'Status': s})} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${filters['Status'] === s ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{s.replace('_', ' ')}</button>
+                    <button key={s} onClick={() => setFilters({...filters, 'Status': s})} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${filters['Status'] === s ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{s.replace('_', ' ')}</button>
                   ))}
                 </div>
               </div>
@@ -593,7 +1281,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Priority</h3>
                 <div className="flex flex-wrap gap-2">
                   {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map(s => (
-                    <button key={s} onClick={() => setFilters({...filters, 'Priority': s})} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${filters['Priority'] === s ? 'bg-orange-50 border-orange-200 text-orange-700 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{s}</button>
+                    <button key={s} onClick={() => setFilters({...filters, 'Priority': s})} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${filters['Priority'] === s ? 'bg-orange-50 border-orange-200 text-orange-700 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{s}</button>
                   ))}
                 </div>
               </div>
@@ -601,7 +1289,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Execution Type</h3>
                 <div className="flex flex-wrap gap-2">
                   {['SERVICE', 'PRODUCT', 'HYBRID'].map(s => (
-                    <button key={s} onClick={() => setFilters({...filters, 'Type': s})} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${filters['Type'] === s ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{s}</button>
+                    <button key={s} onClick={() => setFilters({...filters, 'Type': s})} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${filters['Type'] === s ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{s}</button>
                   ))}
                 </div>
               </div>
@@ -609,7 +1297,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Department</h3>
                 <div className="flex flex-wrap gap-2">
                   {['Enterprise', 'SMB', 'Government', 'Internal'].map(s => (
-                    <button key={s} onClick={() => setFilters({...filters, 'Department': s})} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${filters['Department'] === s ? 'bg-green-50 border-green-200 text-green-700 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{s}</button>
+                    <button key={s} onClick={() => setFilters({...filters, 'Department': s})} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${filters['Department'] === s ? 'bg-green-50 border-green-200 text-green-700 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{s}</button>
                   ))}
                 </div>
               </div>
@@ -658,8 +1346,8 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
               </div>
             </div>
             <div className="flex-none p-6 border-t border-gray-100 dark:border-gray-800 flex gap-3 bg-white dark:bg-gray-900">
-              <button onClick={() => setFilters({})} className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-black uppercase tracking-wider hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Clear</button>
-              <button onClick={() => setIsFilterOpen(false)} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-black uppercase tracking-wider shadow-md hover:bg-blue-700 transition-colors">Apply</button>
+              <button onClick={() => setFilters({})} className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-black uppercase tracking-wider hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer">Clear</button>
+              <button onClick={() => setIsFilterOpen(false)} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-black uppercase tracking-wider shadow-md hover:bg-blue-700 transition-colors cursor-pointer">Apply</button>
             </div>
           </div>
         </div>

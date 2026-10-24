@@ -53,46 +53,20 @@ export function EditBasicProjectForm({ businessId, projectId }: { businessId: st
       }
     };
     
-    const fetchNextProjectNumber = async () => {
-      try {
-        const res = await projectOperationsAPI.getProjects(businessId);
-        const projects = res.data || res.projects || [];
-        
-        // Find all projects that start with PRJ-
-        const prjNumbers = projects
-          .map((p: any) => p.projectCode || '')
-          .filter((code: string) => code.startsWith('PRJ-'))
-          .map((code: string) => parseInt(code.replace('PRJ-', ''), 10))
-          .filter((num: number) => !isNaN(num));
-
-        if (prjNumbers.length > 0) {
-          const maxNum = Math.max(...prjNumbers);
-          const nextNum = maxNum + 1;
-          const formatted = 'PRJ-' + nextNum.toString().padStart(3, '0');
-          setFormData(prev => ({ ...prev, projNumber: formatted }));
-        }
-      } catch (error) {
-        console.error("Failed to fetch projects for number generation:", error);
-      }
-    };
-
     const fetchProject = async () => {
       try {
-        const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
-        const token = getCookie('token') || getCookie('accessToken');
-        const res = await fetch(`${API_BASE}/api/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}`, 'x-business-id': businessId } });
-        const data = await res.json();
+        const data = await projectOperationsAPI.getProjectDetails(businessId, projectId);
         if (data.success && data.project) {
           const p = data.project;
           setFormData({ 
-            projNumber: p.projectCode, 
-            projName: p.projectName, 
-            customerId: p.customerId, 
+            projNumber: p.projectCode || p.code || 'PRJ-001', 
+            projName: p.projectName || p.name || '', 
+            customerId: p.customerId || p.customer?.id || '', 
             startDate: p.startDate ? p.startDate.split('T')[0] : '', 
             endDate: p.endDate ? p.endDate.split('T')[0] : '', 
-            currency: p.currency || 'CAD', 
+            currency: p.currency || 'AED', 
             quotationId: p.quotationId || '', 
-            note: p.note || '' 
+            note: p.note || p.description || '' 
           });
           if (p.projectItems && p.projectItems.length > 0) {
             setItems(p.projectItems.map((item: any) => ({
@@ -105,7 +79,9 @@ export function EditBasicProjectForm({ businessId, projectId }: { businessId: st
             })));
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error("Failed to load project for editing:", err);
+      }
     };
 
     fetchQuotations();

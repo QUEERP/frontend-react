@@ -207,6 +207,7 @@ export default function CreateIssuePage() {
     try {
       setIsSubmitting(true);
       const payload = {
+        projectId: formData.projectId,
         title: formData.title,
         description: formData.description,
         issueCode,

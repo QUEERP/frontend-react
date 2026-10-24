@@ -8,7 +8,7 @@ export default function GeneralReportsPage() {
   if (!businessId) return null;
 
   return (
-    <div className="h-[calc(100vh-theme(spacing.16))] bg-gray-50 dark:bg-[#0a0a0a]">
+    <div className="h-[calc(100dvh-4rem)] bg-gray-50 dark:bg-[#0a0a0a]">
       <GeneralReportsWorkspace businessId={businessId} />
     </div>
   );

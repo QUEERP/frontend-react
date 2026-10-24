@@ -350,29 +350,29 @@ export function SalesOrdersPageClient({ businessId }: SalesOrdersPageClientProps
                               </Button>
                             )}
                             {['CONFIRMED', 'Confirmed'].includes(order.status) && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={(e) => { e.stopPropagation(); handleChangeStatus(order.id, 'FULFILLED') }}
-                                  className="h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
-                                >
-                                  <PackageCheck className="mr-1 h-3.5 w-3.5" />
-                                  Complete Order
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    navigate(`/dashboard/${businessId}/invoices/add?salesOrderId=${order.id}`)
-                                  }}
-                                  className="h-8 border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
-                                >
-                                  <ReceiptText className="mr-1 h-3.5 w-3.5" />
-                                  Convert to Invoice
-                                </Button>
-                              </>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => { e.stopPropagation(); handleChangeStatus(order.id, 'FULFILLED') }}
+                                className="h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                              >
+                                <PackageCheck className="mr-1 h-3.5 w-3.5" />
+                                Complete Order
+                              </Button>
+                            )}
+                            {['CONFIRMED', 'Confirmed', 'FULFILLED', 'Fulfilled', 'COMPLETED', 'Completed', 'Approved'].includes(order.status) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  navigate(`/dashboard/${businessId}/invoices/add?salesOrderId=${order.id}`)
+                                }}
+                                className="h-8 border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
+                              >
+                                <ReceiptText className="mr-1 h-3.5 w-3.5" />
+                                Convert to Invoice
+                              </Button>
                             )}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -389,6 +389,18 @@ export function SalesOrdersPageClient({ businessId }: SalesOrdersPageClientProps
                                 <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
                                 Edit Order
                               </DropdownMenuItem>
+                              {!['DRAFT', 'Draft', 'INVOICED', 'Invoiced', 'CANCELLED', 'Cancelled'].includes(order.status) && (
+                                <DropdownMenuItem
+                                  className="cursor-pointer rounded-lg text-purple-600 focus:text-purple-700 focus:bg-purple-50"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/dashboard/${businessId}/invoices/add?salesOrderId=${order.id}`);
+                                  }}
+                                >
+                                  <ReceiptText className="mr-2 h-4 w-4 text-purple-600" />
+                                  Convert to Invoice
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem className="cursor-pointer rounded-lg" onClick={(e) => handleDownloadPdf(e, order)}>
                                 {downloadingId === order.id ? (
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin text-muted-foreground" />
