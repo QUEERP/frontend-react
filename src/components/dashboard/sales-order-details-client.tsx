@@ -156,7 +156,7 @@ export function SalesOrderDetailsClient({ businessId, orderId }: SalesOrderDetai
 
   const isDraft = ['DRAFT', 'Draft'].includes(statusKey)
   const isConfirmed = ['CONFIRMED', 'Confirmed'].includes(statusKey)
-  const isCompleted = ['COMPLETED', 'Completed', 'FULFILLED', 'INVOICED'].includes(statusKey)
+  const isCompleted = ['COMPLETED', 'Completed', 'FULFILLED', 'Fulfilled', 'INVOICED', 'Invoiced'].includes(statusKey)
   const isCancelled = ['CANCELLED', 'Cancelled'].includes(statusKey)
 
   return (

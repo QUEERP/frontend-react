@@ -85,8 +85,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { UserMenu } from './user-menu'
-import { exportToExcel } from '@/lib/export-utils'
+import { exportToExcel, exportToCsv } from '@/lib/export-utils'
 import { FileDownIcon } from 'lucide-react'
+import { API_ROOT } from '@/config/api'
 
 export function InvoicesPageClient({ businessId }: { businessId: string }) {
   const [businessName, setBusinessName] = useState<string | null>(null)
@@ -266,7 +267,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
     }
   }
 
-  const handleExport = async () => {
+  const handleExport = async (format: 'xlsx' | 'csv' = 'xlsx') => {
     try {
       setExportLoading(true)
       const token = getCookie('token') || getCookie('accessToken')
@@ -281,7 +282,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
       if (toDate) params.set('toDate', toDate)
       if (statusFilter !== 'all') params.set('status', statusFilter)
 
-      const res = await fetch(`${API_BASE}/api/invoices?${params.toString()}`, {
+      const res = await fetch(`${API_ROOT}/invoices?${params.toString()}`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -303,8 +304,13 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
         'Currency': inv.currency || 'AED'
       }))
 
-      exportToExcel(exportData, `Invoices_Report_${new Date().toISOString().split('T')[0]}`, 'Invoices')
-      toast({ title: 'Report Generated', description: 'Your invoice report has been downloaded.' })
+      const dateStr = new Date().toISOString().split('T')[0]
+      if (format === 'csv') {
+        exportToCsv(exportData, `Invoices_Report_${dateStr}`)
+      } else {
+        exportToExcel(exportData, `Invoices_Report_${dateStr}`, 'Invoices')
+      }
+      toast({ title: 'Report Generated', description: `Your invoice report (${format.toUpperCase()}) has been downloaded.` })
     } catch (err: any) {
       toast({ title: 'Export Failed', description: err.message, variant: 'destructive' })
     } finally {
@@ -447,15 +453,27 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                 ))}
               </SelectContent>
             </Select>
-            <Button 
-              variant="outline" 
-              className="h-10 rounded-xl cursor-pointer border-border bg-card text-foreground hover:bg-muted gap-2 font-medium px-4 shadow-sm"
-              onClick={handleExport}
-              disabled={exportLoading}
-            >
-              {exportLoading ? <Loader2Icon className="size-4 animate-spin text-blue-600" /> : <FileDownIcon className="size-4" />}
-              <span className="hidden sm:inline">Export</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="h-10 rounded-xl cursor-pointer border-border bg-card text-foreground hover:bg-muted gap-2 font-medium px-4 shadow-sm"
+                  disabled={exportLoading}
+                >
+                  {exportLoading ? <Loader2Icon className="size-4 animate-spin text-blue-600" /> : <FileDownIcon className="size-4" />}
+                  <span className="hidden sm:inline">Export</span>
+                  <ChevronDownIcon className="size-3.5 opacity-50 ml-0.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="rounded-xl border-border shadow-md">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => handleExport('xlsx')}>
+                  <FileTextIcon className="size-4 mr-2 text-emerald-600" /> Export as Excel (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => handleExport('csv')}>
+                  <FileDownIcon className="size-4 mr-2 text-blue-600" /> Export as CSV (.csv)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         <div className="p-0 border-t-0 flex-1 overflow-x-auto max-w-full w-full min-w-0 custom-scrollbar">

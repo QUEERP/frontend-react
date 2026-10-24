@@ -162,7 +162,8 @@ const mockInquiries: Record<string, string[]> = {
 function CreateEstimateContent({ businessId }: { businessId: string }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const requirementId = searchParams.get('requirementId');
+  const requirementId = searchParams.get('requirementId') || searchParams.get('reqId');
+  const editId = searchParams.get('editId') || searchParams.get('edit');
   const { toast } = useToast();
   const { currency, currencySymbol } = useBusinessData();
 
@@ -243,6 +244,37 @@ function CreateEstimateContent({ businessId }: { businessId: string }) {
     };
     fetchRequirementDetails();
   }, [requirementId, businessId, customers]);
+
+  useEffect(() => {
+    if (!editId) return;
+    const fetchEstimationDetails = async () => {
+      try {
+        setLoadingReq(true);
+        const res = await projectOperationsAPI.getEstimationById(businessId, editId);
+        const estData = res.estimation || res.data;
+        if (estData) {
+          setFormData(prev => ({
+            ...prev,
+            estName: estData.title || estData.name || prev.estName,
+            customer: estData.customerId || estData.requirement?.customerId || prev.customer,
+            linkedReq: estData.requirementId || prev.linkedReq,
+            approvalNotes: estData.internalNotes || '',
+            approvalStatus: estData.status || prev.approvalStatus,
+            labour: estData.labourCost ? [{ id: '1', role: 'Engineering & Development', employee: '', hours: 1, rate: Number(estData.labourCost) }] : prev.labour,
+            material: estData.materialCost ? [{ id: '1', item: 'Materials & Equipment', quantity: 1, unitCost: Number(estData.materialCost) }] : prev.material,
+            software: estData.miscCost ? [{ id: '1', description: 'Software / Licenses', cost: Number(estData.miscCost) }] : prev.software,
+            thirdParty: estData.subcontractCost ? [{ id: '1', description: 'Subcontractors / Third Party', cost: Number(estData.subcontractCost) }] : prev.thirdParty,
+            expenses: estData.travelCost ? [{ id: '1', description: 'Travel & Operations', cost: Number(estData.travelCost) }] : prev.expenses,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to load estimation details for editing:", error);
+      } finally {
+        setLoadingReq(false);
+      }
+    };
+    fetchEstimationDetails();
+  }, [editId, businessId]);
   
   // Fetch requirements & inquiries when customer changes
   useEffect(() => {
@@ -431,7 +463,15 @@ function CreateEstimateContent({ businessId }: { businessId: string }) {
         status: action === 'draft' ? 'Draft' : (action === 'proposal' ? 'Approved for Proposal' : 'Pending Approval')
       };
       
-      const res = await projectOperationsAPI.createEstimation(businessId, payload);
+      let res: any;
+      if (editId) {
+        res = await projectOperationsAPI.updateEstimation(businessId, editId, payload);
+        toast({ title: "Success", description: "Estimation updated successfully!" });
+        navigate(`/dashboard/${businessId}/project-operations/estimations`);
+        return;
+      } else {
+        res = await projectOperationsAPI.createEstimation(businessId, payload);
+      }
       
       // Update UI state with saved status
       setFormData(prev => ({ ...prev, approvalStatus: payload.status }));
@@ -807,7 +847,7 @@ function CreateEstimateContent({ businessId }: { businessId: string }) {
       </div>
 
       {/* RIGHT PANE: Sticky Summary & Actions */}
-      <div className="hidden lg:flex flex-col w-[360px] xl:w-[380px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-xl z-10 sticky top-0 h-[calc(100vh-theme(spacing.16))]">
+      <div className="hidden lg:flex flex-col w-[360px] xl:w-[380px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-xl z-10 sticky top-0 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] overflow-y-auto">
         <div className="p-5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
           <div className="flex justify-between items-end mb-2">
             <div>
@@ -928,7 +968,7 @@ export default function CreateEstimatePage() {
   
   return (
     <Suspense fallback={
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.16))] bg-gray-50 dark:bg-gray-950">
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] bg-gray-50 dark:bg-gray-950">
         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p className="text-gray-500 font-medium">Initializing Estimate Workspace...</p>
       </div>

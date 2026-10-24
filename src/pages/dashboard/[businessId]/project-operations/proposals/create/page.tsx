@@ -145,14 +145,13 @@ const initialFormData = {
 function CreateProposalContent({ businessId }: { businessId: string }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const reqId = searchParams.get('reqId');
-  const estId = searchParams.get('estId');
-  const editId = searchParams.get('edit');
+  const reqId = searchParams.get('requirementId') || searchParams.get('reqId');
+  const estId = searchParams.get('estimateId') || searchParams.get('estimationId') || searchParams.get('estId');
+  const editId = searchParams.get('edit') || searchParams.get('editId') || searchParams.get('id');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState(() => {
     const base = { ...initialFormData };
-    // We will run initialization logic inside a useEffect once customers are loaded, or we can just seed IDs if available.
     return base;
   });
   
@@ -202,6 +201,70 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
     fetchUsers();
   }, [businessId]);
 
+  // Load from Requirement when converting
+  useEffect(() => {
+    if (!reqId) return;
+    const fetchReq = async () => {
+      try {
+        const res = await projectOperationsAPI.getRequirementDetails(businessId, reqId);
+        const req = res.requirement || res.data || res;
+        if (req) {
+          setFormData(prev => ({
+            ...prev,
+            propName: req.title ? `${req.title} - Proposal` : prev.propName,
+            customer: req.customerId || req.customer?.id || prev.customer,
+            linkedReq: req.id,
+            includedScope: req.inScope || prev.includedScope,
+            outOfScope: req.outOfScope || prev.outOfScope,
+            finalPrice: req.expectedBudget != null ? Number(req.expectedBudget) : prev.finalPrice,
+          }));
+          // Also fetch estimations for this requirement
+          try {
+            const estRes = await projectOperationsAPI.getEstimations(businessId, req.id);
+            if (estRes.estimations) setReqEstimations(estRes.estimations);
+          } catch (e) {}
+        }
+      } catch (e) {
+        console.error("Failed to load requirement for proposal conversion:", e);
+      }
+    };
+    fetchReq();
+  }, [businessId, reqId]);
+
+  // Load from Estimation when converting
+  useEffect(() => {
+    if (!estId) return;
+    const fetchEst = async () => {
+      try {
+        const res = await projectOperationsAPI.getEstimationById(businessId, estId);
+        const est = res.estimation || res.data || res;
+        if (est) {
+          setFormData(prev => {
+            let next = {
+              ...prev,
+              propName: est.title ? `${est.title} - Proposal` : prev.propName,
+              customer: est.customerId || est.requirement?.customerId || prev.customer,
+              linkedEst: est.id,
+              linkedReq: est.requirementId || prev.linkedReq,
+              matCost: Number(est.materialCost || 0),
+              labCost: Number(est.labourCost || 0),
+              subCost: Number(est.subcontractCost || 0),
+              trvCost: Number(est.travelCost || 0),
+              ovhCost: Number(est.miscCost || 0),
+              estProjectValue: Number(est.totalCost || 0),
+              finalPrice: Number(est.totalCost || 0),
+            };
+            return recalculateCommercials(next);
+          });
+        }
+      } catch (e) {
+        console.error("Failed to load estimation for proposal conversion:", e);
+      }
+    };
+    fetchEst();
+  }, [businessId, estId]);
+
+  // Load for editing
   useEffect(() => {
     if (!editId) return;
     const fetchProposal = async () => {
@@ -218,6 +281,9 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
             propDate: q.issueDate ? new Date(q.issueDate).toISOString().split('T')[0] : prev.propDate,
             validUntil: q.expiryDate ? new Date(q.expiryDate).toISOString().split('T')[0] : prev.validUntil,
             currency: q.currency || prev.currency,
+            finalPrice: Number(q.totalAmount || 0),
+            matCost: Number(q.subtotal || 0),
+            appNotes: q.notes || '',
           }));
         }
       } catch (err) {
@@ -359,6 +425,21 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
     }
     setIsSaving(true);
     try {
+      if (editId) {
+        await quotationsAPI.updateQuotation(businessId, editId, {
+          title: formData.propName,
+          customerId: formData.customer,
+          totalAmount: formData.finalPrice,
+          subtotal: (formData.matCost || 0) + (formData.labCost || 0),
+          expiryDate: formData.validUntil ? new Date(formData.validUntil).toISOString() : undefined,
+          notes: formData.appNotes,
+          status: actionStatus
+        } as any);
+        toast({ title: "Success", description: "Proposal updated successfully." });
+        navigate(`/dashboard/${businessId}/project-operations/proposals`);
+        return;
+      }
+
       if (actionStatus === 'Submit For Approval') {
         await projectOperationsAPI.submitProposalApproval(businessId, formData.propNumber);
         setFormData(prev => ({...prev, status: 'Pending Approval', appStatus: 'Under Review'}));
@@ -745,7 +826,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
       </div>
 
       {/* RIGHT PANE: Sticky Live Summary Panel */}
-      <div className="hidden xl:flex flex-col w-[420px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl z-50 sticky top-0 h-[calc(100vh-theme(spacing.16))]">
+      <div className="hidden xl:flex flex-col w-[420px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl z-50 sticky top-0 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] overflow-y-auto">
         <div className="p-6 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/40 backdrop-blur-sm">
           <div className="flex justify-between items-end mb-3">
             <div>
@@ -883,7 +964,7 @@ export default function CreateProposalPage() {
   
   return (
     <Suspense fallback={
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.16))] bg-gray-50 dark:bg-gray-950">
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] bg-gray-50 dark:bg-gray-950">
         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Initializing Enterprise Proposal Engine...</p>
       </div>

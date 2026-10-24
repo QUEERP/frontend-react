@@ -320,6 +320,67 @@ function RequirementFormContent({ businessId, id }: { businessId: string, id?: s
     fetchUsers();
   }, [businessId]);
 
+  // Load existing requirement details when editing
+  useEffect(() => {
+    if (!id) return;
+    const fetchRequirement = async () => {
+      try {
+        const res = await projectOperationsAPI.getRequirementDetails(businessId, id);
+        const req = res.requirement || res.data || res;
+        if (req) {
+          setFormData(prev => ({
+            ...prev,
+            reqNumber: req.reqNumber || prev.reqNumber,
+            title: req.title || '',
+            linkedInquiry: req.linkedInquiry || '',
+            customer: req.customerId || req.customer?.id || '',
+            projectType: req.projectType || 'FIXED_COST',
+            businessType: req.businessType || 'B2B',
+            executionType: req.executionType || 'PROJECT',
+            status: req.status || 'DRAFT',
+            priority: req.priority || 'MEDIUM',
+            category: req.categoryId || '',
+            businessUnit: req.businessUnit || '',
+            currency: req.currency || 'AED',
+            contactPerson: req.contactPerson || '',
+            designation: req.designation || '',
+            email: req.email || '',
+            phone: req.phone || '',
+            company: req.company || '',
+            industry: req.industry || '',
+            country: req.country || '',
+            timezone: req.timezone || '',
+            projectSize: req.projectSize || '',
+            estimatedBudget: req.expectedBudget != null ? String(req.expectedBudget) : '',
+            expectedRevenue: req.expectedRevenue != null ? String(req.expectedRevenue) : '',
+            expectedProfit: req.expectedProfit != null ? String(req.expectedProfit) : '',
+            expectedMargin: req.expectedMargin != null ? String(req.expectedMargin) : '',
+            businessObjective: req.businessObjective || '',
+            currentProblem: req.currentProblem || '',
+            businessRequirement: req.businessRequirement || '',
+            expectedSolution: req.expectedSolution || '',
+            scope: req.inScope || '',
+            outOfScope: req.outOfScope || '',
+            successCriteria: req.successCriteria || '',
+            assumptions: req.assumptions || '',
+            dependencies: req.assumptionsDependencies || '',
+            resourceRequirements: req.infrastructureRequirements || '',
+            complianceRequirements: req.complianceRequirements || '',
+            qualityAssurance: req.acceptanceCriteria || '',
+            expectedStartDate: req.expectedStart ? new Date(req.expectedStart).toISOString().split('T')[0] : '',
+            expectedEndDate: req.expectedEnd ? new Date(req.expectedEnd).toISOString().split('T')[0] : '',
+            estimatedDuration: req.estimatedDuration || '',
+            deliverables: Array.isArray(req.deliverables) && req.deliverables.length > 0 ? req.deliverables : prev.deliverables,
+            team: Array.isArray(req.team) && req.team.length > 0 ? req.team : prev.team,
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to load requirement details for editing:", err);
+      }
+    };
+    fetchRequirement();
+  }, [businessId, id]);
+
   // Pre-fill data if inquiryId is provided
   useEffect(() => {
     if (!inquiryId || customers.length === 0) return;
@@ -926,7 +987,7 @@ function RequirementFormContent({ businessId, id }: { businessId: string, id?: s
       </div>
 
       {/* RIGHT PANE: Sticky Summary & Actions */}
-      <div className="hidden lg:flex flex-col w-[360px] xl:w-[380px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-xl z-10 sticky top-0 h-[calc(100vh-theme(spacing.16))]">
+      <div className="hidden lg:flex flex-col w-[360px] xl:w-[380px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-xl z-10 sticky top-0 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] overflow-y-auto">
         
         {/* Progress Bar Header */}
         <div className="p-5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">

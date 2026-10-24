@@ -6,7 +6,38 @@ export const exportToExcel = (data: any[], filename: string, sheetName: string =
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  
+  // Generate real XLSX binary with explicit openxmlformats MIME type to avoid Windows/Chrome treating it as HTML document
+  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([excelBuffer], { 
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' 
+  });
+  
+  const finalName = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`;
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = finalName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+};
+
+export const exportToCsv = (data: any[], filename: string) => {
+  const ws = XLSX.utils.json_to_sheet(data);
+  const csvContent = XLSX.utils.sheet_to_csv(ws);
+  const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+  
+  const finalName = filename.endsWith('.csv') ? filename : `${filename}.csv`;
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = finalName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 };
 
 export const exportToPdf = (

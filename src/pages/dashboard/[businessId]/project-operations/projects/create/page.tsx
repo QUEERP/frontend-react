@@ -17,6 +17,7 @@ import { UserSelect } from "@/components/project-operations/UserSelect";
 import { useBusinessCustomers } from "@/hooks/use-business-data";
 import { useBusinessData } from "@/components/dashboard/business-data-provider";
 import { BasicProjectForm } from "@/components/dashboard/basic-project-form";
+import { projectOperationsAPI } from "@/lib/api/project-operations";
 
 // ------------------------------------------------------------------
 // REUSABLE COMPONENTS
@@ -123,6 +124,9 @@ export default function CreateProjectPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const contractId = searchParams.get('contractId');
+  const requirementId = searchParams.get('requirementId') || searchParams.get('reqId');
+  const proposalId = searchParams.get('proposalId') || searchParams.get('quotationId') || searchParams.get('propId');
+  const estimationId = searchParams.get('estimationId') || searchParams.get('estimateId') || searchParams.get('estId');
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -226,6 +230,82 @@ export default function CreateProjectPage() {
               objectives: contract.description || prev.objectives
             }));
             toast({ title: "Auto-Populated", description: "Project fields loaded from Contract." });
+          }
+        }
+
+        // Auto-populate from Requirement if applicable
+        if (requirementId) {
+          try {
+            const res = await projectOperationsAPI.getRequirementDetails(businessId as string, requirementId);
+            const req = res.requirement || res.data || res;
+            if (req) {
+              setFormData(prev => ({
+                ...prev,
+                projName: req.title || prev.projName,
+                customer: req.customerId || req.customer?.id || prev.customer,
+                linkedReq: req.id,
+                estBudget: req.expectedBudget != null ? Number(req.expectedBudget) : prev.estBudget,
+                appBudget: req.expectedBudget != null ? Number(req.expectedBudget) : prev.appBudget,
+                currency: req.currency || prev.currency,
+                startDate: req.expectedStart ? new Date(req.expectedStart).toISOString().split('T')[0] : prev.startDate,
+                endDate: req.expectedEnd ? new Date(req.expectedEnd).toISOString().split('T')[0] : prev.endDate,
+                objectives: req.businessObjective || req.businessRequirement || prev.objectives,
+                inScope: req.inScope || prev.inScope,
+                outOfScope: req.outOfScope || prev.outOfScope,
+                deliverables: Array.isArray(req.deliverables) ? req.deliverables.map((d: any) => d.name || d.title || d).join(', ') : (req.deliverables || prev.deliverables)
+              }));
+              toast({ title: "Auto-Populated", description: "Project fields loaded from Requirement." });
+            }
+          } catch (e) {
+            console.error("Failed to load requirement for project conversion:", e);
+          }
+        }
+
+        // Auto-populate from Proposal if applicable
+        if (proposalId) {
+          try {
+            const { quotationsAPI } = await import('@/lib/api/quotations');
+            const res = await quotationsAPI.getQuotationById(businessId as string, proposalId);
+            if (res.success && res.quotation) {
+              const q = res.quotation;
+              setFormData(prev => ({
+                ...prev,
+                projName: q.title || prev.projName,
+                customer: q.customerId || prev.customer,
+                linkedProp: q.id,
+                estBudget: Number(q.grandTotal || q.totalAmount || 0) || prev.estBudget,
+                appBudget: Number(q.grandTotal || q.totalAmount || 0) || prev.appBudget,
+                currency: q.currency || prev.currency,
+                startDate: q.issueDate ? new Date(q.issueDate).toISOString().split('T')[0] : prev.startDate,
+                endDate: q.expiryDate ? new Date(q.expiryDate).toISOString().split('T')[0] : prev.endDate,
+                objectives: q.notes || prev.objectives
+              }));
+              toast({ title: "Auto-Populated", description: "Project fields loaded from Proposal." });
+            }
+          } catch (e) {
+            console.error("Failed to load proposal for project conversion:", e);
+          }
+        }
+
+        // Auto-populate from Estimation if applicable
+        if (estimationId) {
+          try {
+            const res = await projectOperationsAPI.getEstimationById(businessId as string, estimationId);
+            const est = res.estimation || res.data || res;
+            if (est) {
+              setFormData(prev => ({
+                ...prev,
+                projName: est.title || est.name || prev.projName,
+                customer: est.customerId || est.requirement?.customerId || prev.customer,
+                linkedEst: est.id,
+                linkedReq: est.requirementId || prev.linkedReq,
+                estBudget: Number(est.totalCost || 0) || prev.estBudget,
+                appBudget: Number(est.totalCost || 0) || prev.appBudget,
+              }));
+              toast({ title: "Auto-Populated", description: "Project fields loaded from Estimation." });
+            }
+          } catch (e) {
+            console.error("Failed to load estimation for project conversion:", e);
           }
         }
       } catch (error) {

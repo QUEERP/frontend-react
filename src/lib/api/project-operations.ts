@@ -7,7 +7,7 @@ function getCookie(name: string): string | null {
   
   if (name === 'token' || name === 'accessToken') {
     try {
-      const local = localStorage.getItem('token');
+      const local = localStorage.getItem('token') || localStorage.getItem('accessToken');
       if (local && local !== 'null' && local !== 'undefined') return local;
     } catch (e) {}
   }
@@ -44,6 +44,21 @@ export interface ResourceAllocationData {
 }
 
 export const projectOperationsAPI = {
+  async getProjectDetails(businessId: string, projectId: string): Promise<any> {
+    const token = getCookie('token') || getCookie('accessToken');
+    const response = await fetch(`${API_ROOT}/projects/${projectId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'x-business-id': businessId
+      }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to fetch project details');
+    }
+    return response.json();
+  },
 
   async createRequirement(businessId: string, data: any): Promise<any> {
     const token = getCookie('token') || getCookie('accessToken');
@@ -320,6 +335,26 @@ export const projectOperationsAPI = {
     return response.json();
   },
 
+  async updateEstimation(businessId: string, id: string, data: any): Promise<any> {
+    const token = getCookie('token') || getCookie('accessToken');
+    const response = await fetch(`${API_ROOT}/project-operations/estimations/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'x-business-id': businessId
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to update estimation');
+    }
+
+    return response.json();
+  },
+
   async allocateResource(businessId: string, data: ResourceAllocationData): Promise<any> {
     const token = getCookie('token') || getCookie('accessToken');
         const response = await fetch(`${API_ROOT}/project-operations/resources/allocate`, {
@@ -387,7 +422,7 @@ export const projectOperationsAPI = {
         'Authorization': `Bearer ${token}`,
         'x-business-id': businessId
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ...data, projectId })
     });
 
     if (!response.ok) {
