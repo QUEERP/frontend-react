@@ -188,8 +188,8 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
               linkedProposal: propId,
               dealName: q.title || `Negotiation - ${q.quoteNumber || propId}`,
               customer: q.customerId || prev.customer,
-              origAmount: Number(q.grandTotal || q.totalAmount || 0),
-              negAmount: Number(q.grandTotal || q.totalAmount || 0),
+              origAmount: Number((q as any).grandTotal || q.totalAmount || 0),
+              negAmount: Number((q as any).grandTotal || q.totalAmount || 0),
               origTimeline: q.expiryDate ? new Date(q.expiryDate).toISOString().split('T')[0] : prev.origTimeline
             };
             return recalculateCommercials(next);
