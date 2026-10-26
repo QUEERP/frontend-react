@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { PhoneInput } from '@/components/ui/phone-input'
 import {
   Dialog,
   DialogContent,
@@ -194,7 +195,12 @@ export function CreateCustomerModal({ open, onClose, businessId, onCreated }: Cr
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-foreground">Phone</Label>
-                  <Input className={fieldCls} value={form.phone || ''} onChange={e => set('phone', e.target.value)} placeholder="+91 98765 43210" />
+                  <PhoneInput
+                    id="customer-modal-phone"
+                    value={form.phone || ''}
+                    onChange={val => set('phone', val)}
+                    defaultCountry={form.country || (form.region === 'INDIA' ? 'India' : form.region === 'UAE' ? 'UAE' : 'India')}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-foreground">Website</Label>

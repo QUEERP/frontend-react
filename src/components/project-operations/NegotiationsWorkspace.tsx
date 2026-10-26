@@ -189,7 +189,7 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 p-6 space-y-4 overflow-hidden">
+      <div data-lenis-prevent className="flex-1 overflow-y-auto p-6 space-y-5 pb-16">
         {/* Dashboards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-2 flex-none">
           <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex items-center gap-3">
@@ -254,14 +254,14 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
         </div>
 
         {/* Workspace Area */}
-        <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col">
           {loading ? (
-             <div className="flex-1 flex flex-col items-center justify-center">
+             <div className="py-24 flex flex-col items-center justify-center">
                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                <p className="text-gray-500 font-bold uppercase text-xs">Loading Pipeline...</p>
              </div>
           ) : viewMode === 'table' ? (
-             <div className="flex-1 overflow-y-auto pb-20">
+             <div className="overflow-x-auto">
                <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
                  <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase font-semibold text-gray-500 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
                    <tr>
@@ -322,12 +322,12 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
                </table>
              </div>
           ) : (
-             <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 bg-gray-100/50 dark:bg-gray-950/50">
-               <div className="flex gap-4 h-full min-w-max pb-2">
+             <div className="overflow-x-auto p-4 bg-gray-100/50 dark:bg-gray-950/50">
+               <div className="flex gap-4 min-w-max pb-2">
                  {KANBAN_STAGES.map(stage => (
                    <div 
                      key={stage} 
-                     className="w-80 flex flex-col bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex-shrink-0"
+                     className="w-80 flex flex-col max-h-[600px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex-shrink-0"
                      onDragOver={(e) => e.preventDefault()}
                      onDrop={(e) => handleDrop(e, stage)}
                    >
@@ -337,7 +337,7 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
                          {filteredDeals.filter(d => d.stage === stage).length}
                        </span>
                      </div>
-                     <div className="flex-1 p-3 overflow-y-auto space-y-3 scrollbar-thin">
+                     <div data-lenis-prevent className="flex-1 p-3 overflow-y-auto space-y-3 scrollbar-thin">
                        {filteredDeals.filter(d => d.stage === stage).map(deal => (
                          <div 
                            key={deal.id}

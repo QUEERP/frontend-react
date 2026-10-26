@@ -50,9 +50,17 @@ export const api = {
     const fullUrl = resolveUrl(url);
     const res = await fetch(fullUrl, {
       method: 'GET',
-      headers
+      headers,
+      credentials: 'include'
     });
-    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+    if (!res.ok) {
+      let message = `API Error: ${res.statusText}`;
+      try {
+        const errJson = await res.json();
+        if (errJson.message) message = errJson.message;
+      } catch (_) {}
+      throw new Error(message);
+    }
     const data = await res.json();
     return { data };
   },
@@ -75,9 +83,17 @@ export const api = {
     const res = await fetch(fullUrl, {
       method: 'POST',
       headers,
-      body: body ? JSON.stringify(body) : undefined
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: 'include'
     });
-    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+    if (!res.ok) {
+      let message = `API Error: ${res.statusText}`;
+      try {
+        const errJson = await res.json();
+        if (errJson.message) message = errJson.message;
+      } catch (_) {}
+      throw new Error(message);
+    }
     const data = await res.json();
     return { data };
   },
@@ -96,7 +112,8 @@ export const api = {
     const fullUrl = resolveUrl(url);
     const res = await fetch(fullUrl, {
       method: 'GET',
-      headers
+      headers,
+      credentials: 'include'
     });
 
     if (!res.ok) {

@@ -267,7 +267,7 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 p-6 space-y-4 overflow-hidden">
+      <div data-lenis-prevent className="flex-1 overflow-y-auto p-6 space-y-5 pb-16">
         {/* Toolbar */}
         <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex-none">
           <div className="relative">
@@ -320,8 +320,8 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
         </div>
 
         {/* Table */}
-        <div className="flex-1 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto p-0">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col">
+          <div className="overflow-x-auto p-0">
             {loading ? (
               <div className="p-8 text-center text-gray-500 flex flex-col items-center justify-center h-full">
                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>

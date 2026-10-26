@@ -131,18 +131,18 @@ html, body {
     @apply bg-background text-foreground;
   }
 
-  /* Custom Scrollbar for a more professional look */
+  /* Custom Scrollbar with high contrast and accessible drag handles */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-200 dark:bg-[#2c313a] rounded-full;
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-300 dark:bg-[#3d4450];
+    @apply bg-slate-400 dark:bg-slate-600;
   }
 }

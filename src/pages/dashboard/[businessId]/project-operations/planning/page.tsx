@@ -5,8 +5,8 @@ import { useParams } from "react-router-dom";
 export default function PlanningPage() {
   const { businessId } = useParams();
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] min-h-0 overflow-hidden bg-gray-50 dark:bg-gray-950">
-      <div className="flex-1 overflow-hidden">
+    <div className="flex flex-col min-h-[calc(100vh-4.25rem)] bg-gray-50 dark:bg-gray-950 w-full min-w-0">
+      <div className="flex-1 min-h-0 flex flex-col w-full min-w-0">
         <GlobalPlanningWorkspace businessId={businessId as string} />
       </div>
     </div>

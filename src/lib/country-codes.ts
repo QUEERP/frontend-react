@@ -9,7 +9,7 @@ export interface CountryDialCode {
 export const COUNTRY_DIAL_CODES: CountryDialCode[] = [
   { country: "United States", code: "US", flag: "🇺🇸", dialCode: "+1", maxLength: 10 },
   { country: "Canada", code: "CA", flag: "🇨🇦", dialCode: "+1", maxLength: 10 },
-  { country: "United Kingdom", code: "GB", flag: "🇬🇧", dialCode: "+44", maxLength: 11 },
+  { country: "United Kingdom", code: "GB", flag: "🇬🇧", dialCode: "+44", maxLength: 10 },
   { country: "Australia", code: "AU", flag: "🇦🇺", dialCode: "+61", maxLength: 9 },
   { country: "India", code: "IN", flag: "🇮🇳", dialCode: "+91", maxLength: 10 },
   { country: "United Arab Emirates", code: "AE", flag: "🇦🇪", dialCode: "+971", maxLength: 9 },

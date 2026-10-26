@@ -22,10 +22,14 @@ interface CurrencySelectProps {
   onValueChange: (value: string) => void
   disabled?: boolean
   className?: string
+  placeholder?: string
 }
 
 let cachedMasterCurrencies: Currency[] | null = null;
 let masterCurrenciesPromise: Promise<Currency[]> | null = null;
+
+const normalizeText = (text: string) =>
+  (text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
 
 async function fetchMasterCurrencies(): Promise<Currency[]> {
   if (cachedMasterCurrencies) return cachedMasterCurrencies;
@@ -51,20 +55,24 @@ async function fetchMasterCurrencies(): Promise<Currency[]> {
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
           const map = new Map<string, Currency>();
-          // Index known CURRENCIES metadata for flag & rich symbol
+          // Index all 155 standard currencies
           CURRENCIES.forEach(c => map.set(c.code.toUpperCase(), c));
 
-          const masterList: Currency[] = json.data.map((item: any) => {
+          // Merge any custom properties from DB
+          json.data.forEach((item: any) => {
             const code = (item.code || '').toUpperCase();
-            const meta = map.get(code);
-            return {
-              code,
-              name: item.name || meta?.name || code,
-              symbol: item.symbol || meta?.symbol || code,
-              flag: meta?.flag || '🌐'
-            };
+            if (code) {
+              const meta = map.get(code);
+              map.set(code, {
+                code,
+                name: item.name || meta?.name || code,
+                symbol: item.symbol || meta?.symbol || code,
+                flag: meta?.flag || '🌐'
+              });
+            }
           });
 
+          const masterList = Array.from(map.values());
           cachedMasterCurrencies = masterList;
           return masterList;
         }
@@ -85,6 +93,7 @@ export function CurrencySelect({
   onValueChange,
   disabled = false,
   className,
+  placeholder = "Select currency...",
 }: CurrencySelectProps) {
   const [open, setOpen] = React.useState(false)
   const [currencies, setCurrencies] = React.useState<Currency[]>(cachedMasterCurrencies || CURRENCIES)
@@ -105,59 +114,70 @@ export function CurrencySelect({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          type="button"
           variant="outline"
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={cn("w-full justify-between h-11 rounded-xl bg-muted/50 hover:bg-muted/50 text-foreground", className)}
+          className={cn(
+            "w-full justify-between h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground font-normal hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-blue-500",
+            className
+          )}
         >
           {selectedCurrency ? (
-            <span className="truncate">
+            <span className="truncate font-medium text-foreground">
               {selectedCurrency.code} - {selectedCurrency.name} ({selectedCurrency.symbol})
             </span>
           ) : (
-            <span className="text-slate-400 font-normal">Select currency...</span>
+            <span className="text-muted-foreground font-normal">{placeholder}</span>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[320px] p-0 z-50" align="start">
         <Command 
           filter={(itemValue, search) => {
-            if (itemValue.toLowerCase().includes(search.toLowerCase())) return 1;
+            if (normalizeText(itemValue).includes(normalizeText(search))) return 1;
             return 0;
           }}
         >
           <CommandInput 
             placeholder="Search currency code or name..." 
+            className="h-10 text-sm"
           />
-          <CommandEmpty>No currency found.</CommandEmpty>
-          <CommandList className="max-h-[250px] overflow-y-auto">
+          <CommandList className="max-h-[260px] overflow-y-auto p-1">
+            <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+              No currency found.
+            </CommandEmpty>
             <CommandGroup>
-              {currencies.map((currency) => (
-                <CommandItem
-                  key={currency.code}
-                  value={`${currency.code} ${currency.name}`}
-                  onSelect={() => {
-                    onValueChange(currency.code)
-                    setOpen(false)
-                  }}
-                  className="flex items-center justify-between cursor-pointer"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium text-foreground">{currency.code} - {currency.name}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-muted-foreground mr-3 text-sm">{currency.symbol}</span>
-                    <Check
-                      className={cn(
-                        "h-4 w-4 text-emerald-600",
-                        value === currency.code ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                  </div>
-                </CommandItem>
-              ))}
+              {currencies.map((currency) => {
+                const isSelected = value?.toUpperCase() === currency.code.toUpperCase();
+                return (
+                  <CommandItem
+                    key={currency.code}
+                    value={`${currency.code} ${currency.name} ${currency.symbol}`}
+                    onSelect={() => {
+                      onValueChange(currency.code)
+                      setOpen(false)
+                    }}
+                    className="flex items-center justify-between cursor-pointer px-3 py-2 rounded-lg text-sm"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="font-semibold text-foreground">{currency.code}</span>
+                      <span className="text-muted-foreground text-xs truncate">- {currency.name}</span>
+                    </div>
+                    <div className="flex items-center shrink-0 ml-2">
+                      <span className="text-muted-foreground mr-3 text-sm font-mono">{currency.symbol}</span>
+                      <Check
+                        className={cn(
+                          "h-4 w-4 text-blue-600",
+                          isSelected ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </div>
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </CommandList>
         </Command>

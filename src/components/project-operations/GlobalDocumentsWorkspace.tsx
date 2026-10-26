@@ -206,7 +206,7 @@ export function GlobalDocumentsWorkspace({ businessId }: { businessId: string })
       )}
 
       {/* Sidebar */}
-      <div className="w-56 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto">
+      <div data-lenis-prevent className="w-56 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800">
           <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Folders</div>
         </div>
@@ -274,7 +274,7 @@ export function GlobalDocumentsWorkspace({ businessId }: { businessId: string })
         </div>
 
         {/* Grid */}
-        <div className="flex-1 overflow-auto p-6">
+        <div data-lenis-prevent className="flex-1 overflow-auto p-6">
           {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 animate-pulse">
               {[1,2,3,4,5,6,7,8,9,10].map(i => <div key={i} className="h-40 bg-gray-200 dark:bg-gray-800 rounded-xl" />)}

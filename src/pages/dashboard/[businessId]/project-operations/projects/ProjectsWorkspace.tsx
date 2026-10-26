@@ -874,7 +874,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
   const allocatedResourcesCount = (selectedProject?.resourceAllocations || []).length;
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden relative bg-gray-50 dark:bg-gray-950">
+    <div className="flex flex-col min-h-full relative bg-gray-50 dark:bg-gray-950">
       
       {/* Header */}
       <div className="flex-none px-6 py-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm z-10">
@@ -924,9 +924,9 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-[calc(100vh-11rem)]">
         {/* LEFT PANE: List */}
-        <div className="w-[380px] lg:w-[420px] flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col h-full min-h-0 shadow-sm relative z-20">
+        <div className="w-[380px] lg:w-[420px] flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col shadow-sm relative z-20 sticky top-0 self-start max-h-[calc(100vh-4.25rem)]">
           <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-3 bg-gray-50/50 dark:bg-gray-900/50 flex-none">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -957,7 +957,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
             </div>
           </div>
           
-          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin bg-gray-50 dark:bg-gray-950">
+          <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto scrollbar-thin bg-gray-50 dark:bg-gray-950">
             {loading ? (
                <div className="flex flex-col items-center justify-center h-full p-8 text-center text-gray-500">
                  <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -1029,11 +1029,11 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
         </div>
 
         {/* RIGHT PANE: Details Workspace */}
-        <div className="flex-1 min-w-0 flex flex-col h-full min-h-0 bg-gray-50/50 dark:bg-gray-950/30 overflow-hidden relative z-10">
+        <div data-lenis-prevent className="flex-1 min-w-0 flex flex-col bg-gray-50/50 dark:bg-gray-950/30 relative z-10">
           {selectedProject ? (
             <>
               {/* Header */}
-              <div className="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-start flex-none">
+              <div className="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-start flex-none sticky top-0 z-20 shadow-xs">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <h2 className="text-2xl lg:text-3xl font-black text-gray-900 dark:text-white tracking-tight">{selectedProject.projectName}</h2>
@@ -1064,7 +1064,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
               </div>
 
               {/* Tabs Navigation with Horizontal Scroll Controls */}
-              <div className="relative border-b border-gray-200 dark:border-gray-800 flex items-center bg-white dark:bg-gray-900 shadow-sm z-10 flex-none px-2">
+              <div className="relative border-b border-gray-200 dark:border-gray-800 flex items-center bg-white dark:bg-gray-900 shadow-xs z-20 flex-none px-2 sticky top-[81px]">
                 <button 
                   onClick={() => scrollTabs('left')}
                   aria-label="Scroll tabs left"
@@ -1112,8 +1112,8 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
               </div>
 
               {/* Tab Content */}
-              <div className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8">
-                <div className="max-w-6xl mx-auto space-y-6">
+              <div data-lenis-prevent className="flex-1 p-6 md:p-8 pb-36 min-w-0">
+                <div className="max-w-6xl mx-auto space-y-6 pb-20">
                   {activeTab === 'overview' && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-300">
                       
