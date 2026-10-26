@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import React, { useState, useEffect, use, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, use, Suspense } from 'react';
 import {  Link , useParams } from 'react-router-dom';
 import {  useNavigate, useSearchParams  } from 'react-router-dom';
 import { contactsAPI, Customer } from "@/lib/api/contacts";
@@ -12,31 +12,57 @@ import {
   FileSignature, Send, Download, Save, Eye, UploadCloud, FileBadge
 } from 'lucide-react';
 import { UserSelect } from "@/components/project-operations/UserSelect";
+import { CurrencySelect } from "@/components/dashboard/currency-select";
+import { useBusinessData } from "@/components/dashboard/business-data-provider";
+import { api } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import { projectOperationsAPI } from "@/lib/api/project-operations";
 import { quotationsAPI } from "@/lib/api/quotations";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { CURRENCIES, getCurrencySymbol } from '@/lib/currencies';
 
 // --- UI Components ---
-const InputField = ({ label, name, value, onChange, type = "text", placeholder = "", required = false, className = "col-span-1", readOnly = false, icon: Icon }: any) => (
-  <div className={`space-y-1.5 ${className}`}>
-    <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-      {Icon && <Icon className="w-3.5 h-3.5 text-gray-400" />} {label} {required && !readOnly && <span className="text-red-500">*</span>}
-    </label>
-    <div className="relative">
-      {type === "number" && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>}
-      <input 
-        type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} readOnly={readOnly}
-        className={`w-full p-2.5 ${type === 'number' ? 'pl-7' : ''} border rounded-lg text-sm outline-none transition-all ${
-          readOnly 
-            ? 'bg-gray-100 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed font-medium'
-            : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder-gray-400 dark:placeholder-gray-500'
-        }`}
-      />
+const InputField = ({ 
+  label, 
+  name, 
+  value, 
+  onChange, 
+  type = "text", 
+  placeholder = "", 
+  required = false, 
+  className = "col-span-1", 
+  readOnly = false, 
+  icon: Icon,
+  prefix,
+  suffix
+}: any) => {
+  const plClass = prefix ? (String(prefix).length > 2 ? 'pl-12' : String(prefix).length > 1 ? 'pl-9' : 'pl-7') : '';
+  return (
+    <div className={`space-y-1.5 ${className}`}>
+      <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+        {Icon && <Icon className="w-3.5 h-3.5 text-gray-400" />} {label} {required && !readOnly && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative">
+        {prefix && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-semibold pointer-events-none">{prefix}</span>}
+        <input 
+          type={type} 
+          name={name} 
+          value={value} 
+          onChange={onChange} 
+          placeholder={placeholder} 
+          readOnly={readOnly}
+          className={`w-full p-2.5 ${plClass} ${suffix ? 'pr-8' : ''} border rounded-lg text-sm outline-none transition-all ${
+            readOnly 
+              ? 'bg-gray-100 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed font-medium'
+              : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder-gray-400 dark:placeholder-gray-500'
+          }`}
+        />
+        {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-semibold pointer-events-none">{suffix}</span>}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const SelectField = ({ label, name, value, onChange, options, required = false, className = "col-span-1", readOnly = false, children, icon: Icon }: any) => (
   <div className={`space-y-1.5 ${className}`}>
@@ -58,6 +84,20 @@ const SelectField = ({ label, name, value, onChange, options, required = false, 
           : <option key={opt.value} value={opt.value}>{opt.label}</option>
       )) : children}
     </select>
+  </div>
+);
+
+const CurrencyField = ({ label = "Currency", name = "currency", value, onChange, required = false, className = "col-span-1", disabled = false }: any) => (
+  <div className={`space-y-1.5 ${className}`}>
+    <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <CurrencySelect 
+      value={value} 
+      onValueChange={(val) => onChange({ target: { name, value: val } })} 
+      disabled={disabled}
+      className="bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 h-[42px] rounded-lg text-sm text-gray-900 dark:text-gray-100"
+    />
   </div>
 );
 
@@ -103,11 +143,11 @@ const initialFormData = {
   propNumber: `PRP-${Math.floor(100000 + Math.random() * 900000)}`,
   version: 'v1.0', propName: '', customer: '', customerContact: '', linkedInquiry: '',
   linkedReq: '', linkedEst: '', salesOpp: '', salesOwner: '', businessUnit: '',
-  department: '', currency: '', exchangeRate: 1.0, priority: '', status: 'Draft',
+  department: '', currency: 'USD', exchangeRate: 1.0, priority: 'Medium', status: 'Draft',
   propDate: new Date().toISOString().split('T')[0],
   validFrom: new Date().toISOString().split('T')[0],
   validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-  estProjectValue: 0, executionType: '', projectType: '', businessType: '',
+  estProjectValue: 0, executionType: 'Fixed Price', projectType: 'Enterprise Implementation', businessType: 'Enterprise',
   
   // 2. Exec Summary
   clientBg: '', businessProb: '', challenges: '', objectives: '',
@@ -200,6 +240,84 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
     fetchCustomers();
     fetchUsers();
   }, [businessId]);
+
+  // Business Details & Base Currency
+  const { business: ctxBusiness, currency: ctxCurrency } = useBusinessData();
+  const [business, setBusiness] = useState<any>(null);
+  const [loadingFxRate, setLoadingFxRate] = useState(false);
+  const [fxRateInfo, setFxRateInfo] = useState<any>(null);
+  const userChangedCurrencyRef = React.useRef(false);
+
+  useEffect(() => {
+    if (!businessId) return;
+    api.get(`/business/${businessId}`)
+      .then(res => {
+        const b = res.data?.data || res.data?.business || res.data;
+        if (b) setBusiness(b);
+      })
+      .catch(err => console.error("Failed to load business info:", err));
+  }, [businessId]);
+
+  const activeBusiness = business || ctxBusiness;
+  const baseCurrencyCode = useMemo(() => {
+    return (
+      (activeBusiness as any)?.baseCurrency?.code || 
+      activeBusiness?.currencyCode || 
+      activeBusiness?.currency || 
+      ctxCurrency ||
+      (activeBusiness?.country === 'INDIA' ? 'INR' : activeBusiness?.country === 'UNITED_ARAB_EMIRATES' ? 'AED' : activeBusiness?.country === 'UNITED_STATES' ? 'USD' : 'INR')
+    ).toUpperCase();
+  }, [activeBusiness, ctxCurrency]);
+
+  // Set initial currency to business country base currency if not loaded from saved proposal/estimate
+  useEffect(() => {
+    if (!baseCurrencyCode) return;
+    if (editId || reqId || estId) return;
+    if (userChangedCurrencyRef.current) return;
+    setFormData(prev => {
+      if (!prev.currency || prev.currency === 'USD' || prev.currency === baseCurrencyCode) {
+        return { ...prev, currency: baseCurrencyCode, exchangeRate: 1.0 };
+      }
+      return prev;
+    });
+  }, [baseCurrencyCode, editId, reqId, estId]);
+
+  // Auto-fetch exchange rate when currency changes based on business country
+  useEffect(() => {
+    if (!businessId || !formData.currency) return;
+    const selectedCcy = formData.currency.toUpperCase();
+    
+    // If selected currency is the business's base currency, rate is 1.0
+    if (selectedCcy === baseCurrencyCode) {
+      setFormData(prev => prev.exchangeRate !== 1.0 ? { ...prev, exchangeRate: 1.0 } : prev);
+      setFxRateInfo({ rate: 1.0, isBase: true });
+      return;
+    }
+
+    let isMounted = true;
+    setLoadingFxRate(true);
+
+    api.get(`/currency/rate?currencyCode=${encodeURIComponent(selectedCcy)}&businessId=${businessId}&documentDate=${encodeURIComponent(formData.propDate || new Date().toISOString())}`)
+      .then(res => {
+        if (!isMounted) return;
+        const rateData = res.data?.data;
+        if (rateData && rateData.rate) {
+          const numRate = Number(rateData.rate);
+          setFxRateInfo(rateData);
+          setFormData(prev => ({ ...prev, exchangeRate: numRate }));
+        }
+      })
+      .catch(err => {
+        if (!isMounted) return;
+        console.warn(`Could not auto-fetch rate for ${selectedCcy}:`, err.message);
+        setFxRateInfo(null);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingFxRate(false);
+      });
+
+    return () => { isMounted = false; };
+  }, [businessId, formData.currency, formData.propDate, baseCurrencyCode]);
 
   // Load from Requirement when converting
   useEffect(() => {
@@ -324,7 +442,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
       try {
         setLoadingEsts(true);
         setEstsError('');
-        const res = await projectOperationsAPI.getEstimations(businessId, formData.linkedReq, formData.customer, 'Saved');
+        const res = await projectOperationsAPI.getEstimations(businessId, formData.linkedReq, formData.customer);
         setReqEstimations(res.estimations || []);
       } catch (err: any) {
         setEstsError('Failed to load estimations. Retry');
@@ -369,6 +487,10 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
     setFormData(prev => {
       let next = { ...prev, [name]: value };
       
+      if (name === 'currency') {
+        userChangedCurrencyRef.current = true;
+      }
+
       if (name === 'customer') {
         if (value === 'CREATE_NEW_CUSTOMER') {
           setShowCreateCustomer(true);
@@ -415,6 +537,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
   const reqFields = ['propName', 'customer', 'linkedReq', 'salesOwner', 'validUntil', 'finalPrice'];
   const filledFields = reqFields.filter(f => !!(formData as any)[f] || (formData as any)[f] > 0);
   const completion = Math.round((filledFields.length / reqFields.length) * 100);
+  const currencySym = getCurrencySymbol(formData.currency || 'USD');
 
   const handleSave = async (actionStatus = 'Draft') => {
     if (actionStatus !== 'Draft') {
@@ -505,133 +628,225 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-full bg-gray-100/50 dark:bg-gray-950">
+    <div className="flex flex-col xl:flex-row min-h-full bg-gray-100/50 dark:bg-gray-950">
       
       {/* LEFT PANE: Form Sections */}
-      <div className="flex-1 p-4 md:p-6 lg:p-10 w-full max-w-[1700px] mx-auto overflow-y-auto">
+      <div className="flex-1 p-4 md:p-6 lg:p-8 w-full max-w-[1600px] mx-auto overflow-y-auto min-w-0">
         
         {/* Header */}
-        <div className="mb-10 sticky top-0 bg-gray-100/90 dark:bg-gray-950/90 backdrop-blur-md z-40 py-4 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-10 lg:px-10 border-b border-gray-200 dark:border-gray-800">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
-            <div className="flex items-center gap-4">
-              <Link to={`/dashboard/${businessId}/project-operations/proposals`}
-                className="p-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors shadow-sm"
-              >
-                <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-              </Link>
-              <div>
-                <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                  <span>Project Operations</span><span>/</span><span>Pre-Sales</span><span>/</span><span className="text-blue-600 dark:text-blue-400">Proposals</span>
+        <div className="mb-8 sticky top-0 bg-gray-100/95 dark:bg-gray-950/95 backdrop-blur-md z-40 py-3.5 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8 border-b border-gray-200 dark:border-gray-800 shadow-sm">
+          <div className="flex flex-col gap-3">
+            {/* Top Row: Navigation and Action Buttons */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Link to={`/dashboard/${businessId}/project-operations/proposals`}
+                  className="p-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors shadow-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                  title="Back to Proposals"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Link>
+                <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <span>Project Operations</span>
+                  <span>/</span>
+                  <span>Pre-Sales</span>
+                  <span>/</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-bold">Proposals</span>
                 </div>
-                <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
-                  {editId ? 'Edit Enterprise Proposal' : 'Create Enterprise Proposal'}
-                </h1>
+              </div>
+
+              {/* Action Buttons Toolbar */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button 
+                  type="button"
+                  onClick={() => toast({ title: 'Preview', description: 'Preview modal opened (read-only).' })} 
+                  disabled={isSaving || isExporting} 
+                  className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Eye className="w-3.5 h-3.5" /> Preview
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleGeneratePDF} 
+                  disabled={isSaving || isExporting} 
+                  className="px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded-lg text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isExporting ? <span className="animate-spin w-3.5 h-3.5 border-2 border-red-700 border-t-transparent rounded-full"></span> : <FileBadge className="w-3.5 h-3.5" />} PDF
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSend} 
+                  disabled={isSaving || isExporting} 
+                  className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" /> Send
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => handleSave('Draft')} 
+                  disabled={isSaving || isExporting} 
+                  className="px-3.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isSaving && formData.status === 'Draft' ? "Saving..." : <><Save className="w-3.5 h-3.5" /> Save Draft</>}
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => handleSave('Submit For Approval')} 
+                  disabled={isSaving || isExporting} 
+                  className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isSaving && formData.status !== 'Draft' ? <span className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"></span> : <CheckCircle className="w-3.5 h-3.5" />} Submit For Approval
+                </button>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => toast({ title: 'Preview', description: 'Preview modal opened (read-only).' })} disabled={isSaving || isExporting} className="px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50">
-                <Eye className="w-4 h-4" /> Preview
-              </button>
-              <button onClick={handleGeneratePDF} disabled={isSaving || isExporting} className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded-lg text-sm font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50">
-                {isExporting ? <span className="animate-spin w-4 h-4 border-2 border-red-700 border-t-transparent rounded-full"></span> : <FileBadge className="w-4 h-4" />} PDF
-              </button>
-              <button onClick={handleSend} disabled={isSaving || isExporting} className="px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50">
-                <Send className="w-4 h-4" /> Send
-              </button>
-              <button onClick={() => handleSave('Draft')} disabled={isSaving || isExporting} className="px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50">
-                {isSaving && formData.status === 'Draft' ? "Saving..." : <><Save className="w-4 h-4" /> Save Draft</>}
-              </button>
-              <button onClick={() => handleSave('Submit For Approval')} disabled={isSaving || isExporting} className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-md flex items-center gap-2 disabled:opacity-50">
-                {isSaving && formData.status !== 'Draft' ? <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> : <CheckCircle className="w-4 h-4" />} Submit For Approval
-              </button>
+
+            {/* Bottom Row: Title and Status Chips */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
+                  {editId ? 'Edit Enterprise Proposal' : 'Create Enterprise Proposal'}
+                </h1>
+                <span className="px-2.5 py-1 rounded-md text-xs font-bold tracking-wide uppercase bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                  {formData.status || 'Draft'}
+                </span>
+                <span className="text-xs text-gray-500 font-mono font-medium">
+                  {formData.propNumber} <span className="text-gray-400">({formData.version})</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* 1. General Information */}
         <SectionCard id="general" title="1. General Information" icon={Info} isExpanded={expandedSections.general} onToggle={toggleSection}>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {/* Row 1 */}
             <InputField label="Proposal Number" name="propNumber" value={formData.propNumber} readOnly />
             <InputField label="Version" name="version" value={formData.version} readOnly />
-            <InputField label="Proposal Name" name="propName" value={formData.propName} onChange={handleInputChange} required className="md:col-span-2 lg:col-span-3" placeholder="e.g. ERP Phase 1 Final Proposal" />
+            <InputField label="Proposal Name" name="propName" value={formData.propName} onChange={handleInputChange} required className="sm:col-span-2 lg:col-span-2" placeholder="e.g. ERP Phase 1 Final Proposal" />
             
-            <SelectField label="Customer" name="customer" value={formData.customer} onChange={handleInputChange} readOnly={customersLoading} required className="lg:col-span-2">
+            {/* Row 2: Customer & Contact */}
+            <SelectField label="Customer" name="customer" value={formData.customer} onChange={handleInputChange} readOnly={customersLoading} required className="sm:col-span-2 lg:col-span-2">
               <option value="CREATE_NEW_CUSTOMER" className="text-blue-600 font-bold bg-blue-50">+ Create New Customer...</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>{(c as any)?.company || c?.name || "Unnamed Customer"}</option>
               ))}
             </SelectField>
+            <InputField label="Customer Contact" name="customerContact" value={formData.customerContact} onChange={handleInputChange} className="sm:col-span-2 lg:col-span-2" placeholder="Contact email or phone" />
             
-            <InputField label="Customer Contact" name="customerContact" value={formData.customerContact} onChange={handleInputChange} />
-            <div className="space-y-1.5 col-span-1">
+            {/* Row 3: Requirement & Estimation Linking */}
+            <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                 Linked Requirement <span className="text-red-500">*</span>
               </label>
               {loadingReqs ? (
-                <div className="w-full p-2.5 bg-gray-100 border rounded-lg text-sm text-gray-500 flex justify-between">Loading... <span className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></span></div>
+                <div className="w-full p-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-500 flex justify-between items-center">
+                  <span>Loading requirements...</span> <span className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></span>
+                </div>
               ) : formData.customer ? (
                 customerReqs.length > 0 ? (
-                  <select name="linkedReq" value={formData.linkedReq} onChange={handleInputChange} disabled={isSaving} className="w-full p-2.5 bg-gray-50 border rounded-lg text-sm outline-none">
+                  <select name="linkedReq" value={formData.linkedReq} onChange={handleInputChange} disabled={isSaving} className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none text-gray-900 dark:text-gray-100 focus:border-blue-500">
                     <option value="">Select Requirement...</option>
-                    {customerReqs.map(r => <option key={r.id} value={r.id}>{r.requirementNumber} — {r.title}</option>)}
+                    {customerReqs.map(r => <option key={r.id} value={r.id}>{r.requirementNumber || r.id} — {r.title}</option>)}
                   </select>
                 ) : (
-                  <select disabled className="w-full p-2.5 bg-gray-100 border rounded-lg text-sm text-gray-500">
-                    <option>No requirements found</option>
+                  <select disabled className="w-full p-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-500">
+                    <option>No open requirements found for this customer</option>
                   </select>
                 )
               ) : (
-                <select disabled className="w-full p-2.5 bg-gray-100 border rounded-lg text-sm text-gray-500"><option>Select Customer First</option></select>
+                <select disabled className="w-full p-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-500"><option>Select Customer First</option></select>
               )}
               {reqsError && <p className="text-xs text-red-500">{reqsError}</p>}
             </div>
 
-            <div className="space-y-1.5 col-span-1">
+            <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                 Linked Estimation <span className="text-red-500">*</span>
               </label>
               {loadingEsts ? (
-                <div className="w-full p-2.5 bg-gray-100 border rounded-lg text-sm text-gray-500 flex justify-between">Loading... <span className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></span></div>
+                <div className="w-full p-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-500 flex justify-between items-center">
+                  <span>Loading estimations...</span> <span className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></span>
+                </div>
               ) : formData.linkedReq ? (
                 reqEstimations.length > 0 ? (
-                  <select name="linkedEst" value={formData.linkedEst} onChange={handleInputChange} disabled={isSaving} className="w-full p-2.5 bg-gray-50 border rounded-lg text-sm outline-none">
+                  <select name="linkedEst" value={formData.linkedEst} onChange={handleInputChange} disabled={isSaving} className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none text-gray-900 dark:text-gray-100 focus:border-blue-500">
                     <option value="">Select Estimation...</option>
-                    {reqEstimations.map(e => <option key={e.id} value={e.id}>{e.id} — Grand Total ${e.totalCost}</option>)}
+                    {reqEstimations.map(e => <option key={e.id} value={e.id}>{e.id} — Grand Total ${Number(e.totalCost || 0).toLocaleString()}</option>)}
                   </select>
                 ) : (
-                  <select disabled className="w-full p-2.5 bg-gray-100 border rounded-lg text-sm text-gray-500">
-                    <option>No saved estimation found</option>
+                  <select disabled className="w-full p-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-500">
+                    <option>No saved estimation found for this requirement</option>
                   </select>
                 )
               ) : (
-                <select disabled className="w-full p-2.5 bg-gray-100 border rounded-lg text-sm text-gray-500"><option>Select Requirement First</option></select>
+                <select disabled className="w-full p-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-500"><option>Select Requirement First</option></select>
               )}
               {estsError && <p className="text-xs text-red-500">{estsError}</p>}
             </div>
 
-            <InputField label="Sales Opportunity" name="salesOpp" value={formData.salesOpp} onChange={handleInputChange} />
+            {/* Row 4: Sales & Org */}
+            <InputField label="Sales Opportunity" name="salesOpp" value={formData.salesOpp} onChange={handleInputChange} placeholder="Opportunity name / ID" />
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Sales Owner</label>
+              <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Sales Owner</label>
               <UserSelect businessId={businessId as string} value={formData.salesOwner} onChange={(v) => handleInputChange({ target: { name: 'salesOwner', value: v } } as any)} placeholder="Select Sales Owner" />
             </div>
-            
             <SelectField label="Business Unit" name="businessUnit" value={formData.businessUnit} onChange={handleInputChange} options={['Engineering', 'Operations', 'Consulting', 'Managed Services', 'Sales']} />
             <SelectField label="Department" name="department" value={formData.department} onChange={handleInputChange} options={['Enterprise', 'Commercial', 'Government/Public', 'SMB']} />
             
-            <SelectField label="Currency" name="currency" value={formData.currency} onChange={handleInputChange} options={['USD', 'EUR', 'GBP', 'INR', 'AED']} />
-            <InputField label="Exchange Rate" name="exchangeRate" type="number" value={formData.exchangeRate} onChange={handleNumberChange} />
-            
+            {/* Row 5: Financial Basics & Status */}
+            <CurrencyField 
+              label="Currency" 
+              name="currency" 
+              value={formData.currency} 
+              onChange={handleInputChange} 
+            />
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                  Exchange Rate
+                </label>
+                {loadingFxRate && (
+                  <span className="text-[10px] text-blue-500 font-semibold animate-pulse">
+                    Auto-fetching...
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <input 
+                  type="number"
+                  name="exchangeRate"
+                  step="0.0001"
+                  value={formData.exchangeRate}
+                  onChange={handleNumberChange}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono"
+                />
+              </div>
+              {formData.currency && baseCurrencyCode && formData.currency.toUpperCase() !== baseCurrencyCode && (
+                <div className="flex items-center justify-between text-[10px] font-mono text-gray-500">
+                  <span title={`1 ${formData.currency.toUpperCase()} = ${formData.exchangeRate} ${baseCurrencyCode}`}>
+                    1 {formData.currency.toUpperCase()} = {formData.exchangeRate} {baseCurrencyCode}
+                  </span>
+                  {fxRateInfo?.source && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 font-sans font-medium">
+                      Live Rate ({fxRateInfo.source.startsWith('API') ? 'Provider' : fxRateInfo.source})
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
             <SelectField label="Priority" name="priority" value={formData.priority} onChange={handleInputChange} options={['Low', 'Medium', 'High', 'Critical']} />
             <SelectField label="Status" name="status" value={formData.status} onChange={handleInputChange} options={['Draft', 'Internal Review', 'Approved', 'Sent', 'Negotiation', 'Accepted', 'Rejected']} />
-            <InputField label="Estimated Proj Value" name="estProjectValue" type="number" value={formData.estProjectValue} onChange={handleNumberChange} readOnly />
 
+            {/* Row 6: Dates & Proj Value */}
+            <InputField label="Estimated Proj Value" name="estProjectValue" type="number" prefix={currencySym} value={formData.estProjectValue} onChange={handleNumberChange} readOnly />
             <InputField label="Proposal Date" name="propDate" value={formData.propDate} type="date" onChange={handleInputChange} />
             <InputField label="Valid From" name="validFrom" value={formData.validFrom} type="date" onChange={handleInputChange} />
             <InputField label="Valid Until" name="validUntil" value={formData.validUntil} type="date" onChange={handleInputChange} />
             
-            <InputField label="Execution Type" name="executionType" value={formData.executionType} onChange={handleInputChange} />
-            <InputField label="Project Type" name="projectType" value={formData.projectType} onChange={handleInputChange} />
-            <InputField label="Business Type" name="businessType" value={formData.businessType} onChange={handleInputChange} />
+            {/* Row 7: Classification */}
+            <InputField label="Execution Type" name="executionType" value={formData.executionType} onChange={handleInputChange} placeholder="e.g. Fixed Price, T&M" />
+            <InputField label="Project Type" name="projectType" value={formData.projectType} onChange={handleInputChange} placeholder="e.g. Implementation, Migration" />
+            <InputField label="Business Type" name="businessType" value={formData.businessType} onChange={handleInputChange} placeholder="e.g. Enterprise, SMB" className="sm:col-span-2 lg:col-span-2" />
           </div>
         </SectionCard>
 
@@ -671,35 +886,35 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
         <SectionCard id="commercial" title="4. Commercial Engine" icon={Calculator} isExpanded={expandedSections.commercial} onToggle={toggleSection}>
           
           <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">A. Cost Basis (From Estimations)</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
-            <InputField label="Materials" name="matCost" value={formData.matCost} onChange={handleNumberChange} type="number" />
-            <InputField label="Labour" name="labCost" value={formData.labCost} onChange={handleNumberChange} type="number" />
-            <InputField label="Equipment" name="eqCost" value={formData.eqCost} onChange={handleNumberChange} type="number" />
-            <InputField label="Travel" name="trvCost" value={formData.trvCost} onChange={handleNumberChange} type="number" />
-            <InputField label="Subcontract" name="subCost" value={formData.subCost} onChange={handleNumberChange} type="number" />
-            <InputField label="Overhead" name="ovhCost" value={formData.ovhCost} onChange={handleNumberChange} type="number" />
-            <InputField label="Risk Res." name="riskCost" value={formData.riskCost} onChange={handleNumberChange} type="number" />
-            <InputField label="Contingency" name="contCost" value={formData.contCost} onChange={handleNumberChange} type="number" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-4 mb-8">
+            <InputField label="Materials" name="matCost" value={formData.matCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
+            <InputField label="Labour" name="labCost" value={formData.labCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
+            <InputField label="Equipment" name="eqCost" value={formData.eqCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
+            <InputField label="Travel" name="trvCost" value={formData.trvCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
+            <InputField label="Subcontract" name="subCost" value={formData.subCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
+            <InputField label="Overhead" name="ovhCost" value={formData.ovhCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
+            <InputField label="Risk Res." name="riskCost" value={formData.riskCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
+            <InputField label="Contingency" name="contCost" value={formData.contCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
           </div>
 
           <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">B. Pricing & Margins</h3>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-            <InputField label="Markup (%)" name="markupPct" value={formData.markupPct} onChange={handleNumberChange} type="number" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <InputField label="Markup (%)" name="markupPct" value={formData.markupPct} onChange={handleNumberChange} type="number" suffix="%" />
             <SelectField label="Disc. Type" name="discountType" value={formData.discountType} onChange={handleInputChange} options={['%', 'Fixed Amount']} />
-            <InputField label="Discount" name="discountPct" value={formData.discountPct} onChange={handleNumberChange} type="number" />
+            <InputField label="Discount" name="discountPct" value={formData.discountPct} onChange={handleNumberChange} type="number" suffix={formData.discountType === '%' ? '%' : undefined} prefix={formData.discountType !== '%' ? currencySym : undefined} />
             <SelectField label="Tax Type" name="taxType" value={formData.taxType} onChange={handleInputChange} options={['%', 'Fixed Amount']} />
-            <InputField label="Tax" name="taxPct" value={formData.taxPct} onChange={handleNumberChange} type="number" />
+            <InputField label="Tax" name="taxPct" value={formData.taxPct} onChange={handleNumberChange} type="number" suffix={formData.taxType === '%' ? '%' : undefined} prefix={formData.taxType !== '%' ? currencySym : undefined} />
           </div>
 
           <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-6 mb-8 shadow-inner flex flex-col md:flex-row justify-between items-center text-white">
             <div className="flex flex-col gap-1 mb-4 md:mb-0">
                <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Live Calculated Final Price</span>
-               <span className="text-4xl font-black text-green-400">{formData.currency} {formData.finalPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+               <span className="text-4xl font-black text-green-400">{formData.currency || 'USD'} {formData.finalPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
             </div>
             <div className="flex gap-8 text-right">
                <div className="flex flex-col">
                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Expected Profit</span>
-                 <span className="text-xl font-bold">{formData.currency} {formData.expectedProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                 <span className="text-xl font-bold">{formData.currency || 'USD'} {formData.expectedProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                </div>
                <div className="flex flex-col">
                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Margin %</span>
@@ -709,11 +924,11 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
           </div>
 
           <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">C. Payment Terms & Clauses</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <InputField label="Payment Terms" name="paymentTerms" value={formData.paymentTerms} onChange={handleInputChange} placeholder="e.g. Net 30, Due on Receipt" />
-            <InputField label="Advance (%)" name="advancePct" value={formData.advancePct} onChange={handleNumberChange} type="number" />
-            <InputField label="Retention (%)" name="retentionPct" value={formData.retentionPct} onChange={handleNumberChange} type="number" />
-            <TextAreaField label="Milestone Billing" name="milestoneBilling" value={formData.milestoneBilling} onChange={handleInputChange} className="md:col-span-3" />
+            <InputField label="Advance (%)" name="advancePct" value={formData.advancePct} onChange={handleNumberChange} type="number" suffix="%" />
+            <InputField label="Retention (%)" name="retentionPct" value={formData.retentionPct} onChange={handleNumberChange} type="number" suffix="%" />
+            <TextAreaField label="Milestone Billing" name="milestoneBilling" value={formData.milestoneBilling} onChange={handleInputChange} className="sm:col-span-2 lg:col-span-3" />
             <TextAreaField label="Warranty Terms" name="warranty" value={formData.warranty} onChange={handleInputChange} />
             <TextAreaField label="AMC Terms" name="amc" value={formData.amc} onChange={handleInputChange} />
             <TextAreaField label="Penalty Clause" name="penalty" value={formData.penalty} onChange={handleInputChange} />
@@ -722,12 +937,12 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
 
         {/* 5. Timeline */}
         <SectionCard id="timeline" title="5. Project Timeline" icon={Calendar} isExpanded={expandedSections.timeline} onToggle={toggleSection}>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
             <InputField label="Expected Start" name="estStart" value={formData.estStart} type="date" onChange={handleInputChange} />
             <InputField label="Expected End" name="estEnd" value={formData.estEnd} type="date" onChange={handleInputChange} />
-            <InputField label="Duration" name="duration" value={formData.duration} onChange={handleInputChange} placeholder="e.g. 6 Months" className="md:col-span-2" />
+            <InputField label="Duration" name="duration" value={formData.duration} onChange={handleInputChange} placeholder="e.g. 6 Months" className="sm:col-span-2" />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
              <InputField label="Kickoff (Weeks)" name="kickoff" value={formData.kickoff} onChange={handleInputChange} />
              <InputField label="Planning (Weeks)" name="planning" value={formData.planning} onChange={handleInputChange} />
              <InputField label="Execution (Weeks)" name="execution" value={formData.execution} onChange={handleInputChange} />
@@ -736,7 +951,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
              <InputField label="Go Live (Weeks)" name="goLive" value={formData.goLive} onChange={handleInputChange} />
              <InputField label="Support (Weeks)" name="support" value={formData.support} onChange={handleInputChange} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <TextAreaField label="Key Milestones" name="milestones" value={formData.milestones} onChange={handleInputChange} />
             <TextAreaField label="Dependency Timeline" name="depTimeline" value={formData.depTimeline} onChange={handleInputChange} />
           </div>
@@ -744,27 +959,27 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
 
         {/* 6. Proposed Team */}
         <SectionCard id="team" title="6. Proposed Team" icon={Users} isExpanded={expandedSections.team} onToggle={toggleSection}>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
 
-            <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Business Analyst</label>
+            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Business Analyst</label>
             <UserSelect businessId={businessId as string} value={formData.teamBa} onChange={(v) => handleInputChange({ target: { name: 'teamBa', value: v } } as any)} placeholder="Select BA" /></div>
             
-            <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Solution Architect</label>
+            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Solution Architect</label>
             <UserSelect businessId={businessId as string} value={formData.teamArch} onChange={(v) => handleInputChange({ target: { name: 'teamArch', value: v } } as any)} placeholder="Select Architect" /></div>
             
-            <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Sales Representative</label>
+            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Sales Representative</label>
             <UserSelect businessId={businessId as string} value={formData.teamSales} onChange={(v) => handleInputChange({ target: { name: 'teamSales', value: v } } as any)} placeholder="Select Sales Rep" /></div>
 
-            <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Account Manager</label>
+            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Account Manager</label>
             <UserSelect businessId={businessId as string} value={formData.teamAm} onChange={(v) => handleInputChange({ target: { name: 'teamAm', value: v } } as any)} placeholder="Select AM" /></div>
 
-            <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Proposal Manager</label>
+            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Proposal Manager</label>
             <UserSelect businessId={businessId as string} value={formData.teamPm} onChange={(v) => handleInputChange({ target: { name: 'teamPm', value: v } } as any)} placeholder="Select PM" /></div>
 
-            <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Technical Lead</label>
+            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Technical Lead</label>
             <UserSelect businessId={businessId as string} value={formData.teamTech} onChange={(v) => handleInputChange({ target: { name: 'teamTech', value: v } } as any)} placeholder="Select Tech Lead" /></div>
 
-            <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">QA Lead</label>
+            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">QA Lead</label>
             <UserSelect businessId={businessId as string} value={formData.teamQa} onChange={(v) => handleInputChange({ target: { name: 'teamQa', value: v } } as any)} placeholder="Select QA Lead" /></div>
             <InputField label="Developers Count/Names" name="teamDev" value={formData.teamDev} onChange={handleInputChange} />
             <InputField label="Consultants" name="teamCons" value={formData.teamCons} onChange={handleInputChange} />
@@ -789,7 +1004,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
         
         {/* 8. Approval Workflow */}
         <SectionCard id="approval" title="8. Approval Workflow" icon={ShieldCheck} isExpanded={expandedSections.approval} onToggle={toggleSection}>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
             <SelectField label="Prepared By" name="prepBy" value={formData.prepBy} onChange={handleInputChange} disabled={usersLoading}>
               <option value="">Select...</option>
               {users.map(u => <option key={`p-${u.id}`} value={u.user?.name}>{u.user?.name}</option>)}
@@ -826,46 +1041,48 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
       </div>
 
       {/* RIGHT PANE: Sticky Live Summary Panel */}
-      <div className="hidden xl:flex flex-col w-[420px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl z-50 sticky top-0 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/40 backdrop-blur-sm">
+      <div className="hidden xl:flex flex-col w-[350px] 2xl:w-[380px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-xl z-30 sticky top-0 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] overflow-y-auto">
+        <div className="p-5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/40 backdrop-blur-sm">
           <div className="flex justify-between items-end mb-3">
             <div>
-              <h3 className="text-base font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">Proposal Health</h3>
-              <p className="text-xs text-gray-500 font-medium">Real-time completion tracking</p>
+              <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">Proposal Health</h3>
+              <p className="text-[11px] text-gray-500 font-medium">Real-time completion tracking</p>
             </div>
-            <span className="text-3xl font-black text-blue-600 dark:text-blue-400">{completion}%</span>
+            <span className="text-2xl font-black text-blue-600 dark:text-blue-400">{completion}%</span>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 shadow-inner">
-            <div className={`h-2.5 rounded-full transition-all duration-1000 ${completion === 100 ? 'bg-green-500' : 'bg-blue-600'}`} style={{ width: `${completion}%` }}></div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 shadow-inner overflow-hidden">
+            <div className={`h-2 rounded-full transition-all duration-700 ${completion === 100 ? 'bg-green-500' : 'bg-blue-600'}`} style={{ width: `${completion}%` }}></div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin">
           
           <div>
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 mb-3">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5 mb-2.5">
               <Info className="w-3.5 h-3.5" /> General Summary
             </h4>
-            <div className="space-y-3 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-bold uppercase">Proposal No</span>
-                <span className="text-sm font-black text-gray-900 dark:text-gray-100">{formData.propNumber} <span className="text-gray-400 font-normal">({formData.version})</span></span>
+            <div className="space-y-2.5 bg-gray-50 dark:bg-gray-800/50 p-3.5 rounded-xl border border-gray-100 dark:border-gray-800">
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-xs text-gray-500 font-bold uppercase shrink-0">Proposal No</span>
+                <span className="text-xs font-black text-gray-900 dark:text-gray-100 font-mono text-right truncate">
+                  {formData.propNumber} <span className="text-gray-400 font-normal">({formData.version})</span>
+                </span>
               </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-bold uppercase">Customer</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-gray-100 text-right">
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-xs text-gray-500 font-bold uppercase shrink-0">Customer</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 text-right truncate">
                   {formData.customer 
                     ? (() => { const c = customers.find(x => x.id === formData.customer); return (c as any)?.company || c?.name || 'Unknown'; })() 
                     : 'Not Selected'}
                 </span>
               </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-bold uppercase">Owner</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{formData.salesOwner || '-'}</span>
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-xs text-gray-500 font-bold uppercase shrink-0">Owner</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 text-right truncate">{formData.salesOwner || '-'}</span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
                 <span className="text-xs text-gray-500 font-bold uppercase">Status</span>
-                <span className="text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                <span className="text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                   {formData.status}
                 </span>
               </div>
@@ -873,69 +1090,79 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
           </div>
 
           <div>
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 mb-3">
-              <Calculator className="w-3.5 h-3.5" /> Live Financials ({formData.currency})
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5 mb-2.5">
+              <Calculator className="w-3.5 h-3.5" /> Live Financials ({formData.currency || 'USD'})
             </h4>
-            <div className="space-y-2.5 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+            <div className="space-y-2 bg-gray-50 dark:bg-gray-800/50 p-3.5 rounded-xl border border-gray-100 dark:border-gray-800">
               <div className="flex justify-between items-start">
                 <span className="text-xs text-gray-500 font-bold">Estimated Cost Basis</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{((formData.matCost||0)+(formData.labCost||0)+(formData.eqCost||0)+(formData.trvCost||0)+(formData.subCost||0)+(formData.ovhCost||0)+(formData.riskCost||0)+(formData.contCost||0)).toLocaleString()}</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 font-mono">{((formData.matCost||0)+(formData.labCost||0)+(formData.eqCost||0)+(formData.trvCost||0)+(formData.subCost||0)+(formData.ovhCost||0)+(formData.riskCost||0)+(formData.contCost||0)).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-start text-green-600 dark:text-green-400">
-                <span className="text-xs font-bold">Markup / Profit applied</span>
-                <span className="text-sm font-bold">+{formData.markupPct}%</span>
+                <span className="text-xs font-bold">Markup / Profit</span>
+                <span className="text-xs font-bold font-mono">+{formData.markupPct}%</span>
               </div>
               <div className="flex justify-between items-start text-red-500">
-                <span className="text-xs font-bold">Discount applied</span>
-                <span className="text-sm font-bold">-{formData.discountPct}{formData.discountType}</span>
+                <span className="text-xs font-bold">Discount</span>
+                <span className="text-xs font-bold font-mono">-{formData.discountPct}{formData.discountType}</span>
               </div>
               <div className="flex justify-between items-start text-gray-500">
-                <span className="text-xs font-bold">Tax applied</span>
-                <span className="text-sm font-bold">+{formData.taxPct}{formData.taxType}</span>
+                <span className="text-xs font-bold">Tax</span>
+                <span className="text-xs font-bold font-mono">+{formData.taxPct}{formData.taxType}</span>
               </div>
               
-              <div className="flex justify-between items-end pt-3 pb-1 border-t border-gray-200 dark:border-gray-700 mt-2">
+              <div className="flex justify-between items-baseline pt-2.5 pb-1 border-t border-gray-200 dark:border-gray-700 mt-2">
                 <span className="text-xs text-gray-500 font-black uppercase">Final Price</span>
-                <span className="text-3xl font-black text-gray-900 dark:text-white leading-none">{formData.finalPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                <span className="text-2xl font-black text-gray-900 dark:text-white font-mono">{formData.currency || 'USD'} {formData.finalPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
               </div>
               
-              <div className="flex justify-between items-center pt-2">
+              <div className="flex justify-between items-center pt-1.5">
                  <span className="text-xs text-gray-500 font-bold uppercase">Expected Profit</span>
-                 <span className="text-sm font-black text-green-600">{formData.expectedProfit.toLocaleString(undefined, {minimumFractionDigits: 2})} <span className="text-gray-400">({formData.profitPct.toFixed(1)}%)</span></span>
+                 <span className="text-xs font-black text-green-600 font-mono">{formData.currency || 'USD'} {formData.expectedProfit.toLocaleString(undefined, {minimumFractionDigits: 2})} <span className="text-gray-400 font-normal">({formData.profitPct.toFixed(1)}%)</span></span>
               </div>
             </div>
           </div>
 
           <div>
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 mb-3">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5 mb-2.5">
               <Target className="w-3.5 h-3.5" /> Project Parameters
             </h4>
-            <div className="space-y-3 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+            <div className="space-y-2.5 bg-gray-50 dark:bg-gray-800/50 p-3.5 rounded-xl border border-gray-100 dark:border-gray-800">
               <div className="flex justify-between items-start">
                 <span className="text-xs text-gray-500 font-bold uppercase">Duration</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{formData.duration || '-'}</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-gray-100">{formData.duration || '-'}</span>
               </div>
               <div className="flex justify-between items-start">
                 <span className="text-xs text-gray-500 font-bold uppercase">Validity</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{formData.validUntil || '-'}</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-gray-100">{formData.validUntil || '-'}</span>
               </div>
               <div className="flex justify-between items-start">
                 <span className="text-xs text-gray-500 font-bold uppercase">Execution</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{formData.executionType || '-'}</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-gray-100">{formData.executionType || '-'}</span>
               </div>
             </div>
           </div>
 
         </div>
         
-        <div className="p-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/40 backdrop-blur-sm">
-          <button onClick={() => handleSave('Draft')} className="w-full py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-wider text-sm shadow-lg hover:bg-blue-700 hover:shadow-blue-500/25 transition-all active:scale-[0.98] flex justify-center items-center gap-2 mb-3">
-             <Save className="w-5 h-5" />
-             Save Proposal
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/40 backdrop-blur-sm space-y-2">
+          <button 
+            type="button"
+            onClick={() => handleSave('Submit For Approval')} 
+            disabled={isSaving || isExporting}
+            className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-wider text-xs shadow-md hover:bg-blue-700 hover:shadow-blue-500/25 transition-all active:scale-[0.98] flex justify-center items-center gap-2 disabled:opacity-50"
+          >
+             {isSaving && formData.status !== 'Draft' ? <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> : <CheckCircle className="w-4 h-4" />}
+             Submit For Approval
           </button>
-          <button onClick={() => handleSave('Internal Review')} className="w-full py-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex justify-center items-center gap-2">
-             <CheckCircle className="w-4 h-4" />
-             Submit for Internal Review
+          <button 
+            type="button"
+            onClick={() => handleSave('Draft')} 
+            disabled={isSaving || isExporting}
+            className="w-full py-2.5 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl font-bold text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex justify-center items-center gap-2 disabled:opacity-50"
+          >
+             <Save className="w-4 h-4" />
+             {isSaving && formData.status === 'Draft' ? "Saving..." : "Save Draft"}
           </button>
         </div>
       </div>

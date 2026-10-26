@@ -157,7 +157,7 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
   ];
 
   return (
-    <div className="flex flex-col h-full w-full min-w-0 bg-gray-50 dark:bg-gray-950 overflow-hidden">
+    <div className="flex flex-col min-h-full w-full min-w-0 bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <div className="flex-none px-6 py-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm min-w-0">
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
@@ -175,19 +175,19 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
           <div className="flex flex-wrap gap-3 flex-shrink-0">
             <button
               onClick={handleExportExcel}
-              className="flex items-center gap-2 px-4 py-2 border border-green-600 text-green-600 dark:border-green-500 dark:text-green-500 bg-white dark:bg-gray-900 rounded-lg text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 border border-green-600 text-green-600 dark:border-green-500 dark:text-green-500 bg-white dark:bg-gray-900 rounded-lg text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors shadow-sm cursor-pointer"
             >
               <Download className="w-4 h-4" /> Excel
             </button>
             <button
               onClick={handleExportPDF}
-              className="flex items-center gap-2 px-4 py-2 border border-red-600 text-red-600 dark:border-red-500 dark:text-red-500 bg-white dark:bg-gray-900 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 border border-red-600 text-red-600 dark:border-red-500 dark:text-red-500 bg-white dark:bg-gray-900 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm cursor-pointer"
             >
               <FileText className="w-4 h-4" /> PDF
             </button>
             <button
               onClick={() => { if(businessId) navigate(`/dashboard/${businessId}/project-operations/requirements/create`) }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4" /> New Requirement
             </button>
@@ -195,9 +195,9 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
+      <div className="flex flex-1 min-h-[calc(100vh-11rem)] min-w-0">
       {/* LEFT PANE: Fixed Width Sidebar */}
-      <div className="w-[360px] flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col h-full">
+      <div className="w-[360px] flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col shadow-sm relative z-20 sticky top-0 self-start max-h-[calc(100vh-4.25rem)]">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex-none space-y-3">
           {requirementId && (
             <button 
@@ -264,7 +264,7 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
         </div>
         
         {/* Independent Vertical Scroll for Left Sidebar */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
+        <div data-lenis-prevent className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
           {isLoadingRequirements ? (
             <div className="flex justify-center items-center h-32">
               <span className="text-gray-500">Loading requirements...</span>
@@ -307,11 +307,11 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
       </div>
 
       {/* RIGHT PANE: Expanding Content Area */}
-      <div className="flex-1 min-w-0 w-auto flex flex-col h-full bg-white dark:bg-gray-900 overflow-hidden">
+      <div data-lenis-prevent className="flex-1 min-w-0 w-auto flex flex-col bg-white dark:bg-gray-900">
         {selectedReq ? (
           <>
             {/* Header Area - Fixed at top */}
-            <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-800 flex flex-col gap-4 flex-none bg-white dark:bg-gray-900 min-w-0 w-auto">
+            <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-800 flex flex-col gap-4 flex-none bg-white dark:bg-gray-900 min-w-0 w-auto sticky top-0 z-20 shadow-xs">
               {/* Row 1: Title */}
               <div className="flex items-center gap-3 min-w-0">
                 <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">{selectedReq.title}</h2>
@@ -331,20 +331,20 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
               <div className="flex flex-wrap gap-2 flex-shrink-0">
                 <button 
                   onClick={() => { if(businessId) navigate(`/dashboard/${businessId}/project-operations/estimations/create`) }}
-                  className="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors whitespace-nowrap"
+                  className="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
                 >
                   Create Estimate
                 </button>
                 <button 
                   onClick={() => { if(businessId) navigate(`/dashboard/${businessId}/project-operations/projects/create`) }}
-                  className="px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm transition-colors whitespace-nowrap"
+                  className="px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm transition-colors whitespace-nowrap cursor-pointer"
                 >
                   Convert to Project
                 </button>
                 <div className="relative" ref={menuRef}>
                   <button 
                     onClick={() => setShowMoreMenu(!showMoreMenu)}
-                    className={`p-2 border rounded-lg transition-colors flex-shrink-0 ${showMoreMenu ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                    className={`p-2 border rounded-lg transition-colors flex-shrink-0 cursor-pointer ${showMoreMenu ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                   >
                     <MoreVertical className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                   </button>
@@ -353,32 +353,32 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
                     <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 overflow-hidden text-sm animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="p-2 border-b border-gray-100 dark:border-gray-800">
                         <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">General</p>
-                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/${selectedReq?.id}/edit`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Edit3 className="w-3.5 h-3.5 text-gray-400"/> Edit Requirement</button>
-                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Layout className="w-3.5 h-3.5 text-gray-400"/> View Requirement</button>
+                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/${selectedReq?.id}/edit`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><Edit3 className="w-3.5 h-3.5 text-gray-400"/> Edit Requirement</button>
+                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><Layout className="w-3.5 h-3.5 text-gray-400"/> View Requirement</button>
                         <button onClick={() => {
                           navigator.clipboard.writeText(selectedReq?.requirementNumber || selectedReq?.id);
                           toast({ title: "Copied!", description: "Requirement ID copied to clipboard" });
                           setShowMoreMenu(false);
-                        }} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><CheckCircle className="w-3.5 h-3.5 text-gray-400"/> Copy Requirement ID</button>
+                        }} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><CheckCircle className="w-3.5 h-3.5 text-gray-400"/> Copy Requirement ID</button>
                       </div>
                       <div className="p-2 border-b border-gray-100 dark:border-gray-800">
                         <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Workflow</p>
-                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/estimations/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><DollarSign className="w-3.5 h-3.5 text-gray-400"/> Create Estimate</button>
-                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/proposals/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><FileText className="w-3.5 h-3.5 text-gray-400"/> Create Proposal</button>
-                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/projects/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Layout className="w-3.5 h-3.5 text-gray-400"/> Convert to Project</button>
+                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/estimations/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><DollarSign className="w-3.5 h-3.5 text-gray-400"/> Create Estimate</button>
+                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/proposals/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><FileText className="w-3.5 h-3.5 text-gray-400"/> Create Proposal</button>
+                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/projects/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><Layout className="w-3.5 h-3.5 text-gray-400"/> Convert to Project</button>
                       </div>
                       <div className="p-2 border-b border-gray-100 dark:border-gray-800">
                         <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Communication & Export</p>
                         <button onClick={() => {
                           handleExportPDF();
                           setShowMoreMenu(false);
-                        }} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300"><Printer className="w-3.5 h-3.5 text-gray-400"/> Print / PDF</button>
+                        }} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><Printer className="w-3.5 h-3.5 text-gray-400"/> Print / PDF</button>
                       </div>
                       <div className="p-2 border-b border-gray-100 dark:border-gray-800">
                         <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Management</p>
                         <button onClick={() => {
                           toast({ title: "Coming soon", description: "Delete requirement functionality is not yet available." });
-                        }} className="w-full text-left px-2 py-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-2 text-red-600 dark:text-red-500"><Trash2 className="w-3.5 h-3.5 text-red-500"/> Delete</button>
+                        }} className="w-full text-left px-2 py-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-2 text-red-600 dark:text-red-500 cursor-pointer"><Trash2 className="w-3.5 h-3.5 text-red-500"/> Delete</button>
                       </div>
                     </div>
                   )}
@@ -387,7 +387,7 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
             </div>
 
             {/* Tabs Navigation - Fixed below header */}
-            <div className="px-6 border-b border-gray-200 dark:border-gray-800 flex overflow-x-auto scrollbar-hide flex-none bg-gray-50/50 dark:bg-gray-900/50 min-w-0 w-auto">
+            <div className="px-6 border-b border-gray-200 dark:border-gray-800 flex overflow-x-auto scrollbar-hide flex-none bg-gray-50/50 dark:bg-gray-900/50 min-w-0 w-auto sticky top-[95px] z-20 shadow-xs">
               {tabs.map(tab => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -395,7 +395,7 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                    className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                       isActive 
                         ? 'border-blue-600 text-blue-700 dark:text-blue-400 bg-white dark:bg-gray-900 shadow-[0_-2px_0_0_inset_#2563eb]' 
                         : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -408,9 +408,9 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
               })}
             </div>
 
-            {/* Independent Vertical Scroll for Right Content */}
-            <div className="flex-1 overflow-y-auto overflow-x-auto p-6 bg-gray-50/30 dark:bg-gray-950/50 min-w-0 w-auto">
-              <div className="max-w-6xl mx-auto min-w-0 w-auto">
+            {/* Content Area with smooth natural scroll and ample bottom space */}
+            <div data-lenis-prevent className="flex-1 p-6 pb-36 bg-gray-50/30 dark:bg-gray-950/50 min-w-0 w-auto">
+              <div className="max-w-6xl mx-auto min-w-0 w-auto pb-20">
                 {isLoadingDetails ? (
                   <div className="animate-pulse space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

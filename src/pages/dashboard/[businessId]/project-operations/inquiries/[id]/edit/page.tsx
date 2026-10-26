@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {  useNavigate  } from 'react-router-dom';
 import { CreateCustomerModal } from "@/components/dashboard/create-customer-modal";
 import { useBusinessData } from "@/components/dashboard/business-data-provider";
+import { PhoneInput } from "@/components/ui/phone-input";
 import {
   ArrowLeft, User, Mail, Phone, Building2, MessageSquare, Globe, MapPin, Tag,
   UserPlus, ChevronDown, CheckCircle, AlertCircle, Loader2, RefreshCw, 
@@ -169,6 +170,7 @@ export default function EditInquiryPage() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [isPhoneValid, setIsPhoneValid] = useState(true);
 
   const [formData, setFormData] = useState<any>({
     customerId: "", name: "", email: "", phone: "", company: "", website: "", position: "", 
@@ -248,29 +250,104 @@ export default function EditInquiryPage() {
     }
   }, [businessId, id]);
 
-  const handleCustomerSelect = (customerId: string) => {
+  const handleCustomerSelect = async (customerId: string) => {
     const selected = customers.find((c) => c.id === customerId);
-    if (selected) {
-      const company = (selected as any).company || selected.name || "";
-      const selectedCountry = (selected as any).country || "";
-      const countryData = COUNTRIES_WITH_TIMEZONES.find(c => c.name === selectedCountry);
+    if (!selected) {
       setFormData((prev: any) => ({
         ...prev,
-        customerId: selected.id,
-        name: selected.name || company,
-        company: company,
-        email: selected.email || "",
-        phone: selected.phone || "",
-        city: (selected as any).city || prev.city,
-        state: (selected as any).state || prev.state,
-        country: selectedCountry || prev.country,
-        timezone: countryData ? countryData.timezone : prev.timezone,
+        customerId: "",
+        name: "",
+        company: "",
+        position: "",
+        email: "",
+        phone: "",
+        website: "",
+        industry: "",
+        companySize: "",
+        gstVatNumber: "",
+        city: "",
+        state: "",
+        country: "",
+        zipCode: "",
+        timezone: "",
       }));
-    } else {
-      setFormData((prev: any) => ({
-        ...prev, customerId: "", name: "", company: "", email: "", phone: "", city: "", state: "", country: "", timezone: ""
-      }));
+      return;
     }
+
+    // Try finding contacts directly on the selected customer or fetch via API if empty
+    let contacts = (selected as any).customerContacts || [];
+    if (!contacts.length) {
+      try {
+        const res = await contactsAPI.getContacts(businessId, selected.id);
+        if (res && res.contacts && res.contacts.length) {
+          contacts = res.contacts;
+        }
+      } catch (err) {
+        console.warn("Could not fetch customer contacts", err);
+      }
+    }
+
+    const primaryContact =
+      contacts.find((c: any) => c.isPrimary && !c.isDeleted) ||
+      contacts.find((c: any) => !c.isDeleted) ||
+      contacts[0];
+
+    const companyName = (selected as any).company || selected.name || "";
+    const contactName =
+      primaryContact?.fullName ||
+      (selected as any).contactPerson ||
+      (selected.name && selected.name !== companyName ? selected.name : "") ||
+      companyName;
+
+    const contactEmail = primaryContact?.email || (selected as any).email || "";
+    const contactPhone = primaryContact?.phone || (selected as any).phone || "";
+    const contactPosition =
+      primaryContact?.position ||
+      (selected as any).position ||
+      (selected as any).designation ||
+      "";
+
+    const website = (selected as any).website || "";
+    const industry = (selected as any).industry || "";
+    const companySize = (selected as any).companySize
+      ? String((selected as any).companySize)
+      : (selected as any).employeeCount
+        ? String((selected as any).employeeCount)
+        : "";
+    const gstVatNumber =
+      (selected as any).vatNumber ||
+      (selected as any).gstVatNumber ||
+      (selected as any).taxId ||
+      "";
+
+    const selectedCountry =
+      (selected as any).country ||
+      (selected as any).billingCountry ||
+      (selected as any).region ||
+      "";
+
+    const countryData = COUNTRIES_WITH_TIMEZONES.find(
+      (c) => c.name.toLowerCase() === selectedCountry.toLowerCase().trim()
+    );
+
+    setFormData((prev: any) => ({
+      ...prev,
+      customerId: selected.id,
+      company: companyName,
+      name: contactName,
+      position: contactPosition,
+      email: contactEmail,
+      phone: contactPhone,
+      website: website,
+      industry: industry,
+      companySize: companySize,
+      gstVatNumber: gstVatNumber,
+      city: (selected as any).city || (selected as any).billingCity || prev.city || "",
+      state: (selected as any).state || (selected as any).billingState || prev.state || "",
+      country: countryData ? countryData.name : selectedCountry || prev.country || "",
+      zipCode: (selected as any).zipCode || (selected as any).billingZipCode || prev.zipCode || "",
+      timezone: countryData ? countryData.timezone : prev.timezone || "",
+    }));
   };
 
   const updateField = (field: string, value: any) =>
@@ -308,6 +385,16 @@ export default function EditInquiryPage() {
     e.preventDefault();
     setSubmitLoading(true);
     setSubmitError("");
+    if (!formData.phone || !formData.phone.trim()) {
+      setSubmitError("Phone number is required.");
+      setSubmitLoading(false);
+      return;
+    }
+    if (!isPhoneValid) {
+      setSubmitError("Please enter a valid phone number with the required digits.");
+      setSubmitLoading(false);
+      return;
+    }
     try {
       const payload: any = {
         ...formData,
@@ -523,10 +610,14 @@ export default function EditInquiryPage() {
               </div>
               <div>
                 <label className={labelClass}>Phone Number <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input required type="tel" value={formData.phone} onChange={(e) => updateField("phone", e.target.value)} placeholder="+1 (555) 000-0000" className={`${inputClass} pl-10`} />
-                </div>
+                <PhoneInput
+                  id="edit-inquiry-phone"
+                  value={formData.phone}
+                  onChange={(val) => updateField("phone", val)}
+                  onValidChange={setIsPhoneValid}
+                  defaultCountry={formData.country || (business as any)?.country || "India"}
+                  required
+                />
               </div>
               <div>
                 <label className={labelClass}>Website</label>
@@ -882,18 +973,7 @@ export default function EditInquiryPage() {
         businessId={businessId as string}
         onCreated={(newCustomer) => {
           setCustomers((prev) => [...prev, newCustomer]);
-          const company = newCustomer.company || newCustomer.name || "";
-          setFormData((prev: any) => ({
-            ...prev,
-            customerId: newCustomer.id,
-            name: newCustomer.name || company,
-            company,
-            email: newCustomer.email || "",
-            phone: newCustomer.phone || "",
-            city: newCustomer.city || prev.city,
-            state: newCustomer.state || prev.state,
-            country: newCustomer.country || prev.country,
-          }));
+          handleCustomerSelect(newCustomer.id);
           setShowCreateCustomer(false);
         }}
       />

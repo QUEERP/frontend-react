@@ -217,7 +217,7 @@ export function GlobalTicketsWorkspace({ businessId }: { businessId: string }) {
   }
 
   return (
-    <div className="flex flex-col h-full space-y-4 p-6">
+    <div data-lenis-prevent className="flex-1 overflow-y-auto space-y-5 p-6 pb-16">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
         <div className="bg-white p-4 rounded-xl border flex items-center gap-4">
           <div className="p-3 bg-blue-50 text-blue-600 rounded-lg"><Clock className="w-5 h-5" /></div>
@@ -249,8 +249,8 @@ export function GlobalTicketsWorkspace({ businessId }: { businessId: string }) {
         </div>
       </div>
 
-      <div className="flex-1 bg-white rounded-xl border overflow-hidden flex flex-col">
-        <div className="flex-1 overflow-y-auto">
+      <div className="bg-white rounded-xl border overflow-hidden flex flex-col">
+        <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 border-b sticky top-0">
               <tr>

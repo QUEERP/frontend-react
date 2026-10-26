@@ -223,7 +223,7 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 p-6 space-y-4 overflow-hidden">
+      <div data-lenis-prevent className="flex-1 overflow-y-auto p-6 space-y-5 pb-16">
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2 flex-none">
           <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex items-center gap-4">
@@ -311,8 +311,8 @@ export function EstimationsWorkspace({ businessId }: { businessId: string }) {
         </div>
 
         {/* List */}
-        <div className="flex-1 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col">
+          <div className="overflow-x-auto">
             {loading ? (
               <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase font-semibold text-gray-500 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
