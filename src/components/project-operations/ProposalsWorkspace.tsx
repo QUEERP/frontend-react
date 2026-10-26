@@ -56,7 +56,7 @@ export function ProposalsWorkspace({ businessId }: { businessId: string }) {
     try {
       setLoading(true);
       const data = await quotationsAPI.getQuotations(businessId);
-      const props = (data.quotations || []).filter(q => q.quoteNumber?.startsWith('PRP-'));
+      const props = (data.quotations || []).filter(q => q.quoteNumber?.startsWith('PRP-') || q.quoteNumber?.startsWith('QT-'));
       setProposals(props);
     } catch (error) {
       console.error("Error fetching proposals:", error);
@@ -306,7 +306,7 @@ export function ProposalsWorkspace({ businessId }: { businessId: string }) {
             </div>
             <div>
                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Approved</p>
-               <h3 className="text-xl font-bold">{proposals.filter(e => e.status.toLowerCase() === 'accepted').length}</h3>
+               <h3 className="text-xl font-bold">{proposals.filter(e => e.status?.toLowerCase() === 'accepted' || e.status?.toLowerCase() === 'approved').length}</h3>
             </div>
           </div>
           <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-4 rounded-xl border border-transparent flex flex-col justify-center items-start text-white shadow-sm">
