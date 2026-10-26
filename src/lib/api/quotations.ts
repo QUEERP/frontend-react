@@ -43,6 +43,7 @@ export interface Quotation {
   discount?: number | null
   totalAmount: number
   currency?: string
+  exchangeRate?: number | null
   taxType?: string | null
   gstTreatment?: string | null
   issueDate: string
@@ -76,6 +77,8 @@ export interface CreateQuotationData {
   customerId: string
   dealId?: string
   assignedToId?: string
+  currency?: string
+  exchangeRate?: number
   items: QuotationItemInput[]
   tax?: number
   discount?: number
@@ -91,6 +94,8 @@ export interface UpdateQuotationData {
   customerId?: string
   dealId?: string
   assignedToId?: string
+  currency?: string
+  exchangeRate?: number
   status?: (typeof QUOTATION_STATUS)[number]
   tax?: number
   discount?: number

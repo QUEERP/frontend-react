@@ -35,7 +35,9 @@ const InputField = ({
   readOnly = false, 
   icon: Icon,
   prefix,
-  suffix
+  suffix,
+  step,
+  min
 }: any) => {
   const plClass = prefix ? (String(prefix).length > 2 ? 'pl-12' : String(prefix).length > 1 ? 'pl-9' : 'pl-7') : '';
   return (
@@ -52,6 +54,13 @@ const InputField = ({
           onChange={onChange} 
           placeholder={placeholder} 
           readOnly={readOnly}
+          step={step}
+          min={min}
+          onWheel={(e) => {
+            if (type === 'number') {
+              (e.currentTarget as HTMLInputElement).blur();
+            }
+          }}
           className={`w-full p-2.5 ${plClass} ${suffix ? 'pr-8' : ''} border rounded-lg text-sm outline-none transition-all ${
             readOnly 
               ? 'bg-gray-100 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed font-medium'
@@ -302,8 +311,12 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
         if (!isMounted) return;
         const rateData = res.data?.data;
         if (rateData && rateData.rate) {
-          const numRate = Number(rateData.rate);
-          setFxRateInfo(rateData);
+          const rawRate = Number(rateData.rate);
+          const numRate = !isNaN(rawRate) ? parseFloat(rawRate.toFixed(2)) : 1.0;
+          setFxRateInfo({
+            ...rateData,
+            rate: numRate
+          });
           setFormData(prev => ({ ...prev, exchangeRate: numRate }));
         }
       })
@@ -318,6 +331,18 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
 
     return () => { isMounted = false; };
   }, [businessId, formData.currency, formData.propDate, baseCurrencyCode]);
+
+  // Prevent mouse wheel from inadvertently changing values when scrolling over number inputs
+  useEffect(() => {
+    const handleWheelBlur = () => {
+      const active = document.activeElement as HTMLElement | null;
+      if (active && active.tagName === 'INPUT' && (active as HTMLInputElement).type === 'number') {
+        active.blur();
+      }
+    };
+    window.addEventListener('wheel', handleWheelBlur, { passive: true });
+    return () => window.removeEventListener('wheel', handleWheelBlur);
+  }, []);
 
   // Load from Requirement when converting
   useEffect(() => {
@@ -399,6 +424,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
             propDate: q.issueDate ? new Date(q.issueDate).toISOString().split('T')[0] : prev.propDate,
             validUntil: q.expiryDate ? new Date(q.expiryDate).toISOString().split('T')[0] : prev.validUntil,
             currency: q.currency || prev.currency,
+            exchangeRate: (q as any).exchangeRate ? parseFloat(Number((q as any).exchangeRate).toFixed(2)) : prev.exchangeRate,
             finalPrice: Number(q.totalAmount || 0),
             matCost: Number(q.subtotal || 0),
             appNotes: q.notes || '',
@@ -530,6 +556,19 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
   
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    if (name === 'exchangeRate') {
+      if (value === '') {
+        setFormData(prev => ({ ...prev, exchangeRate: '' as any }));
+        return;
+      }
+      // Restrict user input to at most 2 digits after decimal point
+      const parts = value.split('.');
+      if (parts.length > 2) return;
+      if (parts[1] && parts[1].length > 2) return;
+
+      setFormData(prev => recalculateCommercials({ ...prev, [name]: value }));
+      return;
+    }
     setFormData(prev => recalculateCommercials({ ...prev, [name]: parseFloat(value) || 0 }));
   };
 
@@ -556,25 +595,34 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
           subtotal: (formData.matCost || 0) + (formData.labCost || 0),
           expiryDate: formData.validUntil ? new Date(formData.validUntil).toISOString() : undefined,
           notes: formData.appNotes,
-          status: actionStatus
+          status: actionStatus,
+          currency: formData.currency,
+          exchangeRate: parseFloat(Number(formData.exchangeRate || 1).toFixed(2)),
         } as any);
-        toast({ title: "Success", description: "Proposal updated successfully." });
+        toast({ title: "Success", description: actionStatus === 'Submit For Approval' ? "Submitted for approval successfully." : "Proposal updated successfully." });
         navigate(`/dashboard/${businessId}/project-operations/proposals`);
         return;
       }
 
       if (actionStatus === 'Submit For Approval') {
-        await projectOperationsAPI.submitProposalApproval(businessId, formData.propNumber);
-        setFormData(prev => ({...prev, status: 'Pending Approval', appStatus: 'Under Review'}));
+        const res = await projectOperationsAPI.createProposal(businessId, { 
+          ...formData, 
+          exchangeRate: parseFloat(Number(formData.exchangeRate || 1).toFixed(2)),
+          status: 'PENDING_APPROVAL',
+          appStatus: 'Under Review'
+        });
+        const propId = res.proposal?.quoteNumber || res.proposal?.id || formData.propNumber;
+        await projectOperationsAPI.submitProposalApproval(businessId, propId);
         toast({ title: "Submitted", description: "Submitted for approval successfully." });
+        navigate(`/dashboard/${businessId}/project-operations/proposals`);
       } else {
-        const res = await projectOperationsAPI.createProposal(businessId, { ...formData, status: actionStatus });
-        if (res.proposal && res.proposal.id) {
-          setFormData(prev => ({...prev, propNumber: res.proposal.id, status: actionStatus}));
-        } else {
-          setFormData(prev => ({...prev, status: actionStatus}));
-        }
+        await projectOperationsAPI.createProposal(businessId, { 
+          ...formData, 
+          exchangeRate: parseFloat(Number(formData.exchangeRate || 1).toFixed(2)),
+          status: actionStatus 
+        });
         toast({ title: "Success", description: `${actionStatus} saved successfully.` });
+        navigate(`/dashboard/${businessId}/project-operations/proposals`);
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Failed to process request.", variant: "destructive" });
@@ -815,16 +863,26 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
                 <input 
                   type="number"
                   name="exchangeRate"
-                  step="0.0001"
-                  value={formData.exchangeRate}
+                  step="0.01"
+                  min="0"
+                  value={formData.exchangeRate !== undefined && formData.exchangeRate !== null ? formData.exchangeRate : ''}
                   onChange={handleNumberChange}
+                  onBlur={(e) => {
+                    const val = parseFloat(String(e.target.value));
+                    if (!isNaN(val)) {
+                      setFormData(prev => recalculateCommercials({ ...prev, exchangeRate: parseFloat(val.toFixed(2)) }));
+                    } else {
+                      setFormData(prev => recalculateCommercials({ ...prev, exchangeRate: 1.0 }));
+                    }
+                  }}
+                  onWheel={(e) => e.currentTarget.blur()}
                   className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono"
                 />
               </div>
               {formData.currency && baseCurrencyCode && formData.currency.toUpperCase() !== baseCurrencyCode && (
                 <div className="flex items-center justify-between text-[10px] font-mono text-gray-500">
-                  <span title={`1 ${formData.currency.toUpperCase()} = ${formData.exchangeRate} ${baseCurrencyCode}`}>
-                    1 {formData.currency.toUpperCase()} = {formData.exchangeRate} {baseCurrencyCode}
+                  <span title={`1 ${formData.currency.toUpperCase()} = ${Number(formData.exchangeRate || 1).toFixed(2)} ${baseCurrencyCode}`}>
+                    1 {formData.currency.toUpperCase()} = {Number(formData.exchangeRate || 1).toFixed(2)} {baseCurrencyCode}
                   </span>
                   {fxRateInfo?.source && (
                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 font-sans font-medium">
@@ -1020,6 +1078,21 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
             <SelectField label="Approval Status" name="appStatus" value={formData.appStatus} onChange={handleInputChange} options={['Pending', 'Under Review', 'Approved', 'Rejected']} />
           </div>
           <TextAreaField label="Approval Notes / Conditions" name="appNotes" value={formData.appNotes} onChange={handleInputChange} rows={3} />
+          
+          <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-gray-500 font-medium">
+              Submit proposal for review and routing through configured approval levels.
+            </p>
+            <button 
+              type="button"
+              onClick={() => handleSave('Submit For Approval')} 
+              disabled={isSaving || isExporting}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors shadow-md flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {isSaving && formData.status !== 'Draft' ? <span className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"></span> : <CheckCircle className="w-3.5 h-3.5" />}
+              Submit For Approval
+            </button>
+          </div>
         </SectionCard>
 
         {/* 9. Terms & Conditions */}
@@ -1036,6 +1109,53 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
             <TextAreaField label="Special Legal Notes" name="termLegal" value={formData.termLegal} onChange={handleInputChange} className="md:col-span-2" />
           </div>
         </SectionCard>
+
+        {/* Bottom Actions Bar */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 mb-6">
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+            <div>
+              <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Ready to proceed?</p>
+              <p className="text-xs text-gray-500">Save as draft or submit for internal review and management approval.</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
+            <button 
+              type="button"
+              onClick={handleGeneratePDF} 
+              disabled={isSaving || isExporting} 
+              className="px-3.5 py-2 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/30 rounded-xl text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {isExporting ? <span className="animate-spin w-3.5 h-3.5 border-2 border-red-700 border-t-transparent rounded-full"></span> : <FileBadge className="w-3.5 h-3.5" />} PDF
+            </button>
+            <button 
+              type="button"
+              onClick={handleSend} 
+              disabled={isSaving || isExporting} 
+              className="px-3.5 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <Send className="w-3.5 h-3.5" /> Send
+            </button>
+            <button 
+              type="button"
+              onClick={() => handleSave('Draft')} 
+              disabled={isSaving || isExporting} 
+              className="px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {isSaving && formData.status === 'Draft' ? "Saving..." : <><Save className="w-3.5 h-3.5" /> Save Draft</>}
+            </button>
+            <button 
+              type="button"
+              onClick={() => handleSave('Submit For Approval')} 
+              disabled={isSaving || isExporting} 
+              className="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors shadow-md hover:shadow-blue-500/20 flex items-center gap-2 disabled:opacity-50"
+            >
+              {isSaving && formData.status !== 'Draft' ? <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> : <CheckCircle className="w-4 h-4" />}
+              Submit For Approval
+            </button>
+          </div>
+        </div>
 
         <div className="h-24 lg:hidden"></div>
       </div>

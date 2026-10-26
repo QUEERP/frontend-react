@@ -28,6 +28,11 @@ const InputField = ({ label, name, value, onChange, type = "text", placeholder =
     </label>
     <input 
       type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} readOnly={readOnly}
+      onWheel={(e) => {
+        if (type === 'number') {
+          (e.currentTarget as HTMLInputElement).blur();
+        }
+      }}
       className={`w-full p-2.5 border rounded-lg text-sm outline-none transition-all ${
         readOnly 
           ? 'bg-gray-100 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed font-medium'
