@@ -1,6 +1,6 @@
 import * as React from 'react'
 import {  useNavigate  } from 'react-router-dom';
-import { quotationsAPI, Quotation } from '@/lib/api/quotations'
+import { proposalsAPI, Proposal as Quotation } from '@/lib/api/proposals'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -145,7 +145,7 @@ export function ProposalDetailsClient({ businessId, proposalId }: ProposalDetail
   const loadProposal = React.useCallback(async () => {
     try {
       setLoading(true)
-      const response = await quotationsAPI.getQuotationById(businessId, proposalId)
+      const response = await proposalsAPI.getProposalById(businessId, proposalId)
       if (response.success) setProposal(response.quotation)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to fetch Proposal')
@@ -161,8 +161,8 @@ export function ProposalDetailsClient({ businessId, proposalId }: ProposalDetail
   const handleApprove = async () => {
     try {
       setActionLoading(true)
-      await quotationsAPI.approveQuotation(businessId, proposalId)
-      toast.success('Proposal approved successfully')
+      const res = await proposalsAPI.approveProposal(businessId, proposalId)
+      toast.success(res.message || 'Proposal approved successfully')
       loadProposal()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to approve Proposal')
@@ -174,8 +174,8 @@ export function ProposalDetailsClient({ businessId, proposalId }: ProposalDetail
   const handleReject = async () => {
     try {
       setActionLoading(true)
-      await quotationsAPI.rejectQuotation(businessId, proposalId)
-      toast.success('Proposal rejected')
+      const res = await proposalsAPI.rejectProposal(businessId, proposalId)
+      toast.success(res.message || 'Proposal rejected successfully')
       loadProposal()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to reject Proposal')
@@ -195,7 +195,7 @@ export function ProposalDetailsClient({ businessId, proposalId }: ProposalDetail
   const handleDownloadPdf = async () => {
     try {
       setPdfLoading(true)
-      await quotationsAPI.downloadQuotationPdf(businessId, proposalId, proposal!.quoteNumber)
+      await proposalsAPI.downloadProposalPdf(businessId, proposalId, proposal!.quoteNumber)
       toast.success('Proposal PDF downloaded successfully')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to download PDF')
@@ -218,7 +218,7 @@ export function ProposalDetailsClient({ businessId, proposalId }: ProposalDetail
         <AlertCircle className="h-10 w-10 mb-4 text-slate-400" />
         <p className="text-lg font-semibold text-foreground">Proposal Not Found</p>
         <p className="text-sm">The Proposal you are looking for does not exist or was removed.</p>
-        <Button variant="outline" className="mt-6 rounded-xl cursor-pointer" onClick={() => navigate(`/dashboard/${businessId}/Proposals`)}>
+        <Button variant="outline" className="mt-6 rounded-xl cursor-pointer" onClick={() => navigate(`/dashboard/${businessId}/project-operations/proposals`)}>
           Return to Directory
         </Button>
       </div>
@@ -247,7 +247,7 @@ export function ProposalDetailsClient({ businessId, proposalId }: ProposalDetail
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(`/dashboard/${businessId}/Proposals`)}
+            onClick={() => navigate(`/dashboard/${businessId}/project-operations/proposals`)}
             className="h-10 cursor-pointer w-10 rounded-xl hover:bg-muted text-muted-foreground shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />

@@ -215,7 +215,7 @@ export const projectOperationsAPI = {
 
   async createProposal(businessId: string, data: any): Promise<any> {
     const token = getCookie('token') || getCookie('accessToken');
-        const response = await fetch(`${API_ROOT}/project-operations/proposals`, {
+        const response = await fetch(`${API_ROOT}/proposals`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -234,7 +234,7 @@ export const projectOperationsAPI = {
 
   async submitProposalApproval(businessId: string, id: string): Promise<any> {
     const token = getCookie('token') || getCookie('accessToken');
-        const response = await fetch(`${API_ROOT}/project-operations/proposals/${id}/submit-approval`, {
+        const response = await fetch(`${API_ROOT}/proposals/${id}/submit-approval`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -251,7 +251,7 @@ export const projectOperationsAPI = {
 
   async sendProposal(businessId: string, id: string, data: any): Promise<any> {
     const token = getCookie('token') || getCookie('accessToken');
-        const response = await fetch(`${API_ROOT}/project-operations/proposals/${id}/send`, {
+        const response = await fetch(`${API_ROOT}/proposals/${id}/send`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -350,6 +350,24 @@ export const projectOperationsAPI = {
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.message || 'Failed to update estimation');
+    }
+
+    return response.json();
+  },
+
+  async deleteEstimation(businessId: string, id: string): Promise<any> {
+    const token = getCookie('token') || getCookie('accessToken');
+    const response = await fetch(`${API_ROOT}/project-operations/estimations/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'x-business-id': businessId
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to delete estimation');
     }
 
     return response.json();

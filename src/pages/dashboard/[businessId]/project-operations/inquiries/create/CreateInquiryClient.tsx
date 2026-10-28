@@ -678,19 +678,19 @@ export function CreateInquiryClient({ businessId }: Props) {
                 <label className={labelClass}>Estimated Budget ({currencyCode})</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-400 select-none">{symbol}</span>
-                  <input type="number" step="0.01" value={formData.budgetRange ?? ""} onChange={(e) => updateField("budgetRange", e.target.value)} placeholder="0.00" className={`${inputClass} pl-10`} />
+                  <input type="number" step="0.01" value={formData.budgetRange ?? ""} onChange={(e) => updateField("budgetRange", e.target.value)} onWheel={(e) => e.currentTarget.blur()} placeholder="0.00" className={`${inputClass} pl-10`} />
                 </div>
               </div>
               <div>
                 <label className={labelClass}>Expected Revenue ({currencyCode})</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-400 select-none">{symbol}</span>
-                  <input type="number" step="0.01" value={formData.expectedRevenue ?? ""} onChange={(e) => updateField("expectedRevenue", e.target.value ? parseFloat(e.target.value) : undefined)} placeholder="0.00" className={`${inputClass} pl-10`} />
+                  <input type="number" step="0.01" value={formData.expectedRevenue ?? ""} onChange={(e) => updateField("expectedRevenue", e.target.value ? parseFloat(e.target.value) : undefined)} onWheel={(e) => e.currentTarget.blur()} placeholder="0.00" className={`${inputClass} pl-10`} />
                 </div>
               </div>
               <div>
                 <label className={labelClass}>Probability (%)</label>
-                <input type="number" min="0" max="100" value={formData.probability ?? ""} onChange={(e) => updateField("probability", e.target.value ? parseInt(e.target.value) : undefined)} placeholder="50" className={inputClass} />
+                <input type="number" min="0" max="100" value={formData.probability ?? ""} onChange={(e) => updateField("probability", e.target.value ? parseInt(e.target.value) : undefined)} onWheel={(e) => e.currentTarget.blur()} placeholder="50" className={inputClass} />
               </div>
             </div>
           </div>
@@ -857,7 +857,7 @@ export function CreateInquiryClient({ businessId }: Props) {
               </div>
               <div><label className={labelClass}>Competitors</label><input type="text" value={formData.competitors} onChange={(e) => updateField("competitors", e.target.value)} placeholder="Competitor A, B" className={inputClass} /></div>
               <div><label className={labelClass}>Risk Level</label><input type="text" value={formData.riskLevel} onChange={(e) => updateField("riskLevel", e.target.value)} placeholder="Low, Medium, High" className={inputClass} /></div>
-              <div><label className={labelClass}>Expected Profit ({currencyCode})</label><input type="number" step="0.01" value={formData.expectedProfit ?? ""} onChange={(e) => updateField("expectedProfit", e.target.value ? parseFloat(e.target.value) : undefined)} placeholder="0.00" className={inputClass} /></div>
+              <div><label className={labelClass}>Expected Profit ({currencyCode})</label><input type="number" step="0.01" value={formData.expectedProfit ?? ""} onChange={(e) => updateField("expectedProfit", e.target.value ? parseFloat(e.target.value) : undefined)} onWheel={(e) => e.currentTarget.blur()} placeholder="0.00" className={inputClass} /></div>
               <div><label className={labelClass}>Tags (Comma Separated)</label><input type="text" value={formData.tags} onChange={(e) => updateField("tags", e.target.value)} placeholder="Enterprise, VIP, Q3" className={inputClass} /></div>
             </div>
           </div>

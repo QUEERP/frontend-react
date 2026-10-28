@@ -17,7 +17,7 @@ import { useBusinessData } from "@/components/dashboard/business-data-provider";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import { projectOperationsAPI } from "@/lib/api/project-operations";
-import { quotationsAPI } from "@/lib/api/quotations";
+import { proposalsAPI } from "@/lib/api/proposals";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { CURRENCIES, getCurrencySymbol } from '@/lib/currencies';
@@ -412,9 +412,9 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
     if (!editId) return;
     const fetchProposal = async () => {
       try {
-        const res = await quotationsAPI.getQuotationById(businessId, editId);
-        if (res.success && res.quotation) {
-          const q = res.quotation;
+        const res = await proposalsAPI.getProposalById(businessId, editId);
+        if (res.success && (res.proposal || res.quotation)) {
+          const q = res.proposal || res.quotation;
           setFormData(prev => ({
             ...prev,
             propNumber: q.quoteNumber || prev.propNumber,
@@ -588,7 +588,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
     setIsSaving(true);
     try {
       if (editId) {
-        await quotationsAPI.updateQuotation(businessId, editId, {
+        await proposalsAPI.updateProposal(businessId, editId, {
           title: formData.propName,
           customerId: formData.customer,
           totalAmount: formData.finalPrice,
@@ -605,18 +605,18 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
       }
 
       if (actionStatus === 'Submit For Approval') {
-        const res = await projectOperationsAPI.createProposal(businessId, { 
+        const res = await proposalsAPI.createProposal(businessId, { 
           ...formData, 
           exchangeRate: parseFloat(Number(formData.exchangeRate || 1).toFixed(2)),
           status: 'PENDING_APPROVAL',
           appStatus: 'Under Review'
         });
         const propId = res.proposal?.quoteNumber || res.proposal?.id || formData.propNumber;
-        await projectOperationsAPI.submitProposalApproval(businessId, propId);
+        await proposalsAPI.submitProposalApproval(businessId, propId);
         toast({ title: "Submitted", description: "Submitted for approval successfully." });
         navigate(`/dashboard/${businessId}/project-operations/proposals`);
       } else {
-        await projectOperationsAPI.createProposal(businessId, { 
+        await proposalsAPI.createProposal(businessId, { 
           ...formData, 
           exchangeRate: parseFloat(Number(formData.exchangeRate || 1).toFixed(2)),
           status: actionStatus 
