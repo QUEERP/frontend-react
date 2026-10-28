@@ -6,6 +6,7 @@ import { leadsAPI, Lead } from '@/lib/api/leads';
 import { getCookie } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -20,7 +21,6 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [customerFilter, setCustomerFilter] = useState('ALL');
   const [qualifyingId, setQualifyingId] = useState<string | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [modalState, setModalState] = useState<{ type: string, inquiry: Lead | null }>({ type: '', inquiry: null });
   const [modalInput, setModalInput] = useState<any>({});
@@ -66,7 +66,6 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
   };
 
   const handleAction = async (inq: Lead, action: string) => {
-    setOpenMenuId(null);
     if (action === 'view') {
       navigate(`/dashboard/${businessId}/project-operations/inquiries/${inq.id}`);
     } else if (action === 'edit') {
@@ -406,80 +405,113 @@ export function InquiriesWorkspace({ businessId }: { businessId: string }) {
                             <Pencil className="w-4 h-4" />
                           </button>
 
-                          <div className="relative">
-                            <button 
-                              title="More Actions"
-                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                setOpenMenuId(openMenuId === inq.id ? null : inq.id); 
-                              }}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button 
+                                title="More Actions"
+                                className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 transition-colors focus:outline-none"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent 
+                              align="end" 
+                              side="bottom"
+                              sideOffset={6}
+                              className="w-56 p-1.5 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-50 text-left"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                            
-                            {openMenuId === inq.id && (
-                              <>
-                                <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }} />
-                                <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 z-50 overflow-hidden text-left py-1 text-sm text-gray-700 dark:text-gray-300">
-                                  
-                                  {actionLoadingId === inq.id && (
-                                    <div className="flex items-center justify-center p-4">
-                                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-                                    </div>
-                                  )}
-                                  
-                                  {actionLoadingId !== inq.id && (
-                                    <>
-                                      {inq.status !== 'CONVERTED' && inq.status !== 'WON' && inq.status !== 'LOST' && (
-                                        <button className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 text-blue-600 dark:text-blue-400 font-medium transition-colors" onClick={(e) => { e.stopPropagation(); handleAction(inq, 'convert'); }}>
-                                          <ArrowRight className="w-4 h-4" /> Convert to Requirement
-                                        </button>
-                                      )}
-
-                                      <button className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" onClick={(e) => { e.stopPropagation(); handleAction(inq, 'schedule'); }}>
-                                        <Calendar className="w-4 h-4 text-gray-400" /> Schedule Meeting
-                                      </button>
-                                      
-                                      {inq.status === 'NEW' && (
-                                        <button className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" onClick={(e) => { e.stopPropagation(); handleAction(inq, 'assign'); }}>
-                                          <User className="w-4 h-4 text-gray-400" /> Assign Inquiry
-                                        </button>
-                                      )}
-
-                                      <button className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" onClick={(e) => { e.stopPropagation(); handleAction(inq, 'note'); }}>
-                                        <StickyNote className="w-4 h-4 text-gray-400" /> Add Internal Note
-                                      </button>
-
-                                      <button className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" onClick={(e) => { e.stopPropagation(); handleAction(inq, 'upload'); }}>
-                                        <Paperclip className="w-4 h-4 text-gray-400" /> Upload Documents
-                                      </button>
-
-                                      <button className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" onClick={(e) => { e.stopPropagation(); handleAction(inq, 'status'); }}>
-                                        <RefreshCw className="w-4 h-4 text-gray-400" /> Change Status
-                                      </button>
-                                      
-                                      <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
-                                      
-                                      <button className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" onClick={(e) => { e.stopPropagation(); handleAction(inq, 'duplicate'); }}>
-                                        <Copy className="w-4 h-4 text-gray-400" /> Duplicate Inquiry
-                                      </button>
-
-                                      <button className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" onClick={(e) => { e.stopPropagation(); handleAction(inq, 'export_pdf'); }}>
-                                        <Download className="w-4 h-4 text-gray-400" /> Export PDF
-                                      </button>
-
-                                      <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
-
-                                      <button className="flex items-center gap-2 w-full px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors" onClick={(e) => { e.stopPropagation(); handleAction(inq, 'delete'); }}>
-                                        <Trash2 className="w-4 h-4" /> Delete Inquiry
-                                      </button>
-                                    </>
-                                  )}
+                              {actionLoadingId === inq.id ? (
+                                <div className="flex items-center justify-center p-4">
+                                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
                                 </div>
-                              </>
-                            )}
-                          </div>
+                              ) : (
+                                <>
+                                  {inq.status !== 'CONVERTED' && inq.status !== 'WON' && inq.status !== 'LOST' && (
+                                    <DropdownMenuItem 
+                                      className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg cursor-pointer transition-colors focus:bg-blue-50 dark:focus:bg-blue-950/40" 
+                                      onClick={(e) => { e.stopPropagation(); handleAction(inq, 'convert'); }}
+                                    >
+                                      <ArrowRight className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                                      <span>Convert to Requirement</span>
+                                    </DropdownMenuItem>
+                                  )}
+
+                                  <DropdownMenuItem 
+                                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors focus:bg-gray-100 dark:focus:bg-gray-800" 
+                                    onClick={(e) => { e.stopPropagation(); handleAction(inq, 'schedule'); }}
+                                  >
+                                    <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                                    <span>Schedule Meeting</span>
+                                  </DropdownMenuItem>
+                                  
+                                  {inq.status === 'NEW' && (
+                                    <DropdownMenuItem 
+                                      className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors focus:bg-gray-100 dark:focus:bg-gray-800" 
+                                      onClick={(e) => { e.stopPropagation(); handleAction(inq, 'assign'); }}
+                                    >
+                                      <User className="w-4 h-4 text-gray-400 shrink-0" />
+                                      <span>Assign Inquiry</span>
+                                    </DropdownMenuItem>
+                                  )}
+
+                                  <DropdownMenuItem 
+                                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors focus:bg-gray-100 dark:focus:bg-gray-800" 
+                                    onClick={(e) => { e.stopPropagation(); handleAction(inq, 'note'); }}
+                                  >
+                                    <StickyNote className="w-4 h-4 text-gray-400 shrink-0" />
+                                    <span>Add Internal Note</span>
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuItem 
+                                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors focus:bg-gray-100 dark:focus:bg-gray-800" 
+                                    onClick={(e) => { e.stopPropagation(); handleAction(inq, 'upload'); }}
+                                  >
+                                    <Paperclip className="w-4 h-4 text-gray-400 shrink-0" />
+                                    <span>Upload Documents</span>
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuItem 
+                                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors focus:bg-gray-100 dark:focus:bg-gray-800" 
+                                    onClick={(e) => { e.stopPropagation(); handleAction(inq, 'status'); }}
+                                  >
+                                    <RefreshCw className="w-4 h-4 text-gray-400 shrink-0" />
+                                    <span>Change Status</span>
+                                  </DropdownMenuItem>
+                                  
+                                  <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
+                                  
+                                  <DropdownMenuItem 
+                                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors focus:bg-gray-100 dark:focus:bg-gray-800" 
+                                    onClick={(e) => { e.stopPropagation(); handleAction(inq, 'duplicate'); }}
+                                  >
+                                    <Copy className="w-4 h-4 text-gray-400 shrink-0" />
+                                    <span>Duplicate Inquiry</span>
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuItem 
+                                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors focus:bg-gray-100 dark:focus:bg-gray-800" 
+                                    onClick={(e) => { e.stopPropagation(); handleAction(inq, 'export_pdf'); }}
+                                  >
+                                    <Download className="w-4 h-4 text-gray-400 shrink-0" />
+                                    <span>Export PDF</span>
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
+
+                                  <DropdownMenuItem 
+                                    variant="destructive"
+                                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg cursor-pointer transition-colors focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-600 dark:focus:text-red-400" 
+                                    onClick={(e) => { e.stopPropagation(); handleAction(inq, 'delete'); }}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+                                    <span>Delete Inquiry</span>
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </td>
                     </tr>

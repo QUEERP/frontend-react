@@ -7,7 +7,7 @@ import {
   Save as SaveIcon, X, MoreVertical, LayoutGrid, List, Eye, Edit, Copy, 
   Mail, Calendar, ArrowUpRight, CheckCircle, Ban, Archive, Trash2 
 } from 'lucide-react';
-import { dealsAPI, Deal } from '@/lib/api/deals';
+import { negotiationsAPI, Negotiation as Deal } from '@/lib/api/negotiations';
 import { useToast } from "@/components/ui/use-toast";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -52,9 +52,9 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
   const fetchDeals = async () => {
     try {
       setLoading(true);
-      const data = await dealsAPI.getDeals(businessId);
+      const data = await negotiationsAPI.getNegotiations(businessId);
       // Ensure all deals have a valid Kanban stage mapping, default to 'New'
-      const mapped = (data.deals || []).map(d => {
+      const mapped = (data.negotiations || data.data || []).map(d => {
         let stage = d.stage || 'New';
         if (stage === 'Proposal') stage = 'Technical Review';
         if (stage === 'Negotiation') stage = 'Commercial Review';
@@ -113,6 +113,7 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
     e.preventDefault();
     const dealId = e.dataTransfer.getData('dealId');
     if (dealId) {
+      negotiationsAPI.updateNegotiation(businessId, dealId, { stage: newStage }).catch(console.error);
       setDeals(prev => prev.map(d => {
         if (d.id === dealId && d.stage !== newStage) {
           toast({ title: "Stage Updated", description: `${d.name} moved to ${newStage}` });
@@ -126,17 +127,19 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
   const handleAction = (action: string, deal: Deal) => {
     setActiveMenuId(null);
     if (action === 'won') {
+       negotiationsAPI.updateNegotiation(businessId, deal.id, { stage: 'Won' }).catch(console.error);
        setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, stage: 'Won' } : d));
-       toast({ title: "Deal Won! 🎉", description: "Negotiation successfully closed.", className: "bg-green-50" });
+       toast({ title: "Negotiation Won! 🎉", description: "Negotiation successfully closed.", className: "bg-green-50" });
     } else if (action === 'lost') {
+       negotiationsAPI.updateNegotiation(businessId, deal.id, { stage: 'Lost' }).catch(console.error);
        setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, stage: 'Lost' } : d));
-       toast({ title: "Deal Lost", description: "Negotiation marked as lost.", variant: "destructive" });
+       toast({ title: "Negotiation Lost", description: "Negotiation marked as lost.", variant: "destructive" });
     }
   };
 
   const handleExportExcel = () => {
     const data = filteredDeals.map(d => ({
-      "Deal Name": d.name,
+      "Negotiation Name": d.name,
       "Customer": d.customer?.name || d.customer?.company || 'N/A',
       "Stage": d.stage,
       "Expected Close": d.expectedCloseDate ? new Date(d.expectedCloseDate).toLocaleDateString() : 'TBD',
@@ -152,7 +155,7 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
     const doc = new jsPDF('landscape');
     doc.setFontSize(16); doc.text('Negotiations Pipeline Report', 14, 20);
     autoTable(doc, {
-      head: [['Deal Name', 'Customer', 'Stage', 'Value']],
+      head: [['Negotiation Name', 'Customer', 'Stage', 'Value']],
       body: filteredDeals.map(d => [d.name, d.customer?.name || '-', d.stage || '-', `$${(d.amount || 0).toLocaleString()}`]),
       startY: 30, theme: 'grid'
     });
@@ -169,8 +172,8 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
         </div>
         <div className="flex justify-between items-center">
           <div>
-             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Deal Negotiations</h1>
-             <p className="text-sm text-gray-500 mt-1">Track and close active deals through the CPQ pipeline.</p>
+             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Negotiations</h1>
+             <p className="text-sm text-gray-500 mt-1">Track and manage active negotiations through the pre-sales pipeline.</p>
           </div>
           <div className="flex gap-2">
             <button onClick={handleExportExcel} className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 rounded-lg text-sm font-semibold hover:bg-green-100 transition-colors">
@@ -183,7 +186,7 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
               onClick={() => navigate(`/dashboard/${businessId}/project-operations/negotiations/create`)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm ml-2"
             >
-              + New Deal
+              + New Negotiation
             </button>
           </div>
         </div>
@@ -195,7 +198,7 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
           <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex items-center gap-3">
             <div className="p-2.5 bg-blue-50 text-blue-600 dark:bg-blue-900/30 rounded-lg"><Handshake className="w-5 h-5" /></div>
             <div>
-               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Active Deals</p>
+               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Active Negotiations</p>
                <h3 className="text-lg font-black">{activeNeg.length}</h3>
             </div>
           </div>
@@ -216,7 +219,7 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
           <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex items-center gap-3">
             <div className="p-2.5 bg-red-50 text-red-600 dark:bg-red-900/30 rounded-lg"><AlertCircle className="w-5 h-5" /></div>
             <div>
-               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Lost Deals</p>
+               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Lost Negotiations</p>
                <h3 className="text-lg font-black">{lostDeals.length}</h3>
             </div>
           </div>
@@ -265,7 +268,7 @@ export function NegotiationsWorkspace({ businessId }: { businessId: string }) {
                <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
                  <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase font-semibold text-gray-500 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
                    <tr>
-                     <th className="px-6 py-4">Deal Name</th>
+                     <th className="px-6 py-4">Negotiation Name</th>
                      <th className="px-6 py-4">Customer</th>
                      <th className="px-6 py-4">Current Stage</th>
                      <th className="px-6 py-4">Expected Close</th>

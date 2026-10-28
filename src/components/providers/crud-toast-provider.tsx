@@ -60,6 +60,16 @@ function defaultMessageByMethod(method: string): string {
 
 export function CrudToastProvider() {
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleWheel = () => {
+      if (document.activeElement instanceof HTMLInputElement && document.activeElement.type === 'number') {
+        document.activeElement.blur();
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: true });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, []);
+  useEffect(() => {
     if (typeof window === 'undefined') return
 
     const originalFetch = window.fetch.bind(window)

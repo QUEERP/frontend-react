@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from "@/components/ui/use-toast"
-import { ArrowLeft, Edit3, Trash2, CheckCircle2, XCircle, Printer, Download, CheckCircle, Clock, Copy, Plus, Activity, AlertCircle, FileCheck, DollarSign, Info, Calendar, HandCoins, ExternalLink, Calculator } from 'lucide-react'
+import { ArrowLeft, FileSignature, Edit3, Trash2, CheckCircle2, XCircle, Printer, Download, CheckCircle, Clock, Copy, Plus, Activity, AlertCircle, FileCheck, DollarSign, Info, Calendar, HandCoins, ExternalLink, Calculator } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -97,8 +97,36 @@ export function EstimationDetailsClient({ businessId, estimationId }: Estimation
         </div>
 
         <div className="flex flex-wrap items-center gap-2 z-10">
-          <Button variant="outline" className="rounded-xl font-bold bg-background shadow-sm hover:bg-muted transition-colors border-border text-foreground">
-             Edit Estimation
+          <Button 
+            onClick={() => navigate(`/dashboard/${businessId}/project-operations/estimations/create?editId=${estimation.id}`)}
+            variant="outline" 
+            className="rounded-xl font-bold bg-background shadow-sm hover:bg-muted transition-colors border-border text-foreground"
+          >
+             <Edit3 className="w-4 h-4 mr-1.5" /> Edit Estimation
+          </Button>
+          <Button 
+            onClick={async () => {
+              try {
+                await projectOperationsAPI.updateEstimation(businessId, estimation.id, {
+                  status: 'Approved for Proposal'
+                });
+                setEstimation((prev: any) => prev ? { ...prev, status: 'Approved for Proposal' } : prev);
+                toast({
+                  title: "Converted to Proposal",
+                  description: "Estimation status updated to 'Approved for Proposal'. Opening proposal generator..."
+                });
+                navigate(`/dashboard/${businessId}/project-operations/proposals/create?estimateId=${estimation.id}`);
+              } catch (e: any) {
+                toast({
+                  title: "Error",
+                  description: e.message || "Failed to convert estimation",
+                  variant: "destructive"
+                });
+              }
+            }}
+            className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm flex items-center gap-1.5 cursor-pointer"
+          >
+            <FileSignature className="w-4 h-4 mr-1" /> Convert to Proposal
           </Button>
         </div>
       </div>

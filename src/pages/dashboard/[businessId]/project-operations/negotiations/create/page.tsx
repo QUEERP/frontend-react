@@ -4,7 +4,8 @@ import {  Link , useParams } from 'react-router-dom';
 import {  useNavigate, useSearchParams  } from 'react-router-dom';
 import { contactsAPI, Customer } from "@/lib/api/contacts";
 import { usersAPI, BusinessUser } from "@/lib/api/users";
-import { quotationsAPI } from "@/lib/api/quotations";
+import { negotiationsAPI } from "@/lib/api/negotiations";
+import { proposalsAPI } from "@/lib/api/proposals";
 import { 
   ArrowLeft, ChevronDown, CheckCircle, Info, FileText,
   Target, Calendar, Users, AlertTriangle, Paperclip, Plus, Trash2, 
@@ -145,6 +146,7 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
   const [isConverting, setIsConverting] = useState(false);
   const [users, setUsers] = useState<BusinessUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [proposals, setProposals] = useState<any[]>([]);
   
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -173,15 +175,24 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
     };
     fetchCustomers();
     fetchUsers();
+    const fetchProposals = async () => {
+      try {
+        const res = await proposalsAPI.getProposals(businessId);
+        setProposals(res.proposals || res.data || []);
+      } catch (error) {
+        console.error("Failed to load proposals:", error);
+      }
+    };
+    fetchProposals();
   }, [businessId]);
 
   useEffect(() => {
     if (!propId) return;
     const fetchProposal = async () => {
       try {
-        const res = await quotationsAPI.getQuotationById(businessId, propId);
-        if (res.success && res.quotation) {
-          const q = res.quotation;
+        const res = await proposalsAPI.getProposalById(businessId, propId);
+        const q = res.proposal || res.quotation || res.data;
+        if (q) {
           setFormData(prev => {
             let next = {
               ...prev,
@@ -211,6 +222,38 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
     fetchProposal();
   }, [customers, propId, businessId]);
   
+  
+  useEffect(() => {
+    if (!editId) return;
+    const fetchDeal = async () => {
+      try {
+        const res = await negotiationsAPI.getNegotiationById(businessId, editId);
+        const d = res.negotiation || res.data;
+        if (d) {
+          setFormData(prev => {
+            let next = {
+              ...prev,
+              dealName: d.name || '',
+              customer: d.customerId || '',
+              salesOwner: d.salesOwner || d.assignedToId || '',
+              status: d.stage || 'New',
+              probability: d.probability || 0,
+              expectedClose: d.expectedCloseDate ? new Date(d.expectedCloseDate).toISOString().split('T')[0] : '',
+              currency: d.currency || 'USD',
+              origAmount: d.amount || 0,
+              negAmount: d.amount || 0,
+              finalAmount: d.amount || 0,
+            };
+            return recalculateCommercials(next);
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchDeal();
+  }, [editId, businessId]);
+
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     general: true, commercial: true, scope: false, timeline: false, feedback: false, meetings: false, attachments: false, notes: false
   });
@@ -246,10 +289,14 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
       }
       
       if (name === 'linkedProposal') {
-        const p = mockProposals[value];
+        const p = proposals.find(x => x.id === value || x.quoteNumber === value);
         if (p) {
-          const c = customers.find(x => ((x as any)?.company || x.name) === p.customerName);
-          next.dealName = p.name; next.customer = c?.id || ''; next.origAmount = p.amount; next.negAmount = p.amount; next.origTimeline = p.timeline;
+          next.dealName = `Negotiation - ${p.title || p.quoteNumber}`;
+          next.customer = p.customerId || next.customer;
+          next.origAmount = Number(p.totalAmount || p.grandTotal || 0);
+          next.negAmount = Number(p.totalAmount || p.grandTotal || 0);
+          next.currency = p.currency || next.currency;
+          next.origTimeline = p.expiryDate ? new Date(p.expiryDate).toISOString().split('T')[0] : next.origTimeline;
           next = recalculateCommercials(next);
         }
       }
@@ -266,16 +313,43 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
   const filledFields = reqFields.filter(f => !!(formData as any)[f]);
   const completion = Math.round((filledFields.length / reqFields.length) * 100);
 
-  const handleSave = (status = 'New') => {
+  const handleSave = async (status = 'New') => {
     if (!formData.customer || !formData.dealName) {
-      toast({ title: "Validation Error", description: "Customer and Deal Name are mandatory.", variant: "destructive" });
+      toast({ title: "Validation Error", description: "Customer and Negotiation Name are mandatory.", variant: "destructive" });
       return;
     }
-    toast({
-      title: editId ? "Negotiation Updated" : "Negotiation Deal Created",
-      description: `The deal has been saved in ${status} stage.`
-    });
-    navigate(`/dashboard/${businessId}/project-operations/negotiations`);
+    try {
+      if (editId) {
+        await negotiationsAPI.updateNegotiation(businessId, editId, {
+          name: formData.dealName,
+          customerId: formData.customer,
+          amount: formData.finalAmount || formData.negAmount || 0,
+          stage: status as any,
+          currency: formData.currency || 'USD',
+          expectedCloseDate: formData.expectedClose ? new Date(formData.expectedClose).toISOString() : undefined,
+          probability: Number(formData.probability) || 0,
+          assignedToId: formData.salesOwner || undefined,
+        });
+        toast({ title: "Negotiation Updated", description: "The negotiation has been updated successfully." });
+      } else {
+        await negotiationsAPI.createNegotiation(businessId, {
+          name: formData.dealName,
+          customerId: formData.customer,
+          amount: formData.finalAmount || formData.negAmount || 0,
+          stage: (status === 'Draft' ? 'New' : status) as any,
+          currency: formData.currency || 'USD',
+          expectedCloseDate: formData.expectedClose ? new Date(formData.expectedClose).toISOString() : undefined,
+          probability: Number(formData.probability) || 0,
+          assignedToId: formData.salesOwner || undefined,
+          description: `Negotiation No: ${formData.negNumber}${formData.linkedProposal ? ` | Proposal: ${formData.linkedProposal}` : ''}`,
+        });
+        toast({ title: "Negotiation Created", description: "Negotiation created successfully." });
+      }
+      navigate(`/dashboard/${businessId}/project-operations/negotiations`);
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Error", description: err.message || "Failed to save negotiation.", variant: "destructive" });
+    }
   };
 
   const handleAction = (status: string) => {
@@ -370,7 +444,7 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
                   <span>Project Operations</span><span>/</span><span>Pre-Sales</span><span>/</span><span className="text-orange-600 dark:text-orange-400">Negotiations</span>
                 </div>
                 <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
-                  {editId ? 'Edit Negotiation Deal' : 'New Negotiation Deal'}
+                  {editId ? 'Edit Negotiation' : 'New Negotiation'}
                 </h1>
               </div>
             </div>
@@ -392,10 +466,10 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
         </div>
 
         {/* 1. General Info */}
-        <SectionCard id="general" title="1. Deal Information" icon={Info} isExpanded={expandedSections.general} onToggle={toggleSection}>
+        <SectionCard id="general" title="1. Negotiation Information" icon={Info} isExpanded={expandedSections.general} onToggle={toggleSection}>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
             <InputField label="Negotiation Number" name="negNumber" value={formData.negNumber} readOnly />
-            <InputField label="Deal Name" name="dealName" value={formData.dealName} onChange={handleInputChange} required className="md:col-span-2 lg:col-span-3" placeholder="e.g. ERP Phase 1 Counter Offer" />
+            <InputField label="Negotiation Name" name="dealName" value={formData.dealName} onChange={handleInputChange} required className="md:col-span-2 lg:col-span-3" placeholder="e.g. ERP Phase 1 Negotiation Scope" />
             
             <SelectField label="Customer" name="customer" value={formData.customer} onChange={handleInputChange} readOnly={customersLoading} required className="lg:col-span-2">
               <option value="CREATE_NEW_CUSTOMER" className="text-blue-600 font-bold bg-blue-50">+ Create New Customer...</option>
@@ -404,16 +478,12 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
               ))}
             </SelectField>
             
-            <SelectField label="Linked Proposal" name="linkedProposal" value={formData.linkedProposal} onChange={handleInputChange} required>
-              {Object.keys(mockProposals)
-                .filter(p => {
-                  if (!formData.customer) return true;
-                  const selectedCustomer = customers.find(c => c.id === formData.customer);
-                  const selectedCustomerName = (selectedCustomer as any)?.company || selectedCustomer?.name;
-                  return mockProposals[p].customerName === selectedCustomerName;
-                })
-                .map(p => (
-                  <option key={p} value={p}>{p} - {mockProposals[p].customerName}</option>
+            <SelectField label="Linked Proposal" name="linkedProposal" value={formData.linkedProposal} onChange={handleInputChange}>
+              <option value="">Select Linked Proposal (Optional)...</option>
+              {proposals.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.quoteNumber} - {p.title || (p.customer?.company || 'Proposal')} (${(p.totalAmount || 0).toLocaleString()})
+                </option>
               ))}
             </SelectField>
 
@@ -507,7 +577,7 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
         </SectionCard>
 
         {/* 7. Attachments */}
-        <SectionCard id="attachments" title="7. Deal Attachments" icon={Paperclip} isExpanded={expandedSections.attachments} onToggle={toggleSection}>
+        <SectionCard id="attachments" title="7. Negotiation Attachments" icon={Paperclip} isExpanded={expandedSections.attachments} onToggle={toggleSection}>
            <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-12 flex flex-col items-center justify-center text-center bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-50 transition-colors cursor-pointer group">
              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                <UploadCloud className="w-8 h-8" />
@@ -534,7 +604,7 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
         <div className="p-6 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/40 backdrop-blur-sm">
           <div className="flex justify-between items-end mb-3">
             <div>
-              <h3 className="text-base font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">Deal Health</h3>
+              <h3 className="text-base font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">Negotiation Health</h3>
               <p className="text-xs text-gray-500 font-medium">Readiness indicator</p>
             </div>
             <span className="text-3xl font-black text-orange-600 dark:text-orange-400">{completion}%</span>
@@ -548,11 +618,11 @@ function CreateNegotiationContent({ businessId }: { businessId: string }) {
           
           <div>
             <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 mb-3">
-              <Info className="w-3.5 h-3.5" /> Deal Summary
+              <Info className="w-3.5 h-3.5" /> Negotiation Summary
             </h4>
             <div className="space-y-3 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
               <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-bold uppercase">Deal Name</span>
+                <span className="text-xs text-gray-500 font-bold uppercase">Negotiation Name</span>
                 <span className="text-sm font-black text-gray-900 dark:text-gray-100 text-right">{formData.dealName || '-'}</span>
               </div>
               <div className="flex justify-between items-start">

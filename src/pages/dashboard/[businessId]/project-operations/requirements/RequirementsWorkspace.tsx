@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {  useNavigate, useParams  } from 'react-router-dom';
 import { 
   Search, Filter, MoreVertical, Layout, AlignLeft, 
@@ -12,6 +12,13 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { projectOperationsAPI } from '@/lib/api/project-operations';
 import { toast } from '@/components/ui/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 export default function RequirementsWorkspace({ businessId: propBusinessId, id: propId }: { businessId?: string, id?: string }) {
   const navigate = useNavigate();
@@ -23,22 +30,29 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isLoadingRequirements, setIsLoadingRequirements] = useState(true);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
   
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [filters, setFilters] = useState<Record<string, any>>({});
+  const [filters, setFilters] = useState<{
+    customer?: string;
+    status?: string;
+    priority?: string;
+    projectType?: string;
+    minBudget?: string;
+    maxBudget?: string;
+    savedFilter?: string;
+  }>({});
+  const [tempFilters, setTempFilters] = useState<{
+    customer?: string;
+    status?: string;
+    priority?: string;
+    projectType?: string;
+    minBudget?: string;
+    maxBudget?: string;
+    savedFilter?: string;
+  }>({});
   const [activeSort, setActiveSort] = useState('Newest First');
-  
-  const menuRef = useRef<HTMLDivElement>(null);
-  const sortRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   useEffect(() => {
     if (businessId) {
@@ -51,8 +65,8 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
       setIsLoadingRequirements(true);
       const res = await projectOperationsAPI.getRequirements(businessId);
       if (res.success) {
-        setRequirements(res.requirements);
-        if (res.requirements.length > 0 && !selectedReq) {
+        setRequirements(res.requirements || []);
+        if (res.requirements && res.requirements.length > 0 && !selectedReq) {
           const matchingReq = requirementId ? res.requirements.find((r: any) => r.id === requirementId) : null;
           setSelectedReq(matchingReq || res.requirements[0]);
         }
@@ -68,38 +82,216 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
     }
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowMoreMenu(false);
-      }
-      if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
-        setIsSortOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Distinct customers from requirements
+  const uniqueCustomers = useMemo(() => {
+    return Array.from(
+      new Set(
+        requirements
+          .map((r: any) => r.customer?.company || r.customer?.name)
+          .filter(Boolean)
+      )
+    ).sort();
+  }, [requirements]);
 
+  // Distinct project types from requirements
+  const uniqueProjectTypes = useMemo(() => {
+    const list = new Set<string>();
+    ['Software', 'Basic', 'Consultancy', 'Consulting / Advisory', 'Trading'].forEach(t => list.add(t));
+    requirements.forEach((r: any) => {
+      if (r.projectType) list.add(r.projectType);
+    });
+    return Array.from(list).sort();
+  }, [requirements]);
+
+  // Filtered and sorted requirements
+  const filteredAndSortedRequirements = useMemo(() => {
+    let list = [...requirements];
+
+    // Search filter
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter((r: any) => {
+        const title = (r.title || '').toLowerCase();
+        const num = (r.requirementNumber || '').toLowerCase();
+        const customer = (r.customer?.company || r.customer?.name || '').toLowerCase();
+        const status = (r.status || '').toLowerCase();
+        const type = (r.projectType || '').toLowerCase();
+        const priority = (r.priority || '').toLowerCase();
+        return (
+          title.includes(term) ||
+          num.includes(term) ||
+          customer.includes(term) ||
+          status.includes(term) ||
+          type.includes(term) ||
+          priority.includes(term)
+        );
+      });
+    }
+
+    // Customer filter
+    if (filters.customer && filters.customer !== 'All Customers') {
+      list = list.filter((r: any) => (r.customer?.company || r.customer?.name) === filters.customer);
+    }
+
+    // Status filter
+    if (filters.status && filters.status !== 'All') {
+      const target = filters.status.toLowerCase();
+      list = list.filter((r: any) => {
+        const s = (r.status || '').toLowerCase();
+        if (target === 'review') return s.includes('review');
+        if (target === 'new') return s === 'new' || s === 'draft';
+        return s === target;
+      });
+    }
+
+    // Priority filter
+    if (filters.priority && filters.priority !== 'All') {
+      const targetPriority = filters.priority.toLowerCase();
+      list = list.filter((r: any) => (r.priority || '').toLowerCase() === targetPriority);
+    }
+
+    // Project Type filter
+    if (filters.projectType && filters.projectType !== 'All Types') {
+      const targetType = filters.projectType.toLowerCase();
+      list = list.filter((r: any) => (r.projectType || '').toLowerCase() === targetType);
+    }
+
+    // Min Budget filter
+    if (filters.minBudget) {
+      const min = parseFloat(filters.minBudget);
+      if (!isNaN(min)) {
+        list = list.filter((r: any) => {
+          const val = parseFloat(String(r.estimatedBudget || r.budgetRange || '0').replace(/[^0-9.-]+/g, '')) || 0;
+          return val >= min;
+        });
+      }
+    }
+
+    // Max Budget filter
+    if (filters.maxBudget) {
+      const max = parseFloat(filters.maxBudget);
+      if (!isNaN(max)) {
+        list = list.filter((r: any) => {
+          const val = parseFloat(String(r.estimatedBudget || r.budgetRange || '0').replace(/[^0-9.-]+/g, '')) || 0;
+          return val <= max;
+        });
+      }
+    }
+
+    // Saved Quick filter
+    if (filters.savedFilter) {
+      if (filters.savedFilter === 'High Priority') {
+        list = list.filter((r: any) => ['high', 'critical'].includes((r.priority || '').toLowerCase()));
+      } else if (filters.savedFilter === 'Pending Estimates') {
+        list = list.filter((r: any) => !r.estimations || r.estimations.length === 0);
+      } else if (filters.savedFilter === 'Approved') {
+        list = list.filter((r: any) => (r.status || '').toLowerCase() === 'approved');
+      }
+    }
+
+    // Sorting
+    return list.sort((a: any, b: any) => {
+      const getVal = (r: any) => parseFloat(String(r.expectedBudget || r.estimatedBudget || r.budgetRange || '0').replace(/[^0-9.-]+/g, '')) || 0;
+      switch (activeSort) {
+        case 'Newest First': {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return (dateB - dateA) || (b.requirementNumber || '').localeCompare(a.requirementNumber || '', undefined, { numeric: true });
+        }
+        case 'Oldest First': {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return (dateA - dateB) || (a.requirementNumber || '').localeCompare(b.requirementNumber || '', undefined, { numeric: true });
+        }
+        case 'Recently Updated': {
+          const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+          const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+          return (dateB - dateA) || (b.requirementNumber || '').localeCompare(a.requirementNumber || '', undefined, { numeric: true });
+        }
+        case 'Req # High → Low':
+        case 'Requirement Number': {
+          const numA = a.requirementNumber || '';
+          const numB = b.requirementNumber || '';
+          return numB.localeCompare(numA, undefined, { numeric: true });
+        }
+        case 'Req # Low → High': {
+          const numA = a.requirementNumber || '';
+          const numB = b.requirementNumber || '';
+          return numA.localeCompare(numB, undefined, { numeric: true });
+        }
+        case 'Budget High → Low': {
+          return getVal(b) - getVal(a);
+        }
+        case 'Budget Low → High': {
+          return getVal(a) - getVal(b);
+        }
+        case 'Alphabetical A-Z': {
+          return (a.title || '').localeCompare(b.title || '');
+        }
+        case 'Alphabetical Z-A': {
+          return (b.title || '').localeCompare(a.title || '');
+        }
+        default:
+          return 0;
+      }
+    });
+  }, [requirements, searchTerm, filters, activeSort]);
+
+  // Keep selectedReq in sync if current selected item is filtered out
+  useEffect(() => {
+    if (filteredAndSortedRequirements.length > 0) {
+      if (!selectedReq || !filteredAndSortedRequirements.some((r: any) => r.id === selectedReq.id)) {
+        setSelectedReq(filteredAndSortedRequirements[0]);
+      }
+    }
+  }, [filteredAndSortedRequirements]);
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
+  // Header PDF Export matching Customer Inquiries PDF styling
   const handleExportPDF = () => {
     try {
-      if (!requirements || requirements.length === 0) {
+      const dataToExport = filteredAndSortedRequirements.length > 0 ? filteredAndSortedRequirements : requirements;
+      if (!dataToExport || dataToExport.length === 0) {
         toast({ title: 'Export Failed', description: 'No requirements data available to export.', variant: 'destructive' });
         return;
       }
       const doc = new jsPDF();
-      doc.text("Requirements Report", 14, 15);
+      const pageWidth = doc.internal.pageSize.width;
+      const primaryColor: [number, number, number] = [41, 128, 185];
+
+      // Header Banner
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 0, pageWidth, 40, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PROJECT REQUIREMENTS', 14, 25);
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - 14, 25, { align: 'right' });
+
+      // Table
       const tableColumn = ["ID", "Title", "Customer", "Status", "Priority", "Budget", "Date"];
-      const tableRows = requirements.map(req => [
-        req.requirementNumber || 'N/A',
+      const tableRows = dataToExport.map((req: any) => [
+        req.requirementNumber || req.id?.slice(0, 8) || 'N/A',
         req.title || 'N/A',
         req.customer?.company || req.customer?.name || 'N/A',
         req.status || 'N/A',
         req.priority || 'N/A',
-        req.budgetRange || req.estimatedBudget || 'TBD',
+        req.budgetRange || req.estimatedBudget ? (String(req.budgetRange || req.estimatedBudget).startsWith('$') ? String(req.budgetRange || req.estimatedBudget) : `$${req.budgetRange || req.estimatedBudget}`) : 'TBD',
         req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'N/A'
       ]);
-      autoTable(doc, { head: [tableColumn], body: tableRows, startY: 20 });
+
+      autoTable(doc, { 
+        head: [tableColumn], 
+        body: tableRows, 
+        startY: 50,
+        theme: 'grid',
+        headStyles: { fillColor: primaryColor }
+      });
       doc.save("Requirements_Report.pdf");
       toast({ title: 'Success', description: 'PDF exported successfully.' });
     } catch (err: any) {
@@ -108,14 +300,71 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
     }
   };
 
+  // Single Requirement PDF export
+  const handleExportSingleReqPDF = (req: any) => {
+    if (!req) return;
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const primaryColor: [number, number, number] = [41, 128, 185];
+
+      // Header Banner
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 0, pageWidth, 40, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text(req.requirementNumber || 'REQUIREMENT DETAILS', 14, 22);
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(req.title || '', 14, 32);
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - 14, 25, { align: 'right' });
+
+      // Details Table
+      const detailsRows = [
+        ['Requirement Number', req.requirementNumber || '-'],
+        ['Title', req.title || '-'],
+        ['Customer', req.customer?.company || req.customer?.name || '-'],
+        ['Status', req.status || '-'],
+        ['Priority', req.priority || '-'],
+        ['Project Type', req.projectType || '-'],
+        ['Execution Type', req.executionType || '-'],
+        ['Estimated Budget', req.budgetRange || req.estimatedBudget ? `$${req.budgetRange || req.estimatedBudget}` : 'TBD'],
+        ['Target Start Date', req.targetStartDate ? new Date(req.targetStartDate).toLocaleDateString() : '-'],
+        ['Target End Date', req.targetEndDate ? new Date(req.targetEndDate).toLocaleDateString() : '-'],
+        ['Description', req.description || req.businessRequirement || 'No description provided.'],
+        ['Scope Summary', req.scopeSummary || '-'],
+      ];
+
+      autoTable(doc, {
+        body: detailsRows,
+        startY: 50,
+        theme: 'grid',
+        columnStyles: {
+          0: { fontStyle: 'bold', fillColor: [245, 247, 250], cellWidth: 55 },
+          1: { cellWidth: 'auto' }
+        }
+      });
+
+      doc.save(`Requirement_${req.requirementNumber || req.id?.slice(0, 8)}.pdf`);
+      toast({ title: 'Success', description: 'Requirement PDF generated.' });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: 'Export Failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const handleExportExcel = () => {
     try {
-      if (!requirements || requirements.length === 0) {
+      const dataToExport = filteredAndSortedRequirements.length > 0 ? filteredAndSortedRequirements : requirements;
+      if (!dataToExport || dataToExport.length === 0) {
         toast({ title: 'Export Failed', description: 'No requirements data available to export.', variant: 'destructive' });
         return;
       }
-      const ws = XLSX.utils.json_to_sheet(requirements.map(req => ({
-        ID: req.requirementNumber || 'N/A',
+      const ws = XLSX.utils.json_to_sheet(dataToExport.map((req: any) => ({
+        ID: req.requirementNumber || req.id?.slice(0, 8) || 'N/A',
         Title: req.title || 'N/A',
         Customer: req.customer?.company || req.customer?.name || 'N/A',
         Status: req.status || 'N/A',
@@ -137,10 +386,9 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
     if (selectedReq?.id === req.id) return;
     setIsLoadingDetails(true);
     setSelectedReq(req);
-    // Simulate API fetch delay
     setTimeout(() => {
       setIsLoadingDetails(false);
-    }, 500);
+    }, 300);
   };
 
   const tabs = [
@@ -158,34 +406,31 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
 
   return (
     <div className="flex flex-col min-h-full w-full min-w-0 bg-gray-50 dark:bg-gray-950">
-      {/* Header */}
-      <div className="flex-none px-6 py-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm min-w-0">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-          <span>Project Operations</span>
-          <span className="text-gray-300 dark:text-gray-600">/</span>
-          <span>Pre-Sales</span>
-          <span className="text-gray-300 dark:text-gray-600">/</span>
-          <span className="text-blue-600 dark:text-blue-400">Requirements</span>
+      
+      {/* Top Header */}
+      <div className="flex-none px-6 py-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm z-10">
+        <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          <span>Project Operations</span><span>/</span><span>Pre-Sales</span><span>/</span><span className="text-blue-600 dark:text-blue-400">Requirements</span>
         </div>
-        <div className="flex flex-wrap gap-4 justify-between items-start sm:items-center">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate">Requirements Workspace</h1>
-            <p className="text-sm text-gray-500 mt-1 truncate">Manage all your project requirements in one place.</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Requirements Workspace</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage all your project requirements in one place.</p>
           </div>
-          <div className="flex flex-wrap gap-3 flex-shrink-0">
-            <button
+          <div className="flex gap-2">
+            <button 
               onClick={handleExportExcel}
               className="flex items-center gap-2 px-4 py-2 border border-green-600 text-green-600 dark:border-green-500 dark:text-green-500 bg-white dark:bg-gray-900 rounded-lg text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors shadow-sm cursor-pointer"
             >
               <Download className="w-4 h-4" /> Excel
             </button>
-            <button
+            <button 
               onClick={handleExportPDF}
               className="flex items-center gap-2 px-4 py-2 border border-red-600 text-red-600 dark:border-red-500 dark:text-red-500 bg-white dark:bg-gray-900 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm cursor-pointer"
             >
               <FileText className="w-4 h-4" /> PDF
             </button>
-            <button
+            <button 
               onClick={() => { if(businessId) navigate(`/dashboard/${businessId}/project-operations/requirements/create`) }}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
             >
@@ -218,91 +463,161 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
             />
           </div>
           
-          {/* Active Chips */}
-          {Object.keys(filters).length > 0 && (
+          {/* Active Filter Chips */}
+          {activeFilterCount > 0 && (
             <div className="flex flex-wrap gap-1.5 pb-1">
-              {Object.entries(filters).map(([k, v]) => (
-                <div key={k} className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-[10px] font-semibold border border-blue-100 dark:border-blue-800">
-                  <span>{k}: {v}</span>
-                  <X className="w-3 h-3 cursor-pointer hover:text-blue-900" onClick={() => {
-                    const newF = {...filters}; delete newF[k]; setFilters(newF);
-                  }}/>
+              {filters.customer && (
+                <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-[10px] font-semibold border border-blue-100 dark:border-blue-800">
+                  <span>Customer: {filters.customer}</span>
+                  <X className="w-3 h-3 cursor-pointer hover:text-blue-900" onClick={() => setFilters(prev => ({ ...prev, customer: undefined }))} />
                 </div>
-              ))}
-              <button onClick={() => setFilters({})} className="text-[10px] text-gray-500 hover:text-gray-800 px-1 font-medium">Clear All</button>
+              )}
+              {filters.status && (
+                <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-[10px] font-semibold border border-blue-100 dark:border-blue-800">
+                  <span>Status: {filters.status}</span>
+                  <X className="w-3 h-3 cursor-pointer hover:text-blue-900" onClick={() => setFilters(prev => ({ ...prev, status: undefined }))} />
+                </div>
+              )}
+              {filters.priority && (
+                <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-[10px] font-semibold border border-blue-100 dark:border-blue-800">
+                  <span>Priority: {filters.priority}</span>
+                  <X className="w-3 h-3 cursor-pointer hover:text-blue-900" onClick={() => setFilters(prev => ({ ...prev, priority: undefined }))} />
+                </div>
+              )}
+              {filters.projectType && (
+                <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-[10px] font-semibold border border-blue-100 dark:border-blue-800">
+                  <span>Type: {filters.projectType}</span>
+                  <X className="w-3 h-3 cursor-pointer hover:text-blue-900" onClick={() => setFilters(prev => ({ ...prev, projectType: undefined }))} />
+                </div>
+              )}
+              {(filters.minBudget || filters.maxBudget) && (
+                <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-[10px] font-semibold border border-blue-100 dark:border-blue-800">
+                  <span>Budget: ${filters.minBudget || '0'} - ${filters.maxBudget || '∞'}</span>
+                  <X className="w-3 h-3 cursor-pointer hover:text-blue-900" onClick={() => setFilters(prev => ({ ...prev, minBudget: undefined, maxBudget: undefined }))} />
+                </div>
+              )}
+              {filters.savedFilter && (
+                <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-[10px] font-semibold border border-blue-100 dark:border-blue-800">
+                  <span>{filters.savedFilter}</span>
+                  <X className="w-3 h-3 cursor-pointer hover:text-blue-900" onClick={() => setFilters(prev => ({ ...prev, savedFilter: undefined }))} />
+                </div>
+              )}
+              <button onClick={() => setFilters({})} className="text-[10px] text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 px-1 font-medium cursor-pointer">Clear All</button>
             </div>
           )}
 
           <div className="flex gap-2 relative">
             <button 
-              onClick={() => setIsFilterOpen(true)}
-              className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-xs font-medium border rounded-md transition-colors ${Object.keys(filters).length > 0 ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+              onClick={() => {
+                setTempFilters({ ...filters });
+                setIsFilterOpen(true);
+              }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium border rounded-md transition-colors cursor-pointer ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
             >
-              <Filter className="w-3 h-3" /> Filters {Object.keys(filters).length > 0 && `(${Object.keys(filters).length})`}
-            </button>
-            <div className="flex-1" ref={sortRef}>
-              <button 
-                onClick={() => setIsSortOpen(!isSortOpen)}
-                className="w-full flex items-center justify-center gap-2 py-1.5 text-xs font-medium border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                <ArrowDownUp className="w-3 h-3" /> Sort
-              </button>
-              {isSortOpen && (
-                <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl z-20 overflow-hidden text-xs animate-in fade-in slide-in-from-top-2">
-                  <div className="p-1">
-                    {['Newest First', 'Oldest First', 'Recently Updated', 'Requirement Number', 'Budget High → Low', 'Budget Low → High', 'Alphabetical A-Z'].map(s => (
-                      <button key={s} onClick={() => { setActiveSort(s); setIsSortOpen(false); }} className={`w-full text-left px-3 py-2 rounded-md flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 ${activeSort === s ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                        {s} {activeSort === s && <CheckCircle className="w-3.5 h-3.5" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <Filter className="w-3.5 h-3.5" /> 
+              <span>Filters</span> 
+              {activeFilterCount > 0 && (
+                <span className="ml-1 bg-blue-600 text-white rounded-full w-4 h-4 inline-flex items-center justify-center text-[10px] font-bold">
+                  {activeFilterCount}
+                </span>
               )}
+            </button>
+            
+            <div className="flex-1">
+              <DropdownMenu open={isSortOpen} onOpenChange={setIsSortOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button 
+                    type="button"
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium border rounded-md transition-colors focus:outline-none cursor-pointer ${activeSort !== 'Newest First' ? 'border-blue-300 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                  >
+                    <span className="flex items-center gap-1.5 truncate">
+                      <ArrowDownUp className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span className="truncate">{activeSort}</span>
+                    </span>
+                    <ChevronDown className="w-3 h-3 text-gray-400 shrink-0 ml-1" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" sideOffset={4} className="w-56 p-1 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-50">
+                  {[
+                    { id: 'Newest First', label: 'Newest First' },
+                    { id: 'Oldest First', label: 'Oldest First' },
+                    { id: 'Recently Updated', label: 'Recently Updated' },
+                    { id: 'Req # High → Low', label: 'Req # High → Low' },
+                    { id: 'Req # Low → High', label: 'Req # Low → High' },
+                    { id: 'Budget High → Low', label: 'Budget High → Low' },
+                    { id: 'Budget Low → High', label: 'Budget Low → High' },
+                    { id: 'Alphabetical A-Z', label: 'Alphabetical A-Z' },
+                    { id: 'Alphabetical Z-A', label: 'Alphabetical Z-A' },
+                  ].map(item => (
+                    <DropdownMenuItem 
+                      key={item.id} 
+                      onClick={() => { setActiveSort(item.id); setIsSortOpen(false); }} 
+                      className={`w-full px-3 py-2 text-xs rounded-md flex items-center justify-between cursor-pointer ${activeSort === item.id ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 font-bold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    >
+                      <span>{item.label}</span>
+                      {activeSort === item.id && <CheckCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
-          <div className="text-xs text-gray-400 font-medium">Showing 48 of 352 Requirements</div>
+          
+          <div className="text-xs text-gray-400 font-medium">
+            Showing {filteredAndSortedRequirements.length} of {requirements.length} Requirements
+          </div>
         </div>
         
         {/* Independent Vertical Scroll for Left Sidebar */}
         <div data-lenis-prevent className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
           {isLoadingRequirements ? (
             <div className="flex justify-center items-center h-32">
-              <span className="text-gray-500">Loading requirements...</span>
+              <span className="text-gray-500 text-sm">Loading requirements...</span>
             </div>
-          ) : requirements.length === 0 ? (
-            <div className="flex justify-center items-center h-32">
-              <span className="text-gray-500">No requirements found.</span>
+          ) : filteredAndSortedRequirements.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center text-gray-500">
+              <p className="text-sm font-medium mb-1">No requirements found</p>
+              <p className="text-xs text-gray-400 mb-3">Try adjusting your search or filters.</p>
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={() => { setSearchTerm(''); setFilters({}); }}
+                  className="text-xs text-blue-600 hover:underline font-semibold cursor-pointer"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
           ) : (
-            requirements.map((req: any) => (
+            filteredAndSortedRequirements.map((req: any) => (
               <div 
                 key={req.id} 
-              onClick={() => handleSelectReq(req)}
-              className={`p-4 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition-colors ${
-                selectedReq?.id === req.id 
-                  ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-l-blue-600' 
-                  : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-l-4 border-l-transparent'
-              }`}
-            >
-              <div className="flex justify-between items-start mb-1">
-                <span className="text-xs font-bold text-gray-500">{req.requirementNumber}</span>
-                <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
-                  req.status === 'Draft' || req.status === 'New' ? 'bg-gray-100 text-gray-700' :
-                  req.status === 'Review' || req.status === 'Under Review' ? 'bg-orange-100 text-orange-700' :
-                  req.status === 'Approved' ? 'bg-green-100 text-green-700' :
-                  'bg-blue-100 text-blue-700'
-                }`}>
-                  {req.status || 'Draft'}
-                </span>
+                onClick={() => handleSelectReq(req)}
+                className={`p-4 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition-colors ${
+                  selectedReq?.id === req.id 
+                    ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-l-blue-600' 
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-l-4 border-l-transparent'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <span className="text-xs font-bold text-gray-500">{req.requirementNumber}</span>
+                  <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
+                    req.status === 'Draft' || req.status === 'New' ? 'bg-gray-100 text-gray-700' :
+                    req.status === 'Review' || req.status === 'Under Review' ? 'bg-orange-100 text-orange-700' :
+                    req.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                    'bg-blue-100 text-blue-700'
+                  }`}>
+                    {req.status || 'Draft'}
+                  </span>
+                </div>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate mb-1">{req.title}</h4>
+                <p className="text-xs text-gray-500 mb-2 truncate">{req.customer?.company || req.customer?.name || 'No Customer'}</p>
+                <div className="flex justify-between items-center text-xs text-gray-400">
+                  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(req.createdAt).toLocaleDateString()}</span>
+                  <span className="font-medium text-gray-600 dark:text-gray-300">{req.budgetRange || req.estimatedBudget || 'TBD'}</span>
+                </div>
               </div>
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate mb-1">{req.title}</h4>
-              <p className="text-xs text-gray-500 mb-2 truncate">{req.customer?.company || req.customer?.name || 'No Customer'}</p>
-              <div className="flex justify-between items-center text-xs text-gray-400">
-                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(req.createdAt).toLocaleDateString()}</span>
-                <span className="font-medium text-gray-600 dark:text-gray-300">{req.budgetRange || req.estimatedBudget || 'TBD'}</span>
-              </div>
-            </div>
-          )))}
+            ))
+          )}
         </div>
       </div>
 
@@ -328,66 +643,127 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
               </div>
 
               {/* Row 3: Actions */}
-              <div className="flex flex-wrap gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <button 
-                  onClick={() => { if(businessId) navigate(`/dashboard/${businessId}/project-operations/estimations/create`) }}
-                  className="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+                  onClick={() => { if(businessId) navigate(`/dashboard/${businessId}/project-operations/estimations/create?requirementId=${selectedReq?.id}`) }}
+                  className="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
                 >
                   Create Estimate
                 </button>
                 <button 
-                  onClick={() => { if(businessId) navigate(`/dashboard/${businessId}/project-operations/projects/create`) }}
+                  onClick={() => { if(businessId) navigate(`/dashboard/${businessId}/project-operations/projects/create?requirementId=${selectedReq?.id}`) }}
                   className="px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm transition-colors whitespace-nowrap cursor-pointer"
                 >
                   Convert to Project
                 </button>
-                <div className="relative" ref={menuRef}>
-                  <button 
-                    onClick={() => setShowMoreMenu(!showMoreMenu)}
-                    className={`p-2 border rounded-lg transition-colors flex-shrink-0 cursor-pointer ${showMoreMenu ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-                  >
-                    <MoreVertical className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                  </button>
+                
+                {/* Clean DropdownMenu rendered via Portal to avoid overlapping tabs */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button 
+                      title="More Actions"
+                      className="h-9 w-9 p-0 flex items-center justify-center border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer text-gray-700 dark:text-gray-300 focus:outline-none shrink-0"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                  </DropdownMenuTrigger>
                   
-                  {showMoreMenu && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 overflow-hidden text-sm animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="p-2 border-b border-gray-100 dark:border-gray-800">
-                        <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">General</p>
-                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/${selectedReq?.id}/edit`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><Edit3 className="w-3.5 h-3.5 text-gray-400"/> Edit Requirement</button>
-                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><Layout className="w-3.5 h-3.5 text-gray-400"/> View Requirement</button>
-                        <button onClick={() => {
-                          navigator.clipboard.writeText(selectedReq?.requirementNumber || selectedReq?.id);
-                          toast({ title: "Copied!", description: "Requirement ID copied to clipboard" });
-                          setShowMoreMenu(false);
-                        }} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><CheckCircle className="w-3.5 h-3.5 text-gray-400"/> Copy Requirement ID</button>
-                      </div>
-                      <div className="p-2 border-b border-gray-100 dark:border-gray-800">
-                        <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Workflow</p>
-                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/estimations/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><DollarSign className="w-3.5 h-3.5 text-gray-400"/> Create Estimate</button>
-                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/proposals/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><FileText className="w-3.5 h-3.5 text-gray-400"/> Create Proposal</button>
-                        <button onClick={() => navigate(`/dashboard/${businessId}/project-operations/projects/create?requirementId=${selectedReq?.id}`)} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><Layout className="w-3.5 h-3.5 text-gray-400"/> Convert to Project</button>
-                      </div>
-                      <div className="p-2 border-b border-gray-100 dark:border-gray-800">
-                        <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Communication & Export</p>
-                        <button onClick={() => {
-                          handleExportPDF();
-                          setShowMoreMenu(false);
-                        }} className="w-full text-left px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer"><Printer className="w-3.5 h-3.5 text-gray-400"/> Print / PDF</button>
-                      </div>
-                      <div className="p-2 border-b border-gray-100 dark:border-gray-800">
-                        <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Management</p>
-                        <button onClick={() => {
-                          toast({ title: "Coming soon", description: "Delete requirement functionality is not yet available." });
-                        }} className="w-full text-left px-2 py-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-2 text-red-600 dark:text-red-500 cursor-pointer"><Trash2 className="w-3.5 h-3.5 text-red-500"/> Delete</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  <DropdownMenuContent 
+                    align="end" 
+                    side="bottom"
+                    sideOffset={6}
+                    className="w-56 p-1.5 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-50 text-left"
+                  >
+                    <p className="px-2.5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">General</p>
+                    
+                    <DropdownMenuItem 
+                      onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/${selectedReq?.id}/edit`)}
+                      className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium rounded-lg cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>Edit Requirement</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem 
+                      onClick={() => navigate(`/dashboard/${businessId}/project-operations/requirements/${selectedReq?.id}`)}
+                      className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium rounded-lg cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800"
+                    >
+                      <Layout className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>View Requirement</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedReq?.requirementNumber || selectedReq?.id);
+                        toast({ title: "Copied!", description: "Requirement ID copied to clipboard" });
+                      }}
+                      className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium rounded-lg cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>Copy Requirement ID</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
+
+                    <p className="px-2.5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Workflow</p>
+
+                    <DropdownMenuItem 
+                      onClick={() => navigate(`/dashboard/${businessId}/project-operations/estimations/create?requirementId=${selectedReq?.id}`)}
+                      className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium rounded-lg cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800"
+                    >
+                      <DollarSign className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>Create Estimate</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem 
+                      onClick={() => navigate(`/dashboard/${businessId}/project-operations/proposals/create?requirementId=${selectedReq?.id}`)}
+                      className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium rounded-lg cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>Create Proposal</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem 
+                      onClick={() => navigate(`/dashboard/${businessId}/project-operations/projects/create?requirementId=${selectedReq?.id}`)}
+                      className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium rounded-lg cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800"
+                    >
+                      <Layout className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>Convert to Project</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
+
+                    <p className="px-2.5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Communication & Export</p>
+
+                    <DropdownMenuItem 
+                      onClick={() => handleExportSingleReqPDF(selectedReq)}
+                      className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium rounded-lg cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>Export Requirement PDF</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
+
+                    <p className="px-2.5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Management</p>
+
+                    <DropdownMenuItem 
+                      variant="destructive"
+                      onClick={() => {
+                        toast({ title: "Coming soon", description: "Delete requirement functionality is not yet available." });
+                      }}
+                      className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg cursor-pointer focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-600 dark:focus:text-red-400"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                      <span>Delete</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
             {/* Tabs Navigation - Fixed below header */}
-            <div className="px-6 border-b border-gray-200 dark:border-gray-800 flex overflow-x-auto scrollbar-hide flex-none bg-gray-50/50 dark:bg-gray-900/50 min-w-0 w-auto sticky top-[95px] z-20 shadow-xs">
+            <div className="px-6 border-b border-gray-200 dark:border-gray-800 flex overflow-x-auto scrollbar-hide flex-none bg-gray-50/50 dark:bg-gray-900/50 min-w-0 w-auto sticky top-[138px] z-10 shadow-xs">
               {tabs.map(tab => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -395,36 +771,27 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
+                    className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
                       isActive 
-                        ? 'border-blue-600 text-blue-700 dark:text-blue-400 bg-white dark:bg-gray-900 shadow-[0_-2px_0_0_inset_#2563eb]' 
-                        : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                     }`}
                   >
-                    <Icon className="w-4 h-4 mr-2" />
+                    <Icon className="w-4 h-4" />
                     {tab.label}
                   </button>
                 );
               })}
             </div>
 
-            {/* Content Area with smooth natural scroll and ample bottom space */}
-            <div data-lenis-prevent className="flex-1 p-6 pb-36 bg-gray-50/30 dark:bg-gray-950/50 min-w-0 w-auto">
-              <div className="max-w-6xl mx-auto min-w-0 w-auto pb-20">
-                {isLoadingDetails ? (
-                  <div className="animate-pulse space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      <div className="lg:col-span-2 space-y-6">
-                        <div className="h-32 bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
-                        <div className="h-48 bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
-                      </div>
-                      <div className="space-y-6">
-                        <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <>
+            {/* Main Content Area */}
+            <div data-lenis-prevent className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+              {isLoadingDetails ? (
+                <div className="flex justify-center items-center h-48">
+                  <span className="text-gray-500">Loading requirement details...</span>
+                </div>
+              ) : (
+                <>
                   {activeTab === 'overview' && <OverviewTab req={selectedReq} />}
                   {activeTab === 'details' && <DetailsTab req={selectedReq} />}
                   {activeTab === 'meetings' && <MeetingsTab req={selectedReq} />}
@@ -435,16 +802,15 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
                   {activeTab === 'timeline' && <TimelineTab req={selectedReq} />}
                   {activeTab === 'comments' && <CommentsTab req={selectedReq} />}
                   {activeTab === 'attachments' && <AttachmentsTab req={selectedReq} />}
-                  </>
-                )}
-              </div>
+                </>
+              )}
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <Layout className="w-12 h-12 mb-4 text-gray-300" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">No Requirement Selected</h3>
-            <p className="text-sm">Select a requirement from the list to view its workspace.</p>
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
+            <Layout className="w-12 h-12 mb-3 text-gray-300" />
+            <p className="text-base font-medium">Select a requirement to view details</p>
+            <p className="text-xs text-gray-400 mt-1">Or create a new requirement from the top right button.</p>
           </div>
         )}
       </div>
@@ -461,11 +827,7 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
                 Advanced Filters
               </h2>
               <div className="flex items-center gap-2">
-                <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-bold" title="Save Filter">
-                  <SaveIcon className="w-4 h-4" /> Save
-                </button>
-                <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-1"></div>
-                <button onClick={() => setIsFilterOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <button onClick={() => setIsFilterOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -474,11 +836,29 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
             <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin">
               {/* Saved Filters */}
               <div>
-                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Saved Filters</h3>
+                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Quick Filters</h3>
                 <div className="flex flex-wrap gap-2">
-                  <button className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors">My Requirements</button>
-                  <button className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors">High Priority</button>
-                  <button className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors">Pending Estimates</button>
+                  <button 
+                    type="button"
+                    onClick={() => setTempFilters(prev => ({ ...prev, priority: prev.priority === 'High' ? undefined : 'High' }))} 
+                    className={`px-3 py-1.5 border rounded-lg text-xs font-medium transition-colors cursor-pointer ${tempFilters.priority === 'High' ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100'}`}
+                  >
+                    High Priority
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setTempFilters(prev => ({ ...prev, status: prev.status === 'Approved' ? undefined : 'Approved' }))} 
+                    className={`px-3 py-1.5 border rounded-lg text-xs font-medium transition-colors cursor-pointer ${tempFilters.status === 'Approved' ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100'}`}
+                  >
+                    Approved
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setTempFilters(prev => ({ ...prev, savedFilter: prev.savedFilter === 'Pending Estimates' ? undefined : 'Pending Estimates' }))} 
+                    className={`px-3 py-1.5 border rounded-lg text-xs font-medium transition-colors cursor-pointer ${tempFilters.savedFilter === 'Pending Estimates' ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100'}`}
+                  >
+                    Pending Estimates
+                  </button>
                 </div>
               </div>
 
@@ -488,17 +868,15 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
                 <div className="space-y-3">
                   <div>
                     <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Customer</label>
-                    <select className="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none">
-                      <option>All Customers</option>
-                      <option>Global Corp</option>
-                      <option>TechStart</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Project Manager</label>
-                    <select className="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none">
-                      <option>All Managers</option>
-                      <option>Sarah Jenkins</option>
+                    <select 
+                      value={tempFilters.customer || ''} 
+                      onChange={e => setTempFilters(prev => ({ ...prev, customer: e.target.value || undefined }))} 
+                      className="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">All Customers</option>
+                      {uniqueCustomers.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -511,21 +889,45 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
                   <div>
                     <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">Status</label>
                     <div className="flex flex-wrap gap-2">
-                      {['New', 'Review', 'Approved', 'Estimate Created', 'Proposal Sent', 'Won', 'Lost'].map(s => (
-                        <button key={s} className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent focus:border-blue-500 focus:bg-blue-50 focus:text-blue-700 transition-all">
-                          {s}
-                        </button>
-                      ))}
+                      {['All', 'Draft', 'New', 'Review', 'Approved', 'Estimate Created', 'Proposal Sent', 'Won', 'Lost'].map(s => {
+                        const isSelected = (s === 'All' && !tempFilters.status) || tempFilters.status === s;
+                        return (
+                          <button 
+                            type="button"
+                            key={s} 
+                            onClick={() => setTempFilters(prev => ({ ...prev, status: s === 'All' ? undefined : s }))}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                              isSelected 
+                                ? 'bg-blue-600 text-white font-semibold shadow-xs' 
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent'
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">Priority</label>
                     <div className="flex flex-wrap gap-2">
-                      {['Low', 'Medium', 'High', 'Critical'].map(p => (
-                        <button key={p} className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent focus:border-blue-500 focus:bg-blue-50 focus:text-blue-700 transition-all">
-                          {p}
-                        </button>
-                      ))}
+                      {['All', 'Low', 'Medium', 'High', 'Critical'].map(p => {
+                        const isSelected = (p === 'All' && !tempFilters.priority) || tempFilters.priority === p;
+                        return (
+                          <button 
+                            type="button"
+                            key={p} 
+                            onClick={() => setTempFilters(prev => ({ ...prev, priority: p === 'All' ? undefined : p }))}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                              isSelected 
+                                ? 'bg-blue-600 text-white font-semibold shadow-xs' 
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -533,26 +935,19 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
 
               {/* Project Classification */}
               <div>
-                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center justify-between cursor-pointer">
-                  Classification <ChevronDown className="w-4 h-4" />
-                </h3>
+                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Classification</h3>
                 <div className="space-y-3">
                   <div>
                     <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Project Type</label>
-                    <select className="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none">
-                      <option>All Types</option>
-                      <option>Software</option>
-                      <option>Basic</option>
-                      <option>Consultancy</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Execution Type</label>
-                    <select className="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none">
-                      <option>All Types</option>
-                      <option>Service</option>
-                      <option>Product</option>
-                      <option>Hybrid</option>
+                    <select 
+                      value={tempFilters.projectType || ''} 
+                      onChange={e => setTempFilters(prev => ({ ...prev, projectType: e.target.value || undefined }))} 
+                      className="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">All Types</option>
+                      {uniqueProjectTypes.map(pt => (
+                        <option key={pt} value={pt}>{pt}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -564,54 +959,52 @@ export default function RequirementsWorkspace({ businessId: propBusinessId, id: 
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                    <input type="number" placeholder="Min" className="w-full pl-7 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none" />
+                    <input 
+                      type="number" 
+                      placeholder="Min" 
+                      value={tempFilters.minBudget || ''} 
+                      onChange={e => setTempFilters(prev => ({ ...prev, minBudget: e.target.value || undefined }))} 
+                      onWheel={e => e.currentTarget.blur()}
+                      className="w-full pl-7 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none text-gray-900 dark:text-gray-100" 
+                    />
                   </div>
                   <span className="text-gray-400">-</span>
                   <div className="relative flex-1">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                    <input type="number" placeholder="Max" className="w-full pl-7 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none" />
+                    <input 
+                      type="number" 
+                      placeholder="Max" 
+                      value={tempFilters.maxBudget || ''} 
+                      onChange={e => setTempFilters(prev => ({ ...prev, maxBudget: e.target.value || undefined }))} 
+                      onWheel={e => e.currentTarget.blur()}
+                      className="w-full pl-7 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none text-gray-900 dark:text-gray-100" 
+                    />
                   </div>
-                </div>
-              </div>
-
-              {/* Dates */}
-              <div>
-                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Dates</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Quick Filters</label>
-                    <select className="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none">
-                      <option>Any Time</option>
-                      <option>Today</option>
-                      <option>This Week</option>
-                      <option>This Month</option>
-                      <option>This Quarter</option>
-                      <option>Custom Date Range</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Custom Toggles */}
-              <div>
-                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Attributes</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {['Has Attachments', 'Has Deliverables', 'Has Estimate', 'Pending Approval'].map(t => (
-                    <label key={t} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                      <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{t}</span>
-                    </label>
-                  ))}
                 </div>
               </div>
 
             </div>
             
             <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex gap-3">
-              <button onClick={() => setFilters({})} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              <button 
+                type="button"
+                onClick={() => {
+                  setTempFilters({});
+                  setFilters({});
+                  setIsFilterOpen(false);
+                }} 
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+              >
                 Clear All
               </button>
-              <button onClick={() => { setFilters({'Status': 'Review', 'Priority': 'High', 'Budget': '> $50k'}); setIsFilterOpen(false); }} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm">
+              <button 
+                type="button"
+                onClick={() => {
+                  setFilters({ ...tempFilters });
+                  setIsFilterOpen(false);
+                }} 
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
+              >
                 Apply Filters
               </button>
             </div>
