@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {  useNavigate  } from 'react-router-dom';
 import { CreateCustomerModal } from "@/components/dashboard/create-customer-modal";
 import { useBusinessData } from "@/components/dashboard/business-data-provider";
@@ -12,6 +12,7 @@ import {
 import { leadsAPI } from "@/lib/api/leads";
 import { contactsAPI, Customer } from "@/lib/api/contacts";
 import { usersAPI, BusinessUser } from "@/lib/api/users";
+import { ALL_PROJECT_TYPES, ALL_EXECUTION_TYPES } from "@/lib/constants/project-types";
 
 const LEAD_STATUSES = [
   { label: "New", value: "NEW" },
@@ -171,6 +172,38 @@ export default function EditInquiryPage() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [isPhoneValid, setIsPhoneValid] = useState(true);
+  const [customProjectTypes, setCustomProjectTypes] = useState<string[]>([]);
+  const [customExecutionTypes, setCustomExecutionTypes] = useState<{ label: string; value: string }[]>([]);
+
+  useEffect(() => {
+    if (!businessId) return;
+    const fetchCustomMasters = async () => {
+      try {
+        const token = localStorage.getItem('token') || (typeof document !== 'undefined' ? document.cookie.split('; ').find(row => row.startsWith('token=') || row.startsWith('accessToken='))?.split('=')[1] : '');
+        const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
+        const [projRes, execRes] = await Promise.all([
+          fetch(`${API_BASE}/api/project-operations/masters?type=PROJECT_TYPE`, {
+            headers: { 'x-business-id': businessId, Authorization: `Bearer ${token}` }
+          }).then(r => r.ok ? r.json() : { masters: [] }).catch(() => ({ masters: [] })),
+          fetch(`${API_BASE}/api/project-operations/masters?type=EXECUTION_TYPE`, {
+            headers: { 'x-business-id': businessId, Authorization: `Bearer ${token}` }
+          }).then(r => r.ok ? r.json() : { masters: [] }).catch(() => ({ masters: [] }))
+        ]);
+        if (projRes.masters && Array.isArray(projRes.masters)) {
+          const names = projRes.masters.map((m: any) => m.name).filter(Boolean);
+          setCustomProjectTypes(names);
+        }
+        if (execRes.masters && Array.isArray(execRes.masters)) {
+          const items = execRes.masters.map((m: any) => ({ label: m.name, value: m.name.toUpperCase().replace(/\s+/g, '_') }));
+          setCustomExecutionTypes(items);
+        }
+      } catch (e) {
+        console.warn("Could not load custom masters", e);
+      }
+    };
+    fetchCustomMasters();
+  }, [businessId]);
+
 
   const [formData, setFormData] = useState<any>({
     customerId: "", name: "", email: "", phone: "", company: "", website: "", position: "", 
@@ -189,6 +222,25 @@ export default function EditInquiryPage() {
     meetingLocation: "", followUpNotes: "",
     attachments: [] as File[],
   });
+
+
+  const combinedProjectTypes = useMemo(() => {
+    const list = [...customProjectTypes, ...ALL_PROJECT_TYPES];
+    if (formData.projectType && !list.includes(formData.projectType)) {
+      list.unshift(formData.projectType);
+    }
+    return Array.from(new Set(list));
+  }, [customProjectTypes, formData.projectType]);
+
+  const combinedExecutionTypes = useMemo(() => {
+    const map = new Map<string, { label: string; value: string; category?: string }>();
+    ALL_EXECUTION_TYPES.forEach(item => map.set(item.value, item));
+    customExecutionTypes.forEach(item => map.set(item.value, { ...item, category: "Custom Masters" }));
+    if (formData.executionType && !map.has(formData.executionType)) {
+      map.set(formData.executionType, { label: formData.executionType, value: formData.executionType, category: "Selected Type" });
+    }
+    return Array.from(map.values());
+  }, [customExecutionTypes, formData.executionType]);
 
   const bizCurrencyCode = bizCountry === "INDIA" ? "INR" : bizCountry === "UAE" ? "AED" : (currency || "USD");
   const currencyCode = formData?.currency || bizCurrencyCode;
@@ -244,6 +296,8 @@ export default function EditInquiryPage() {
             assignedToId: typeof lead.assignedTo === "object" ? lead.assignedTo?.id : lead.assignedTo || "",
             tags: lead.tags ? lead.tags.join(", ") : "",
             inquiryTitle: lead.inquiryTitle || lead.title || "",
+            projectType: lead.projectType || "",
+            executionType: lead.inquiryType || lead.executionType || "AUTO_DETECT",
           });
         }
       }).catch(console.error);
@@ -759,8 +813,17 @@ export default function EditInquiryPage() {
                 <label className={labelClass}>Project Type</label>
                 <div className="relative">
                   <select value={formData.projectType} onChange={(e) => updateField("projectType", e.target.value)} className={`${inputClass} pr-10 appearance-none cursor-pointer`}>
-                    <option value="">— Select Type —</option>
-                    {PROJECT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    <option value="">— Select Project Type —</option>
+                    {customProjectTypes.length > 0 && (
+                      <optgroup label="Custom Masters">
+                        {customProjectTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                      </optgroup>
+                    )}
+                    <optgroup label="All Project Types">
+                      {combinedProjectTypes.filter(t => !customProjectTypes.includes(t)).map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </optgroup>
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 </div>
@@ -770,7 +833,20 @@ export default function EditInquiryPage() {
                 <div className="relative">
                   <select value={formData.executionType} onChange={(e) => updateField("executionType", e.target.value)} className={`${inputClass} pr-10 appearance-none cursor-pointer`}>
                     <option value="">— Select Execution Type —</option>
-                    {EXECUTION_TYPES.map(({ label, value }) => <option key={value} value={value}>{label}</option>)}
+                    {["Core Delivery Models", "Contract & Billing Models", "Methodology & Resource Models", "Custom Masters"].map(cat => {
+                      const items = combinedExecutionTypes.filter(x => x.category === cat);
+                      if (items.length === 0) return null;
+                      return (
+                        <optgroup key={cat} label={cat}>
+                          {items.map(item => (
+                            <option key={item.value} value={item.value}>{item.label}</option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
+                    {combinedExecutionTypes.filter(x => !x.category || !["Core Delivery Models", "Contract & Billing Models", "Methodology & Resource Models", "Custom Masters"].includes(x.category)).map(item => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 </div>

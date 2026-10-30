@@ -43,6 +43,7 @@ export interface CreateContractData {
   title: string;
   description?: string;
   value: number;
+  currency?: string;
   startDate: string;
   endDate?: string;
   isDeleted?: boolean;
@@ -121,10 +122,24 @@ class ContractsAPI {
     return this.request('/contracts', { method: 'GET' }, businessId);
   }
 
+  async getContractById(businessId: string, id: string): Promise<{ success: boolean; contract: Contract; data?: Contract }> {
+    try {
+      return await this.request(`/contracts/${id}`, { method: 'GET' }, businessId);
+    } catch {
+      const all = await this.getContracts(businessId);
+      const found = (all.contracts || []).find((item) => item.id === id);
+      if (!found) {
+        throw new Error('Contract not found');
+      }
+      return { success: true, contract: found };
+    }
+  }
+
   async createContract(businessId: string, data: CreateContractData): Promise<{ success: boolean; contract: Contract }> {
     const payload: CreateContractData = {
       ...data,
       value: Number(data.value || 0),
+      currency: data.currency,
       startDate: this.toIsoDateTime(data.startDate) || data.startDate,
       endDate: this.toIsoDateTime(data.endDate),
       description: data.description?.trim() || undefined,
@@ -167,17 +182,6 @@ class ContractsAPI {
       method: 'PUT',
       body: JSON.stringify(payload),
     }, businessId);
-  }
-
-  async getContractById(businessId: string, contractId: string): Promise<{ success: boolean; contract: Contract }> {
-    const all = await this.getContracts(businessId);
-    const found = (all.contracts || []).find((item) => item.id === contractId);
-
-    if (!found) {
-      throw new Error('Contract not found');
-    }
-
-    return { success: true, contract: found };
   }
 
   async deleteContract(businessId: string, contractId: string): Promise<{ success: boolean; message: string }> {

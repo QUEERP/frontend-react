@@ -18,6 +18,7 @@ import { api } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import { projectOperationsAPI } from "@/lib/api/project-operations";
 import { proposalsAPI } from "@/lib/api/proposals";
+import { contractsAPI } from "@/lib/api/contracts";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { CURRENCIES, getCurrencySymbol } from '@/lib/currencies';
@@ -197,6 +198,8 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
   const reqId = searchParams.get('requirementId') || searchParams.get('reqId');
   const estId = searchParams.get('estimateId') || searchParams.get('estimationId') || searchParams.get('estId');
   const editId = searchParams.get('edit') || searchParams.get('editId') || searchParams.get('id');
+  const contractId = searchParams.get('fromContract') || searchParams.get('contractId');
+  const [sourceContract, setSourceContract] = useState<any>(null);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState(() => {
@@ -281,7 +284,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
   // Set initial currency to business country base currency if not loaded from saved proposal/estimate
   useEffect(() => {
     if (!baseCurrencyCode) return;
-    if (editId || reqId || estId) return;
+    if (editId || reqId || estId || contractId) return;
     if (userChangedCurrencyRef.current) return;
     setFormData(prev => {
       if (!prev.currency || prev.currency === 'USD' || prev.currency === baseCurrencyCode) {
@@ -436,6 +439,38 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
     };
     fetchProposal();
   }, [businessId, editId]);
+
+  // Load from Contract when converting
+  useEffect(() => {
+    if (!contractId || editId || reqId || estId) return;
+    const fetchContract = async () => {
+      try {
+        const res = await contractsAPI.getContractById(businessId, contractId);
+        const contract = res.contract || (res as any).data;
+        if (contract) {
+          setSourceContract(contract);
+          const cVal = Number(contract.value || 0);
+          setFormData(prev => ({
+            ...prev,
+            propName: contract.title ? (contract.title.toLowerCase().includes('contract') ? contract.title.replace(/contract/i, 'Proposal').trim() : `${contract.title} - Proposal`) : prev.propName,
+            customer: contract.customerId || prev.customer,
+            currency: contract.currency || prev.currency || 'USD',
+            finalPrice: cVal,
+            estProjectValue: cVal,
+            matCost: cVal,
+            includedScope: contract.description || 'Project deliverables per approved contract agreement.',
+            deliverables: contract.title || 'Agreed Contract Deliverables',
+            termPayment: contract.description || '',
+            estStart: contract.startDate ? contract.startDate.split('T')[0] : prev.estStart,
+            estEnd: contract.endDate ? contract.endDate.split('T')[0] : prev.estEnd,
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to load contract for proposal conversion:", err);
+      }
+    };
+    fetchContract();
+  }, [businessId, contractId, editId, reqId, estId]);
 
   // Fetch requirements when customer changes
   useEffect(() => {
@@ -763,6 +798,30 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
             </div>
           </div>
         </div>
+
+        {/* Contract Conversion Banner */}
+        {sourceContract && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 border border-purple-200 dark:border-purple-800 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 rounded-lg shrink-0">
+                <FileSignature className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-purple-950 dark:text-purple-200">
+                    Converting from Contract: {sourceContract.title}
+                  </h4>
+                  <span className="bg-purple-600 text-white font-bold px-2 py-0.5 rounded text-[10px] uppercase">
+                    Contract ➔ Proposal
+                  </span>
+                </div>
+                <p className="text-xs text-purple-700 dark:text-purple-300 mt-0.5">
+                  Customer, proposal title, value ({sourceContract.currency || 'USD'} {Number(sourceContract.value || 0).toLocaleString()}), dates, and scope have been pre-filled from the contract agreement. Review and update sections as needed.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 1. General Information */}
         <SectionCard id="general" title="1. General Information" icon={Info} isExpanded={expandedSections.general} onToggle={toggleSection}>
