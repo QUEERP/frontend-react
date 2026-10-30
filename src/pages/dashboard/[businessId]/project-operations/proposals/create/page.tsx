@@ -41,6 +41,8 @@ const InputField = ({
   min
 }: any) => {
   const plClass = prefix ? (String(prefix).length > 2 ? 'pl-12' : String(prefix).length > 1 ? 'pl-9' : 'pl-7') : '';
+  const displayVal = (value === null || value === undefined) ? '' : value;
+
   return (
     <div className={`space-y-1.5 ${className}`}>
       <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -51,12 +53,17 @@ const InputField = ({
         <input 
           type={type} 
           name={name} 
-          value={value} 
+          value={displayVal} 
           onChange={onChange} 
-          placeholder={placeholder} 
+          placeholder={placeholder || (type === 'number' ? '0' : '')} 
           readOnly={readOnly}
           step={step}
           min={min}
+          onFocus={(e) => {
+            if (e.target.value === '0' || e.target.value === '0.00' || e.target.value === '0.0') {
+              e.target.select();
+            }
+          }}
           onWheel={(e) => {
             if (type === 'number') {
               (e.currentTarget as HTMLInputElement).blur();
@@ -148,7 +155,13 @@ const SectionCard = ({ id, title, icon: Icon, isExpanded, onToggle, children }: 
 };
 
 // --- Data Models ---
-const initialFormData = {
+const num = (v: any) => {
+  if (v === '' || v === null || v === undefined) return 0;
+  const n = Number(v);
+  return isNaN(n) ? 0 : n;
+};
+
+const initialFormData: Record<string, any> = {
   // 1. General
   propNumber: `PRP-${Math.floor(100000 + Math.random() * 900000)}`,
   version: 'v1.0', propName: '', customer: '', customerContact: '', linkedInquiry: '',
@@ -168,9 +181,9 @@ const initialFormData = {
   deliverables: '', acceptanceCriteria: '', outOfScope: '', custResp: '', vendorResp: '',
   
   // 4. Commercials
-  matCost: 0, labCost: 0, eqCost: 0, trvCost: 0, subCost: 0, ovhCost: 0, riskCost: 0, contCost: 0,
-  markupPct: 0, discountType: '%', discountPct: 0, taxType: '%', taxPct: 0,
-  finalPrice: 0, expectedProfit: 0, profitPct: 0, retentionPct: 0, advancePct: 0,
+  matCost: '', labCost: '', eqCost: '', trvCost: '', subCost: '', ovhCost: '', riskCost: '', contCost: '',
+  markupPct: '', discountType: '%', discountPct: '', taxType: '%', taxPct: '',
+  finalPrice: '', expectedProfit: 0, profitPct: 0, retentionPct: '', advancePct: '',
   paymentTerms: '', milestoneBilling: '', warranty: '', amc: '', penalty: '',
   
   // 5. Timeline
@@ -202,7 +215,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
   const [sourceContract, setSourceContract] = useState<any>(null);
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState(() => {
+  const [formData, setFormData] = useState<Record<string, any>>(() => {
     const base = { ...initialFormData };
     return base;
   });
@@ -418,20 +431,48 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
         const res = await proposalsAPI.getProposalById(businessId, editId);
         if (res.success && (res.proposal || res.quotation)) {
           const q = res.proposal || res.quotation;
-          setFormData(prev => ({
-            ...prev,
-            propNumber: q.quoteNumber || prev.propNumber,
-            propName: q.title || prev.propName,
-            customer: q.customerId || prev.customer,
-            status: q.status || prev.status,
-            propDate: q.issueDate ? new Date(q.issueDate).toISOString().split('T')[0] : prev.propDate,
-            validUntil: q.expiryDate ? new Date(q.expiryDate).toISOString().split('T')[0] : prev.validUntil,
-            currency: q.currency || prev.currency,
-            exchangeRate: (q as any).exchangeRate ? parseFloat(Number((q as any).exchangeRate).toFixed(2)) : prev.exchangeRate,
-            finalPrice: Number(q.totalAmount || 0),
-            matCost: Number(q.subtotal || 0),
-            appNotes: q.notes || '',
-          }));
+          const finalVal = Number(q.totalAmount || 0);
+          const subVal = Number(q.subtotal || 0) || finalVal;
+          let parsedTerms: any = {};
+          try {
+            const qTerms = (q as any).termsConditions;
+            if (qTerms && (qTerms.startsWith('{') || qTerms.includes('"matCost"'))) {
+              parsedTerms = JSON.parse(qTerms);
+            }
+          } catch (e) {}
+
+          setFormData(prev => {
+            const next = {
+              ...prev,
+              propNumber: q.quoteNumber || prev.propNumber,
+              propName: q.title || prev.propName,
+              customer: q.customerId || prev.customer,
+              status: q.status || prev.status,
+              propDate: q.issueDate ? new Date(q.issueDate).toISOString().split('T')[0] : prev.propDate,
+              validUntil: q.expiryDate ? new Date(q.expiryDate).toISOString().split('T')[0] : prev.validUntil,
+              currency: q.currency || prev.currency,
+              exchangeRate: (q as any).exchangeRate ? parseFloat(Number((q as any).exchangeRate).toFixed(2)) : prev.exchangeRate,
+              finalPrice: finalVal,
+              matCost: parsedTerms.matCost !== undefined ? parsedTerms.matCost : (subVal > 0 ? subVal : ''),
+              labCost: parsedTerms.labCost !== undefined ? parsedTerms.labCost : '',
+              eqCost: parsedTerms.eqCost !== undefined ? parsedTerms.eqCost : '',
+              trvCost: parsedTerms.trvCost !== undefined ? parsedTerms.trvCost : '',
+              subCost: parsedTerms.subCost !== undefined ? parsedTerms.subCost : '',
+              ovhCost: parsedTerms.ovhCost !== undefined ? parsedTerms.ovhCost : '',
+              riskCost: parsedTerms.riskCost !== undefined ? parsedTerms.riskCost : '',
+              contCost: parsedTerms.contCost !== undefined ? parsedTerms.contCost : '',
+              markupPct: parsedTerms.markupPct !== undefined ? parsedTerms.markupPct : '',
+              discountPct: parsedTerms.discountPct !== undefined ? parsedTerms.discountPct : (Number(q.discount || 0) || ''),
+              discountType: parsedTerms.discountType || '%',
+              taxPct: parsedTerms.taxPct !== undefined ? parsedTerms.taxPct : (Number(q.tax || 0) || ''),
+              taxType: parsedTerms.taxType || '%',
+              advancePct: parsedTerms.advancePct !== undefined ? parsedTerms.advancePct : '',
+              retentionPct: parsedTerms.retentionPct !== undefined ? parsedTerms.retentionPct : '',
+              paymentTerms: parsedTerms.paymentTerms || prev.paymentTerms,
+              appNotes: q.notes || '',
+            };
+            return recalculateCommercials(next);
+          });
         }
       } catch (err) {
         console.error("Failed to load proposal details for edit:", err);
@@ -524,21 +565,30 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
 
   const recalculateCommercials = (data: any) => {
     const next = { ...data };
-    const totalEstCost = (next.matCost||0) + (next.labCost||0) + (next.eqCost||0) + (next.trvCost||0) + (next.subCost||0) + (next.ovhCost||0) + (next.riskCost||0) + (next.contCost||0);
-    const markupAmt = totalEstCost * ((next.markupPct||0) / 100);
+    const totalEstCost = num(next.matCost) + num(next.labCost) + num(next.eqCost) + num(next.trvCost) + num(next.subCost) + num(next.ovhCost) + num(next.riskCost) + num(next.contCost);
+    const markupAmt = totalEstCost * (num(next.markupPct) / 100);
     const subtotal = totalEstCost + markupAmt;
     
     let discAmt = 0;
-    if (next.discountType === '%') discAmt = subtotal * ((next.discountPct||0)/100);
-    else discAmt = next.discountPct||0; // absolute
+    if (next.discountType === '%') discAmt = subtotal * (num(next.discountPct) / 100);
+    else discAmt = num(next.discountPct);
     
-    const taxable = subtotal - discAmt;
+    const taxable = Math.max(0, subtotal - discAmt);
     let taxAmt = 0;
-    if (next.taxType === '%') taxAmt = taxable * ((next.taxPct||0)/100);
-    else taxAmt = next.taxPct||0;
+    if (next.taxType === '%') taxAmt = taxable * (num(next.taxPct) / 100);
+    else taxAmt = num(next.taxPct);
     
-    next.finalPrice = taxable + taxAmt;
-    next.expectedProfit = next.finalPrice - totalEstCost - taxAmt;
+    const calculatedFinal = taxable + taxAmt;
+    if (totalEstCost > 0 || num(next.markupPct) > 0 || num(next.discountPct) > 0 || num(next.taxPct) > 0) {
+      next.finalPrice = calculatedFinal;
+    } else if (next.finalPrice !== undefined && next.finalPrice !== null && next.finalPrice !== '') {
+      // keep existing finalPrice
+    } else {
+      next.finalPrice = 0;
+    }
+
+    const currentFinal = num(next.finalPrice);
+    next.expectedProfit = currentFinal - totalEstCost - taxAmt;
     next.profitPct = totalEstCost > 0 ? (next.expectedProfit / totalEstCost) * 100 : 0;
     return next;
   };
@@ -596,7 +646,6 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
         setFormData(prev => ({ ...prev, exchangeRate: '' as any }));
         return;
       }
-      // Restrict user input to at most 2 digits after decimal point
       const parts = value.split('.');
       if (parts.length > 2) return;
       if (parts[1] && parts[1].length > 2) return;
@@ -604,7 +653,30 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
       setFormData(prev => recalculateCommercials({ ...prev, [name]: value }));
       return;
     }
-    setFormData(prev => recalculateCommercials({ ...prev, [name]: parseFloat(value) || 0 }));
+
+    if (name === 'finalPrice') {
+      const parsed = value === '' ? '' : (value.endsWith('.') ? value : (isNaN(Number(value)) ? value : Number(value)));
+      setFormData(prev => {
+        const totalEstCost = num(prev.matCost) + num(prev.labCost) + num(prev.eqCost) + num(prev.trvCost) + num(prev.subCost) + num(prev.ovhCost) + num(prev.riskCost) + num(prev.contCost);
+        const profit = num(parsed) - totalEstCost;
+        return {
+          ...prev,
+          finalPrice: parsed,
+          matCost: totalEstCost === 0 ? parsed : prev.matCost,
+          expectedProfit: profit,
+          profitPct: totalEstCost > 0 ? (profit / totalEstCost) * 100 : 0
+        };
+      });
+      return;
+    }
+
+    if (value === '') {
+      setFormData(prev => recalculateCommercials({ ...prev, [name]: '' }));
+      return;
+    }
+
+    const parsed = value.endsWith('.') ? value : (isNaN(Number(value)) ? value : Number(value));
+    setFormData(prev => recalculateCommercials({ ...prev, [name]: parsed }));
   };
 
   // Completion Calc
@@ -622,14 +694,38 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
     }
     setIsSaving(true);
     try {
+      const commercialDetails = JSON.stringify({
+        matCost: num(formData.matCost),
+        labCost: num(formData.labCost),
+        eqCost: num(formData.eqCost),
+        trvCost: num(formData.trvCost),
+        subCost: num(formData.subCost),
+        ovhCost: num(formData.ovhCost),
+        riskCost: num(formData.riskCost),
+        contCost: num(formData.contCost),
+        markupPct: num(formData.markupPct),
+        discountPct: num(formData.discountPct),
+        discountType: formData.discountType,
+        taxPct: num(formData.taxPct),
+        taxType: formData.taxType,
+        advancePct: num(formData.advancePct),
+        retentionPct: num(formData.retentionPct),
+        paymentTerms: formData.paymentTerms
+      });
+
+      const totalVal = num(formData.finalPrice);
+      const calculatedEstCost = num(formData.matCost) + num(formData.labCost) + num(formData.eqCost) + num(formData.trvCost) + num(formData.subCost) + num(formData.ovhCost) + num(formData.riskCost) + num(formData.contCost);
+      const subtotalVal = calculatedEstCost > 0 ? calculatedEstCost : totalVal;
+
       if (editId) {
         await proposalsAPI.updateProposal(businessId, editId, {
           title: formData.propName,
           customerId: formData.customer,
-          totalAmount: formData.finalPrice,
-          subtotal: (formData.matCost || 0) + (formData.labCost || 0),
+          totalAmount: totalVal,
+          subtotal: subtotalVal,
           expiryDate: formData.validUntil ? new Date(formData.validUntil).toISOString() : undefined,
           notes: formData.appNotes,
+          termsConditions: commercialDetails,
           status: actionStatus,
           currency: formData.currency,
           exchangeRate: parseFloat(Number(formData.exchangeRate || 1).toFixed(2)),
@@ -642,6 +738,10 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
       if (actionStatus === 'Submit For Approval') {
         const res = await proposalsAPI.createProposal(businessId, { 
           ...formData, 
+          finalPrice: totalVal,
+          totalAmount: totalVal,
+          subtotal: subtotalVal,
+          termsConditions: commercialDetails,
           exchangeRate: parseFloat(Number(formData.exchangeRate || 1).toFixed(2)),
           status: 'PENDING_APPROVAL',
           appStatus: 'Under Review'
@@ -653,6 +753,10 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
       } else {
         await proposalsAPI.createProposal(businessId, { 
           ...formData, 
+          finalPrice: totalVal,
+          totalAmount: totalVal,
+          subtotal: subtotalVal,
+          termsConditions: commercialDetails,
           exchangeRate: parseFloat(Number(formData.exchangeRate || 1).toFixed(2)),
           status: actionStatus 
         });
@@ -682,7 +786,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
       doc.text(`Proposal Date: ${formData.propDate}`, 14, 64);
       doc.text(`Valid: ${formData.validFrom} to ${formData.validUntil}`, 14, 72);
       
-      doc.text(`Final Value: ${formData.currency} ${formData.finalPrice.toLocaleString()}`, 14, 84);
+      doc.text(`Final Value: ${formData.currency} ${num(formData.finalPrice).toLocaleString()}`, 14, 84);
       
       doc.save(`${formData.propNumber}-v${formData.version}.pdf`);
       toast({ title: "Success", description: "PDF generated successfully." });
@@ -1004,38 +1108,50 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
           
           <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">A. Cost Basis (From Estimations)</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-4 mb-8">
-            <InputField label="Materials" name="matCost" value={formData.matCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
-            <InputField label="Labour" name="labCost" value={formData.labCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
-            <InputField label="Equipment" name="eqCost" value={formData.eqCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
-            <InputField label="Travel" name="trvCost" value={formData.trvCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
-            <InputField label="Subcontract" name="subCost" value={formData.subCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
-            <InputField label="Overhead" name="ovhCost" value={formData.ovhCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
-            <InputField label="Risk Res." name="riskCost" value={formData.riskCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
-            <InputField label="Contingency" name="contCost" value={formData.contCost} onChange={handleNumberChange} type="number" prefix={currencySym} />
+            <InputField label="Materials" name="matCost" value={formData.matCost} onChange={handleNumberChange} type="number" prefix={currencySym} placeholder="0" />
+            <InputField label="Labour" name="labCost" value={formData.labCost} onChange={handleNumberChange} type="number" prefix={currencySym} placeholder="0" />
+            <InputField label="Equipment" name="eqCost" value={formData.eqCost} onChange={handleNumberChange} type="number" prefix={currencySym} placeholder="0" />
+            <InputField label="Travel" name="trvCost" value={formData.trvCost} onChange={handleNumberChange} type="number" prefix={currencySym} placeholder="0" />
+            <InputField label="Subcontract" name="subCost" value={formData.subCost} onChange={handleNumberChange} type="number" prefix={currencySym} placeholder="0" />
+            <InputField label="Overhead" name="ovhCost" value={formData.ovhCost} onChange={handleNumberChange} type="number" prefix={currencySym} placeholder="0" />
+            <InputField label="Risk Res." name="riskCost" value={formData.riskCost} onChange={handleNumberChange} type="number" prefix={currencySym} placeholder="0" />
+            <InputField label="Contingency" name="contCost" value={formData.contCost} onChange={handleNumberChange} type="number" prefix={currencySym} placeholder="0" />
           </div>
 
           <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">B. Pricing & Margins</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            <InputField label="Markup (%)" name="markupPct" value={formData.markupPct} onChange={handleNumberChange} type="number" suffix="%" />
+            <InputField label="Markup (%)" name="markupPct" value={formData.markupPct} onChange={handleNumberChange} type="number" suffix="%" placeholder="0" />
             <SelectField label="Disc. Type" name="discountType" value={formData.discountType} onChange={handleInputChange} options={['%', 'Fixed Amount']} />
-            <InputField label="Discount" name="discountPct" value={formData.discountPct} onChange={handleNumberChange} type="number" suffix={formData.discountType === '%' ? '%' : undefined} prefix={formData.discountType !== '%' ? currencySym : undefined} />
+            <InputField label="Discount" name="discountPct" value={formData.discountPct} onChange={handleNumberChange} type="number" suffix={formData.discountType === '%' ? '%' : undefined} prefix={formData.discountType !== '%' ? currencySym : undefined} placeholder="0" />
             <SelectField label="Tax Type" name="taxType" value={formData.taxType} onChange={handleInputChange} options={['%', 'Fixed Amount']} />
-            <InputField label="Tax" name="taxPct" value={formData.taxPct} onChange={handleNumberChange} type="number" suffix={formData.taxType === '%' ? '%' : undefined} prefix={formData.taxType !== '%' ? currencySym : undefined} />
+            <InputField label="Tax" name="taxPct" value={formData.taxPct} onChange={handleNumberChange} type="number" suffix={formData.taxType === '%' ? '%' : undefined} prefix={formData.taxType !== '%' ? currencySym : undefined} placeholder="0" />
           </div>
 
-          <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-6 mb-8 shadow-inner flex flex-col md:flex-row justify-between items-center text-white">
-            <div className="flex flex-col gap-1 mb-4 md:mb-0">
-               <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Live Calculated Final Price</span>
-               <span className="text-4xl font-black text-green-400">{formData.currency || 'USD'} {formData.finalPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+          <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-6 mb-8 shadow-inner flex flex-col md:flex-row justify-between items-center text-white gap-6">
+            <div className="flex flex-col gap-1 w-full md:w-auto">
+               <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Proposal Final Price</span>
+               <div className="flex items-center gap-2 mt-1">
+                 <span className="text-3xl font-black text-green-400">{formData.currency || 'USD'}</span>
+                 <input
+                   type="number"
+                   name="finalPrice"
+                   value={formData.finalPrice ?? ''}
+                   onChange={handleNumberChange}
+                   onFocus={(e) => { if (e.target.value === '0') e.target.select(); }}
+                   placeholder="0"
+                   className="text-3xl font-black text-green-400 bg-gray-800/80 border border-gray-700 hover:border-green-500 focus:border-green-400 rounded-lg px-3 py-1 outline-none w-56 transition-all"
+                 />
+               </div>
+               <span className="text-[11px] text-gray-400 mt-1">Calculates from Cost Basis + Margins, or type directly here to set a custom proposal price.</span>
             </div>
-            <div className="flex gap-8 text-right">
+            <div className="flex gap-8 text-right shrink-0">
                <div className="flex flex-col">
                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Expected Profit</span>
-                 <span className="text-xl font-bold">{formData.currency || 'USD'} {formData.expectedProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                 <span className="text-xl font-bold">{formData.currency || 'USD'} {num(formData.expectedProfit).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                </div>
                <div className="flex flex-col">
                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Margin %</span>
-                 <span className="text-xl font-bold text-blue-400">{formData.profitPct.toFixed(2)}%</span>
+                 <span className="text-xl font-bold text-blue-400">{num(formData.profitPct).toFixed(2)}%</span>
                </div>
             </div>
           </div>
@@ -1043,8 +1159,8 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
           <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">C. Payment Terms & Clauses</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <InputField label="Payment Terms" name="paymentTerms" value={formData.paymentTerms} onChange={handleInputChange} placeholder="e.g. Net 30, Due on Receipt" />
-            <InputField label="Advance (%)" name="advancePct" value={formData.advancePct} onChange={handleNumberChange} type="number" suffix="%" />
-            <InputField label="Retention (%)" name="retentionPct" value={formData.retentionPct} onChange={handleNumberChange} type="number" suffix="%" />
+            <InputField label="Advance (%)" name="advancePct" value={formData.advancePct} onChange={handleNumberChange} type="number" suffix="%" placeholder="0" />
+            <InputField label="Retention (%)" name="retentionPct" value={formData.retentionPct} onChange={handleNumberChange} type="number" suffix="%" placeholder="0" />
             <TextAreaField label="Milestone Billing" name="milestoneBilling" value={formData.milestoneBilling} onChange={handleInputChange} className="sm:col-span-2 lg:col-span-3" />
             <TextAreaField label="Warranty Terms" name="warranty" value={formData.warranty} onChange={handleInputChange} />
             <TextAreaField label="AMC Terms" name="amc" value={formData.amc} onChange={handleInputChange} />
@@ -1275,7 +1391,7 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
             <div className="space-y-2 bg-gray-50 dark:bg-gray-800/50 p-3.5 rounded-xl border border-gray-100 dark:border-gray-800">
               <div className="flex justify-between items-start">
                 <span className="text-xs text-gray-500 font-bold">Estimated Cost Basis</span>
-                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 font-mono">{((formData.matCost||0)+(formData.labCost||0)+(formData.eqCost||0)+(formData.trvCost||0)+(formData.subCost||0)+(formData.ovhCost||0)+(formData.riskCost||0)+(formData.contCost||0)).toLocaleString()}</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 font-mono">{(num(formData.matCost) + num(formData.labCost) + num(formData.eqCost) + num(formData.trvCost) + num(formData.subCost) + num(formData.ovhCost) + num(formData.riskCost) + num(formData.contCost)).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-start text-green-600 dark:text-green-400">
                 <span className="text-xs font-bold">Markup / Profit</span>
@@ -1292,12 +1408,12 @@ function CreateProposalContent({ businessId }: { businessId: string }) {
               
               <div className="flex justify-between items-baseline pt-2.5 pb-1 border-t border-gray-200 dark:border-gray-700 mt-2">
                 <span className="text-xs text-gray-500 font-black uppercase">Final Price</span>
-                <span className="text-2xl font-black text-gray-900 dark:text-white font-mono">{formData.currency || 'USD'} {formData.finalPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                <span className="text-2xl font-black text-gray-900 dark:text-white font-mono">{formData.currency || 'USD'} {num(formData.finalPrice).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
               </div>
               
               <div className="flex justify-between items-center pt-1.5">
                  <span className="text-xs text-gray-500 font-bold uppercase">Expected Profit</span>
-                 <span className="text-xs font-black text-green-600 font-mono">{formData.currency || 'USD'} {formData.expectedProfit.toLocaleString(undefined, {minimumFractionDigits: 2})} <span className="text-gray-400 font-normal">({formData.profitPct.toFixed(1)}%)</span></span>
+                 <span className="text-xs font-black text-green-600 font-mono">{formData.currency || 'USD'} {num(formData.expectedProfit).toLocaleString(undefined, {minimumFractionDigits: 2})} <span className="text-gray-400 font-normal">({num(formData.profitPct).toFixed(1)}%)</span></span>
               </div>
             </div>
           </div>

@@ -1,14 +1,14 @@
 import { toast } from 'sonner';
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import {  useNavigate, useSearchParams, useParams  } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { contactsAPI, Customer } from "@/lib/api/contacts";
 import { usersAPI, BusinessUser } from "@/lib/api/users";
 import { CreateCustomerModal } from "@/components/dashboard/create-customer-modal";
-import { 
-  ArrowLeft, Save, ChevronDown, CheckCircle, Info, FileText, User, 
-  Target, Cpu, Calendar, DollarSign, Users, AlertTriangle, 
-  Paperclip, Plus, Trash2, ShieldCheck, Box, Briefcase, Settings, 
+import {
+  ArrowLeft, Save, ChevronDown, CheckCircle, Info, FileText, User,
+  Target, Cpu, Calendar, DollarSign, Users, AlertTriangle,
+  Paperclip, Plus, Trash2, ShieldCheck, Box, Briefcase, Settings,
   Layout, Activity, Clock
 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
@@ -18,39 +18,48 @@ import { useBusinessCustomers } from "@/hooks/use-business-data";
 import { useBusinessData } from "@/components/dashboard/business-data-provider";
 import { BasicProjectForm } from "@/components/dashboard/basic-project-form";
 import { projectOperationsAPI } from "@/lib/api/project-operations";
+import { TIMEZONE_GROUPS } from "@/lib/constants/timezones";
 
 // ------------------------------------------------------------------
 // REUSABLE COMPONENTS
 // ------------------------------------------------------------------
 
-const InputField = ({ label, type = "text", value, onChange, placeholder, required = false, prefix, suffix, multiline = false, rows = 3 }: any) => (
-  <div className="flex flex-col gap-1.5">
-    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <div className="relative flex items-center">
-      {prefix && <div className="absolute left-3 text-gray-500">{prefix}</div>}
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={rows}
-          className={`w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 transition-all outline-none resize-y`}
-        />
-      ) : (
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className={`w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 transition-all outline-none ${prefix ? 'pl-9' : ''} ${suffix ? 'pr-9' : ''}`}
-        />
-      )}
-      {suffix && <div className="absolute right-3 text-gray-500">{suffix}</div>}
+const InputField = ({ label, type = "text", value, onChange, placeholder, required = false, prefix, suffix, multiline = false, rows = 3 }: any) => {
+  const displayVal = (value === null || value === undefined) ? '' : value;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative flex items-center">
+        {prefix && <div className="absolute left-3 text-gray-500">{prefix}</div>}
+        {multiline ? (
+          <textarea
+            value={displayVal}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            rows={rows}
+            className={`w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 transition-all outline-none resize-y`}
+          />
+        ) : (
+          <input
+            type={type}
+            value={displayVal}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={(e) => {
+              if (e.target.value === '0' || e.target.value === '0.00' || e.target.value === '0.0') {
+                e.target.select();
+              }
+            }}
+            placeholder={placeholder || (type === 'number' ? '0' : '')}
+            className={`w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 transition-all outline-none ${prefix ? 'pl-9' : ''} ${suffix ? 'pr-9' : ''}`}
+          />
+        )}
+        {suffix && <div className="absolute right-3 text-gray-500">{suffix}</div>}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const SelectField = ({ label, value, onChange, options, required = false, icon: Icon }: any) => (
   <div className="flex flex-col gap-1.5">
@@ -58,16 +67,27 @@ const SelectField = ({ label, value, onChange, options, required = false, icon: 
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <div className="relative flex items-center">
-      {Icon && <div className="absolute left-3 text-gray-500"><Icon className="w-4 h-4"/></div>}
+      {Icon && <div className="absolute left-3 text-gray-500"><Icon className="w-4 h-4" /></div>}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={`w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 transition-all outline-none cursor-pointer appearance-none ${Icon ? 'pl-9' : ''}`}
       >
         <option value="" disabled>Select {label}...</option>
-        {options.map((opt: any, i: number) => (
-          <option key={i} value={opt.value || opt}>{opt.label || opt}</option>
-        ))}
+        {options.map((opt: any, i: number) => {
+          if (opt && opt.group && Array.isArray(opt.options)) {
+            return (
+              <optgroup key={i} label={opt.group}>
+                {opt.options.map((subOpt: any, j: number) => (
+                  <option key={j} value={subOpt.value || subOpt}>{subOpt.label || subOpt}</option>
+                ))}
+              </optgroup>
+            );
+          }
+          return (
+            <option key={i} value={opt.value || opt}>{opt.label || opt}</option>
+          );
+        })}
       </select>
       <div className="absolute right-3 pointer-events-none text-gray-500">
         <ChevronDown className="w-4 h-4" />
@@ -80,7 +100,7 @@ const SectionCard = ({ title, icon: Icon, children, defaultOpen = true, badge }:
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6 transition-all duration-200">
-      <div 
+      <div
         className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors select-none"
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -103,13 +123,6 @@ const SectionCard = ({ title, icon: Icon, children, defaultOpen = true, badge }:
 };
 
 // ------------------------------------------------------------------
-// MOCK DATA
-// ------------------------------------------------------------------
-const MOCK_REQS: any[] = [];
-
-const MOCK_USERS: string[] = [];
-
-// ------------------------------------------------------------------
 // MAIN COMPONENT
 // ------------------------------------------------------------------
 
@@ -130,7 +143,7 @@ export default function CreateProjectPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Record<string, any>>({
     projNumber: 'PRJ-' + Math.floor(10000 + Math.random() * 90000),
     projName: '',
     linkedReq: '',
@@ -152,12 +165,12 @@ export default function CreateProjectPage() {
     timeZone: 'UTC',
     milestoneTemplate: 'Standard Implementation',
 
-    estBudget: 0,
-    appBudget: 0,
+    estBudget: '',
+    appBudget: '',
     currency: 'USD',
     billingType: 'Fixed Price',
-    expRevenue: 0,
-    expProfit: 0,
+    expRevenue: '',
+    expProfit: '',
 
     objectives: '',
     inScope: '',
@@ -172,12 +185,18 @@ export default function CreateProjectPage() {
     attachDocs: true,
   });
 
-  const [team, setTeam] = useState<{id: number, role: string, member: string}[]>([]);
+  const [team, setTeam] = useState<{ id: number, role: string, member: string }[]>([]);
 
   const { customers, loading: loadingCustomers, error: errorCustomers, retry: retryCustomers } = useBusinessCustomers(businessId);
+  const [requirements, setRequirements] = useState<any[]>([]);
   const [estimations, setEstimations] = useState<any[]>([]);
   const [proposals, setProposals] = useState<any[]>([]);
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+
+  const filteredRequirements = useMemo(() => {
+    if (!formData.customer) return [];
+    return requirements.filter(r => r.customerId === formData.customer || r.customer?.id === formData.customer);
+  }, [requirements, formData.customer]);
 
   useEffect(() => {
     const loadAllData = async () => {
@@ -193,14 +212,23 @@ export default function CreateProjectPage() {
         fetch(`${API_BASE}/api/business`, { headers })
           .then(res => res.json())
           .then(data => {
-             const business = data.data || data.business;
-             if (business && business.country) {
-               const c = business.country.toLowerCase();
-               if (c.includes('india') || c === 'in') setFormData(prev => ({ ...prev, currency: 'INR' }));
-               else if (c.includes('uae') || c.includes('united arab emirates') || c === 'ae') setFormData(prev => ({ ...prev, currency: 'AED' }));
-               else setFormData(prev => ({ ...prev, currency: 'USD' }));
-             }
+            const business = data.data || data.business;
+            if (business && business.country) {
+              const c = business.country.toLowerCase();
+              if (c.includes('india') || c === 'in') setFormData(prev => ({ ...prev, currency: 'INR' }));
+              else if (c.includes('uae') || c.includes('united arab emirates') || c === 'ae') setFormData(prev => ({ ...prev, currency: 'AED' }));
+              else setFormData(prev => ({ ...prev, currency: 'USD' }));
+            }
           }).catch(console.error);
+
+        // Load Requirements
+        try {
+          const reqRes = await fetch(`${API_BASE}/api/project-operations/requirements`, { headers });
+          const reqData = await reqRes.json();
+          setRequirements(reqData.requirements || reqData.data || []);
+        } catch (e) {
+          console.error("Failed to load requirements:", e);
+        }
 
         // Load Estimations
         const estRes = await fetch(`${API_BASE}/api/projects/estimations`, { headers });
@@ -320,30 +348,44 @@ export default function CreateProjectPage() {
       setShowCreateCustomer(true);
       return;
     }
+    if (field === 'customer') {
+      setFormData(prev => ({
+        ...prev,
+        customer: value,
+        linkedReq: '',
+        linkedEst: '',
+        linkedProp: '',
+      }));
+      return;
+    }
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Auto-populate when Requirement is selected
-  useEffect(() => {
-    if (formData.linkedReq) {
-      const req = MOCK_REQS.find(r => r.id === formData.linkedReq);
-      if (req) {
-        setFormData(prev => ({
-          ...prev,
-          projName: prev.projName || req.name,
-          customer: req.customer,
-          linkedEst: req.estId,
-          linkedProp: req.propId,
-          execType: req.execType,
-          estBudget: req.budget,
-          appBudget: req.budget,
-          duration: req.duration,
-          inScope: req.scope,
-          deliverables: req.deliverables
-        }));
-      }
+  const handleRequirementSelect = (reqId: string) => {
+    setFormData(prev => ({ ...prev, linkedReq: reqId }));
+    if (!reqId) return;
+    const req = requirements.find(r => r.id === reqId);
+    if (req) {
+      setFormData(prev => ({
+        ...prev,
+        linkedReq: req.id,
+        projName: prev.projName || req.title,
+        estBudget: req.expectedBudget != null ? Number(req.expectedBudget) : prev.estBudget,
+        appBudget: req.expectedBudget != null ? Number(req.expectedBudget) : prev.appBudget,
+        currency: req.currency || prev.currency,
+        priority: req.priority || prev.priority,
+        startDate: req.expectedStart ? new Date(req.expectedStart).toISOString().split('T')[0] : prev.startDate,
+        endDate: req.expectedEnd ? new Date(req.expectedEnd).toISOString().split('T')[0] : prev.endDate,
+        objectives: req.businessObjective || req.businessRequirement || req.description || prev.objectives,
+        inScope: req.inScope || prev.inScope,
+        outOfScope: req.outOfScope || prev.outOfScope,
+        deliverables: Array.isArray(req.deliverables)
+          ? req.deliverables.map((d: any) => d.name || d.title || d).join(', ')
+          : (typeof req.deliverables === 'string' ? req.deliverables : prev.deliverables),
+      }));
+      toast({ title: "Requirement Linked", description: `Auto-populated data from ${req.requirementNumber || req.title || 'Requirement'}.` });
     }
-  }, [formData.linkedReq]);
+  };
 
   const addTeamMember = () => {
     setTeam([...team, { id: Date.now(), role: '', member: '' }]);
@@ -360,8 +402,12 @@ export default function CreateProjectPage() {
   const isSubmittingRef = React.useRef(false);
   const handleSubmit = async (actionType: 'start' | 'draft' | 'planning' = 'start') => {
     if (isSubmittingRef.current) return;
-    if (!formData.projName || !formData.customer || !formData.startDate || !formData.endDate) {
-      toast({ title: "Validation Error", description: "Please fill in all required fields (Name, Customer, Start/End Date).", variant: "destructive" });
+    if (!formData.projName || !formData.projName.trim()) {
+      toast({ title: "Validation Error", description: "Please enter a Project Name.", variant: "destructive" });
+      return;
+    }
+    if (!formData.customer) {
+      toast({ title: "Validation Error", description: "Please select a Customer.", variant: "destructive" });
       return;
     }
 
@@ -369,18 +415,20 @@ export default function CreateProjectPage() {
       isSubmittingRef.current = true;
       setIsSubmitting(true);
       const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
-      const payload = {
+      const payload: any = {
         projectCode: formData.projNumber,
-        projectName: formData.projName,
+        projectName: formData.projName.trim(),
         customerId: formData.customer,
         projectManagerId: formData.projManager || undefined,
         department: formData.busType,
-        priority: formData.priority.toUpperCase(),
-        status: actionType === 'draft' ? 'DRAFT' : 'ACTIVE',
-        budget: formData.appBudget,
+        priority: (formData.priority || 'MEDIUM').toUpperCase(),
+        status: actionType === 'draft' ? 'ON_HOLD' : 'ACTIVE',
+        budget: Number(formData.appBudget) || 0,
         executionType: formData.execType ? formData.execType.toUpperCase() : 'SERVICE',
-        startDate: formData.startDate,
-        endDate: formData.endDate,
+        startDate: formData.startDate || new Date().toISOString().split('T')[0],
+        endDate: formData.endDate || undefined,
+        quotationId: formData.linkedProp || undefined,
+        note: formData.objectives || undefined,
       };
 
       let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -398,16 +446,20 @@ export default function CreateProjectPage() {
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      
+
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Failed to create project');
       }
 
-      toast({ title: "Success", description: `Project ${actionType === 'draft' ? 'draft saved' : 'initialized'} successfully.` });
-      navigate(0);
-      
-      if (actionType === 'planning') {
-        navigate(`/dashboard/${businessId}/project-operations/projects/${data.project?.id || data.data?.id}`);
+      toast({
+        title: "Success",
+        description: `Project ${actionType === 'draft' ? 'draft saved' : 'created'} successfully.`
+      });
+
+      const createdId = data.project?.id || data.data?.id || data.id;
+
+      if (actionType === 'planning' && createdId) {
+        navigate(`/dashboard/${businessId}/project-operations/projects/${createdId}?tab=planning`);
       } else {
         navigate(`/dashboard/${businessId}/project-operations/projects`);
       }
@@ -443,25 +495,29 @@ export default function CreateProjectPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300 shadow-sm">
+            <button
+              type="button"
+              onClick={() => navigate(`/dashboard/${businessId}/project-operations/projects`)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300 shadow-sm"
+            >
               Cancel
             </button>
-            <button 
+            <button
               onClick={() => handleSubmit('draft')}
               disabled={isSubmitting}
               className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm disabled:opacity-50"
             >
               Save Draft
             </button>
-            <button 
+            <button
               onClick={() => handleSubmit('planning')}
               disabled={isSubmitting}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
             >
               Save & Open Planning
             </button>
-            <button 
-              onClick={() => handleSubmit('start')} 
+            <button
+              onClick={() => handleSubmit('start')}
               disabled={isSubmitting}
               className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
             >
@@ -477,25 +533,48 @@ export default function CreateProjectPage() {
 
       <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
-          
+
           {/* Main Form Content */}
           <div className="flex-1 min-w-0 flex flex-col gap-6">
-            
+
             <SectionCard title="General Information" icon={Briefcase}>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-3">
-                  <SelectField 
-                    label="Linked Requirement (Auto-Populates Data)" 
-                    value={formData.linkedReq} 
-                    onChange={(val: any) => handleChange('linkedReq', val)}
-                    options={MOCK_REQS.map(r => ({ value: r.id, label: `${r.id} - ${r.name} (${r.customer})` }))}
-                    icon={Layout}
-                  />
+                <div className="space-y-1.5 lg:col-span-3">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                    Linked Requirement (Auto-Populates Data)
+                  </label>
+                  <div className="relative flex items-center">
+                    <div className="absolute left-3 text-gray-500">
+                      <Layout className="w-4 h-4" />
+                    </div>
+                    <select
+                      value={formData.linkedReq}
+                      onChange={(e) => handleRequirementSelect(e.target.value)}
+                      disabled={!formData.customer}
+                      className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 transition-all outline-none cursor-pointer appearance-none pl-9 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">
+                        {!formData.customer
+                          ? "Please select customer first"
+                          : filteredRequirements.length === 0
+                            ? "No requirements found for this customer"
+                            : "Select Linked Requirement (Auto-Populates Data)..."}
+                      </option>
+                      {filteredRequirements.map((r: any) => (
+                        <option key={r.id} value={r.id}>
+                          {r.requirementNumber ? `${r.requirementNumber} - ` : ''}{r.title}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 pointer-events-none text-gray-500">
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
+                  </div>
                 </div>
                 <div className="lg:col-span-2">
                   <InputField label="Project Name" value={formData.projName} onChange={(val: any) => handleChange('projName', val)} required />
                 </div>
-                
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                     Customer <span className="text-red-500">*</span>
@@ -543,17 +622,17 @@ export default function CreateProjectPage() {
                     )}
                   </div>
                 </div>
-                
+
                 <SelectField label="Execution Type" value={formData.execType} onChange={(val: any) => handleChange('execType', val)} options={['Service', 'Product', 'Hybrid']} />
                 <SelectField label="Priority" value={formData.priority} onChange={(val: any) => handleChange('priority', val)} options={['Low', 'Medium', 'High', 'Critical']} />
-                
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Project Manager</label>
                   <div className="relative flex items-center">
                     <UserSelect businessId={businessId as string} value={formData.projManager} onChange={(v) => handleChange('projManager', v)} placeholder="Select Project Manager..." />
                   </div>
                 </div>
-                
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Linked Estimate</label>
                   <div className="relative flex items-center">
@@ -593,7 +672,7 @@ export default function CreateProjectPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Project Sponsor</label>
                   <div className="relative flex items-center">
@@ -603,25 +682,31 @@ export default function CreateProjectPage() {
               </div>
             </SectionCard>
 
+
+
             <SectionCard title="Schedule & Milestones" icon={Calendar}>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <InputField label="Start Date" type="date" value={formData.startDate} onChange={(val: any) => handleChange('startDate', val)} required />
                 <InputField label="End Date" type="date" value={formData.endDate} onChange={(val: any) => handleChange('endDate', val)} required />
                 <InputField label="Planned Duration" value={formData.duration} onChange={(val: any) => handleChange('duration', val)} placeholder="e.g. 6 Months" />
                 <SelectField label="Working Calendar" value={formData.workCalendar} onChange={(val: any) => handleChange('workCalendar', val)} options={['Standard 5-Day', 'Standard 6-Day', '24/7 Support']} />
-                <SelectField label="Time Zone" value={formData.timeZone} onChange={(val: any) => handleChange('timeZone', val)} options={['UTC', 'EST', 'PST', 'IST', 'GMT']} />
+                <SelectField label="Time Zone" value={formData.timeZone} onChange={(val: any) => handleChange('timeZone', val)} options={TIMEZONE_GROUPS} />
                 <SelectField label="Milestone Template" value={formData.milestoneTemplate} onChange={(val: any) => handleChange('milestoneTemplate', val)} options={['Standard Implementation', 'Agile Sprints', 'Custom']} />
               </div>
             </SectionCard>
 
+
+
             <SectionCard title="Financial details" icon={DollarSign}>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <InputField label="Estimated Budget" type="number" prefix="$" value={formData.estBudget} onChange={(val: any) => handleChange('estBudget', val)} />
-                <InputField label="Approved Budget" type="number" prefix="$" value={formData.appBudget} onChange={(val: any) => handleChange('appBudget', val)} required />
+                <InputField label="Estimated Budget" type="number" prefix="$" value={formData.estBudget} onChange={(val: any) => handleChange('estBudget', val)} placeholder="0" />
+                <InputField label="Approved Budget" type="number" prefix="$" value={formData.appBudget} onChange={(val: any) => handleChange('appBudget', val)} placeholder="0" required />
                 <SelectField label="Currency" value={formData.currency} onChange={(val: any) => handleChange('currency', val)} options={['USD', 'EUR', 'GBP', 'INR', 'AED']} />
                 <SelectField label="Billing Type" value={formData.billingType} onChange={(val: any) => handleChange('billingType', val)} options={['Fixed Price', 'Time & Material', 'Retainer']} />
               </div>
             </SectionCard>
+
+
 
             <SectionCard title="Team Assignment" icon={Users}>
               <div className="space-y-4">
@@ -633,8 +718,8 @@ export default function CreateProjectPage() {
                 {team.map((t, idx) => (
                   <div key={t.id} className="grid grid-cols-12 gap-4 items-center bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg border border-gray-100 dark:border-gray-800">
                     <div className="col-span-5">
-                      <select 
-                        value={t.role} 
+                      <select
+                        value={t.role}
                         onChange={(e) => updateTeam(t.id, 'role', e.target.value)}
                         className="w-full p-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md text-sm outline-none"
                       >
@@ -651,11 +736,11 @@ export default function CreateProjectPage() {
                       </select>
                     </div>
                     <div className="col-span-6">
-                      <UserSelect 
-                        businessId={businessId as string} 
-                        value={t.member} 
-                        onChange={(v) => updateTeam(t.id, 'member', v)} 
-                        placeholder="Unassigned..." 
+                      <UserSelect
+                        businessId={businessId as string}
+                        value={t.member}
+                        onChange={(v) => updateTeam(t.id, 'member', v)}
+                        placeholder="Unassigned..."
                       />
                     </div>
                     <div className="col-span-1 flex justify-center">
@@ -665,7 +750,7 @@ export default function CreateProjectPage() {
                     </div>
                   </div>
                 ))}
-                <button 
+                <button
                   onClick={addTeamMember}
                   className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 px-4 py-2 rounded-lg transition-colors mt-2"
                 >
@@ -673,6 +758,8 @@ export default function CreateProjectPage() {
                 </button>
               </div>
             </SectionCard>
+
+
 
             <SectionCard title="Scope & Objectives" icon={Target}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -688,6 +775,8 @@ export default function CreateProjectPage() {
                 <InputField label="Dependencies" value={formData.dependencies} onChange={(val: any) => handleChange('dependencies', val)} multiline rows={3} placeholder="List internal/external dependencies..." />
               </div>
             </SectionCard>
+
+
 
             <SectionCard title="Risk & Documents" icon={ShieldCheck}>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
@@ -712,6 +801,47 @@ export default function CreateProjectPage() {
                 </div>
               </div>
             </SectionCard>
+
+            {/* Bottom Actions Bar */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(`/dashboard/${businessId}/project-operations/projects`)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300 shadow-sm"
+              >
+                Cancel
+              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleSubmit('draft')}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm disabled:opacity-50"
+                >
+                  Save Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmit('planning')}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+                >
+                  Save & Open Planning
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmit('start')}
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Starting...</>
+                  ) : (
+                    <><CheckCircle className="w-4 h-4" /> Start Project</>
+                  )}
+                </button>
+              </div>
+            </div>
 
           </div>
 
@@ -747,15 +877,15 @@ export default function CreateProjectPage() {
                   <div className="flex justify-between items-end pt-1">
                     <span className="text-xs font-bold text-gray-500 uppercase">Linked Docs</span>
                     <span className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5 text-blue-500"/> {formData.attachDocs && formData.linkedReq ? '3 Files' : '0 Files'}
+                      <FileText className="w-3.5 h-3.5 text-blue-500" /> {formData.attachDocs && formData.linkedReq ? '3 Files' : '0 Files'}
                     </span>
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30 p-4">
                 <h4 className="text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Activity className="w-4 h-4"/> Next Automations
+                  <Activity className="w-4 h-4" /> Next Automations
                 </h4>
                 <ul className="space-y-2">
                   {['Update Requirement Status', 'Generate Project Code', 'Create Default Stages', 'Assign Resources & Notify'].map((task, i) => (
@@ -771,16 +901,16 @@ export default function CreateProjectPage() {
 
         </div>
       </div>
-      
+
       {showCreateCustomer && (
-        <CreateCustomerModal 
+        <CreateCustomerModal
           open={true}
-          businessId={businessId as string} 
+          businessId={businessId as string}
           onClose={() => setShowCreateCustomer(false)}
           onCreated={async () => {
             setShowCreateCustomer(false);
             retryCustomers();
-          }} 
+          }}
         />
       )}
     </div>

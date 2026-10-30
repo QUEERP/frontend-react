@@ -136,7 +136,7 @@ export function EditBasicProjectForm({ businessId, projectId }: { businessId: st
       if (item.id === id) {
         const updated = { ...item, [field]: value };
         if (field === 'quantity' || field === 'rate') {
-          updated.amount = Number(updated.quantity) * Number(updated.rate);
+          updated.amount = (Number(updated.quantity) || 0) * (Number(updated.rate) || 0);
         }
         return updated;
       }
@@ -377,8 +377,10 @@ export function EditBasicProjectForm({ businessId, projectId }: { businessId: st
                       <td className="p-2">
                         <input
                           type="number"
-                          value={item.quantity}
+                          value={item.quantity ?? ''}
                           min="1"
+                          onFocus={(e) => { if (e.target.value === '0') e.target.select(); }}
+                          placeholder="1"
                           onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
                           className="w-full p-2 bg-transparent border border-transparent hover:border-gray-200 focus:border-blue-500 rounded outline-none transition-all text-right"
                         />
@@ -386,9 +388,11 @@ export function EditBasicProjectForm({ businessId, projectId }: { businessId: st
                       <td className="p-2">
                         <input
                           type="number"
-                          value={item.rate}
+                          value={item.rate ?? ''}
                           min="0"
                           step="0.01"
+                          onFocus={(e) => { if (e.target.value === '0') e.target.select(); }}
+                          placeholder="0"
                           onChange={(e) => handleItemChange(item.id, 'rate', e.target.value)}
                           className="w-full p-2 bg-transparent border border-transparent hover:border-gray-200 focus:border-blue-500 rounded outline-none transition-all text-right"
                         />
