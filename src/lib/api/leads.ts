@@ -1,4 +1,4 @@
-import { getCookie } from '@/lib/utils'
+import { getCookie, formatApiErrorMessage } from '@/lib/utils'
 import { API_ROOT } from "@/config/api";
 
 
@@ -212,7 +212,7 @@ export const leadsAPI = {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
-      throw new Error(error.message || 'Failed to create lead')
+      throw new Error(formatApiErrorMessage(error.message || 'Failed to create lead'))
     }
 
     return response.json()
@@ -235,7 +235,7 @@ export const leadsAPI = {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
-      throw new Error(error.message || 'Failed to update lead')
+      throw new Error(formatApiErrorMessage(error.message || 'Failed to update lead'))
     }
 
     return response.json()

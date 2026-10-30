@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import {  useNavigate  } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { CreateCustomerModal } from "@/components/dashboard/create-customer-modal";
 import { useBusinessData } from "@/components/dashboard/business-data-provider";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
   ArrowLeft, User, Mail, Phone, Building2, MessageSquare, Globe, MapPin, Tag,
-  UserPlus, ChevronDown, CheckCircle, AlertCircle, Loader2, RefreshCw, 
+  UserPlus, ChevronDown, CheckCircle, AlertCircle, Loader2, RefreshCw,
   Briefcase, Calendar, Layers, FolderHeart, Activity, Paperclip, Users,
   ListTodo, CheckSquare
 } from "lucide-react";
@@ -13,6 +13,9 @@ import { leadsAPI } from "@/lib/api/leads";
 import { contactsAPI, Customer } from "@/lib/api/contacts";
 import { usersAPI, BusinessUser } from "@/lib/api/users";
 import { ALL_PROJECT_TYPES, ALL_EXECUTION_TYPES } from "@/lib/constants/project-types";
+import { formatApiErrorMessage } from "@/lib/utils";
+import { CurrencySelect } from "@/components/dashboard/currency-select";
+import { getCurrencySymbol } from "@/lib/currencies";
 
 const LEAD_STATUSES = [
   { label: "New", value: "NEW" },
@@ -63,9 +66,9 @@ const EXECUTION_TYPES = [
 ];
 
 const INDUSTRIES = [
-  "Technology", "Retail", "Manufacturing", "Healthcare", "Finance", 
-  "Education", "Basic", "Real Estate", "Transportation", "Logistics", 
-  "Energy", "Telecommunications", "Agriculture", "Hospitality", "Automotive", 
+  "Technology", "Retail", "Manufacturing", "Healthcare", "Finance",
+  "Education", "Basic", "Real Estate", "Transportation", "Logistics",
+  "Energy", "Telecommunications", "Agriculture", "Hospitality", "Automotive",
   "Aerospace", "Media", "Entertainment", "Other"
 ];
 
@@ -204,19 +207,19 @@ export function CreateInquiryClient({ businessId }: Props) {
 
 
   const [formData, setFormData] = useState<any>({
-    customerId: "", name: "", email: "", phone: "", company: "", website: "", position: "", 
+    customerId: "", name: "", email: "", phone: "", company: "", website: "", position: "",
     industry: "", companySize: "", preferredCommunication: "", gstVatNumber: "",
-    inquiryTitle: "", inquiryType: "", source: "", priority: "", status: "", 
-    assignedToId: "", department: "", businessUnit: "", 
+    inquiryTitle: "", inquiryType: "", source: "WEBSITE", priority: "MEDIUM", status: "NEW",
+    assignedToId: "", department: "", businessUnit: "",
     budgetRange: "", expectedRevenue: undefined, probability: undefined, expectedDecisionDate: "", currency: "",
-    projectType: "", executionType: "", expectedStartDate: "", expectedCompletionDate: "", 
-    expectedDuration: "", businessRequirement: "", currentBusinessProblem: "", 
+    projectType: "", executionType: "", expectedStartDate: "", expectedCompletionDate: "",
+    expectedDuration: "", businessRequirement: "", currentBusinessProblem: "",
     expectedSolution: "", scopeSummary: "", deliverables: "", estimatedTeamSize: undefined,
     city: "", state: "", country: "", zipCode: "", timezone: "",
-    internalNotes: "", salesStrategy: "", competitors: "", competitorName: "", 
-    riskLevel: "", winProbability: undefined, expectedProfit: undefined, 
+    internalNotes: "", salesStrategy: "", competitors: "", competitorName: "",
+    riskLevel: "", winProbability: undefined, expectedProfit: undefined,
     expectedMargin: undefined, managementNotes: "", tags: "",
-    nextFollowUpDate: "", reminder: false, meetingDate: "", meetingType: "", 
+    nextFollowUpDate: "", reminder: false, meetingDate: "", meetingType: "",
     meetingLocation: "", followUpNotes: "",
     attachments: [] as File[],
   });
@@ -243,12 +246,7 @@ export function CreateInquiryClient({ businessId }: Props) {
   const bizCurrencyCode = bizCountry === "INDIA" ? "INR" : bizCountry === "UAE" ? "AED" : (currency || "USD");
   const currencyCode = formData?.currency || bizCurrencyCode;
 
-  let symbol = currencySymbol || "$";
-  if (currencyCode === "INR") symbol = "₹";
-  else if (currencyCode === "AED") symbol = "AED";
-  else if (currencyCode === "USD") symbol = "$";
-  else if (currencyCode === "EUR") symbol = "€";
-  else if (currencyCode === "GBP") symbol = "£";
+  const symbol = getCurrencySymbol(currencyCode) || currencySymbol || "$";
 
   const fetchCustomers = async () => {
     try {
@@ -431,8 +429,13 @@ export function CreateInquiryClient({ businessId }: Props) {
     try {
       const payload = {
         ...formData,
+        currency: formData.currency || bizCurrencyCode,
+        priority: formData.priority || "MEDIUM",
+        status: formData.status || "NEW",
+        source: formData.source || "WEBSITE",
+        executionType: formData.executionType || "AUTO_DETECT",
         tags: formData.tags ? formData.tags.split(",").map((t: string) => t.trim()) : [],
-        type: "INQUIRY", 
+        type: "INQUIRY",
         assignedTo: formData.assignedToId,
       };
       await leadsAPI.createLead(businessId, payload as any);
@@ -441,7 +444,7 @@ export function CreateInquiryClient({ businessId }: Props) {
         navigate(`/dashboard/${businessId}/project-operations/inquiries`);
       }, 1200);
     } catch (err: any) {
-      setSubmitError(err.message || "Failed to create inquiry. Please try again.");
+      setSubmitError(formatApiErrorMessage(err));
     } finally {
       setSubmitLoading(false);
     }
@@ -518,11 +521,11 @@ export function CreateInquiryClient({ businessId }: Props) {
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm font-medium text-gray-400">
-             <span className="text-blue-600 font-bold">1</span> / Inquiry
-             <ArrowLeft className="w-3 h-3 mx-1 rotate-180" />
-             <span className="opacity-60">Requirement</span>
-             <ArrowLeft className="w-3 h-3 mx-1 rotate-180" />
-             <span className="opacity-60">Project</span>
+            <span className="text-blue-600 font-bold">1</span> / Inquiry
+            <ArrowLeft className="w-3 h-3 mx-1 rotate-180" />
+            <span className="opacity-60">Requirement</span>
+            <ArrowLeft className="w-3 h-3 mx-1 rotate-180" />
+            <span className="opacity-60">Project</span>
           </div>
         </div>
 
@@ -541,7 +544,7 @@ export function CreateInquiryClient({ businessId }: Props) {
               <User className="w-5 h-5 text-blue-500" />
               1. Customer Information
             </h2>
-            
+
             <div className="mb-6 bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-100 dark:border-gray-800">
               <label className={labelClass}>Existing Customer</label>
               <div className="flex flex-col sm:flex-row gap-3 items-start">
@@ -671,8 +674,7 @@ export function CreateInquiryClient({ businessId }: Props) {
               <div>
                 <label className={labelClass}>Priority</label>
                 <div className="relative">
-                  <select value={formData.priority} onChange={(e) => updateField("priority", e.target.value)} className={`${inputClass} pr-10 appearance-none cursor-pointer`}>
-                    <option value="">— Select Priority —</option>
+                  <select value={formData.priority || "MEDIUM"} onChange={(e) => updateField("priority", e.target.value)} className={`${inputClass} pr-10 appearance-none cursor-pointer`}>
                     {PRIORITIES.map(({ label, value }) => <option key={value} value={value}>{label}</option>)}
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -713,17 +715,11 @@ export function CreateInquiryClient({ businessId }: Props) {
 
               <div>
                 <label className={labelClass}>Currency</label>
-                <div className="relative">
-                  <select value={formData.currency || ""} onChange={(e) => updateField("currency", e.target.value)} className={`${inputClass} pr-10 appearance-none cursor-pointer`}>
-                    <option value="">Default ({bizCurrencyCode})</option>
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="INR">INR (₹)</option>
-                    <option value="AED">AED (د.إ)</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                </div>
+                <CurrencySelect
+                  value={formData.currency || bizCurrencyCode}
+                  onValueChange={(val) => updateField("currency", val)}
+                  className="rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 h-[42px]"
+                />
               </div>
 
               <div>
@@ -753,7 +749,7 @@ export function CreateInquiryClient({ businessId }: Props) {
               <Layers className="w-5 h-5 text-blue-500" />
               3. Project Information
             </h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
               <div>
                 <label className={labelClass}>Project Type</label>
@@ -840,9 +836,9 @@ export function CreateInquiryClient({ businessId }: Props) {
               <div>
                 <label className={labelClass}>Country</label>
                 <div className="relative">
-                  <select 
-                    value={formData.country} 
-                    onChange={handleCountryChange} 
+                  <select
+                    value={formData.country}
+                    onChange={handleCountryChange}
                     className={`${inputClass} pr-10 appearance-none cursor-pointer`}
                   >
                     <option value="">— Select Country —</option>
@@ -878,24 +874,24 @@ export function CreateInquiryClient({ businessId }: Props) {
 
           {/* ── Section 5: Attachments ─────────────────────────── */}
           <div className={sectionClass}>
-             <h2 className={sectionHeaderClass}>
+            <h2 className={sectionHeaderClass}>
               <Paperclip className="w-5 h-5 text-blue-500" />
               5. Attachments
             </h2>
             <div className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl p-10 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-gray-900/50 text-center relative overflow-hidden transition-colors hover:bg-gray-100/50 dark:hover:bg-gray-800/50">
-               <input 
-                  type="file" 
-                  multiple 
-                  onChange={handleFileChange} 
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  title="Click or drag files here"
-               />
-               <FolderHeart className="w-10 h-10 text-gray-400 mb-3" />
-               <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Drag & Drop Documents Here</p>
-               <p className="text-xs text-gray-500 mt-1 max-w-sm">Support for PDF, Word, Excel, Images, BOQ, Tender Docs.</p>
-               <button type="button" className="mt-4 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 pointer-events-none shadow-sm">
-                  Browse Files
-               </button>
+              <input
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                title="Click or drag files here"
+              />
+              <FolderHeart className="w-10 h-10 text-gray-400 mb-3" />
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Drag & Drop Documents Here</p>
+              <p className="text-xs text-gray-500 mt-1 max-w-sm">Support for PDF, Word, Excel, Images, BOQ, Tender Docs.</p>
+              <button type="button" className="mt-4 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 pointer-events-none shadow-sm">
+                Browse Files
+              </button>
             </div>
             {formData.attachments && formData.attachments.length > 0 && (
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -922,12 +918,12 @@ export function CreateInquiryClient({ businessId }: Props) {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
               <div className="md:col-span-2">
-                 <label className={labelClass}>Internal Notes / Management Notes</label>
-                 <textarea rows={2} value={formData.managementNotes} onChange={(e) => updateField("managementNotes", e.target.value)} placeholder="Visible only to internal users..." className={`${inputClass} resize-none`} />
+                <label className={labelClass}>Internal Notes / Management Notes</label>
+                <textarea rows={2} value={formData.managementNotes} onChange={(e) => updateField("managementNotes", e.target.value)} placeholder="Visible only to internal users..." className={`${inputClass} resize-none`} />
               </div>
               <div className="md:col-span-2">
-                 <label className={labelClass}>Sales Strategy</label>
-                 <textarea rows={2} value={formData.salesStrategy} onChange={(e) => updateField("salesStrategy", e.target.value)} placeholder="How do we win this?" className={`${inputClass} resize-none`} />
+                <label className={labelClass}>Sales Strategy</label>
+                <textarea rows={2} value={formData.salesStrategy} onChange={(e) => updateField("salesStrategy", e.target.value)} placeholder="How do we win this?" className={`${inputClass} resize-none`} />
               </div>
               <div><label className={labelClass}>Competitors</label><input type="text" value={formData.competitors} onChange={(e) => updateField("competitors", e.target.value)} placeholder="Competitor A, B" className={inputClass} /></div>
               <div><label className={labelClass}>Risk Level</label><input type="text" value={formData.riskLevel} onChange={(e) => updateField("riskLevel", e.target.value)} placeholder="Low, Medium, High" className={inputClass} /></div>
@@ -987,7 +983,7 @@ export function CreateInquiryClient({ businessId }: Props) {
           </div>
         </form>
       </div>
-      
+
       {/* Create Customer Modal */}
       <CreateCustomerModal
         open={showCreateCustomer}
