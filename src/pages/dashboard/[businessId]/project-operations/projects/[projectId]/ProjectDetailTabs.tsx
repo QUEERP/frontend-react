@@ -1,16 +1,24 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, Map, CheckSquare, Flag, Users, Calendar, 
-  FileText, Clock, Receipt, Package, ShoppingCart, DollarSign, 
-  AlertCircle, ShieldAlert, GitPullRequest, HeadphonesIcon, 
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  LayoutDashboard, Map, CheckSquare, Flag, Users, Calendar,
+  FileText, Clock, Receipt, Package, ShoppingCart, DollarSign,
+  AlertCircle, ShieldAlert, GitPullRequest, HeadphonesIcon,
   BarChart, Activity
 } from 'lucide-react';
 import { useBusinessData } from '@/components/dashboard/business-data-provider';
 import { StatusBadge } from '@/components/project-operations/StatusBadge';
 
 export default function ProjectDetailTabs({ project, businessId, onProjectUpdate }: { project: any, businessId: string, onProjectUpdate?: () => void }) {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(urlTab || "overview");
+
+  useEffect(() => {
+    if (urlTab) {
+      setActiveTab(urlTab);
+    }
+  }, [urlTab]);
   const { business } = useBusinessData();
   const navigate = useNavigate();
 
@@ -54,18 +62,16 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center px-5 py-4 text-sm font-bold transition-colors border-b-2 whitespace-nowrap cursor-pointer ${
-                isActive
+              className={`flex items-center px-5 py-4 text-sm font-bold transition-colors border-b-2 whitespace-nowrap cursor-pointer ${isActive
                   ? "border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 bg-blue-50/50 dark:bg-gray-700/50"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
+                }`}
             >
               <Icon className="w-4 h-4 mr-2" />
               {tab.label}
               {typeof count === 'number' && (
-                <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                  isActive ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                }`}>
+                <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs font-bold ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                  }`}>
                   {count}
                 </span>
               )}
@@ -73,7 +79,7 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
           );
         })}
       </div>
-      
+
       <div className="p-6 min-h-[400px]">
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && (
@@ -150,7 +156,7 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Allocated Resources ({allocations.length})</h3>
-              <button 
+              <button
                 onClick={() => navigate(`/dashboard/${businessId}/project-operations/resources/create?projectId=${project.id}`)}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm"
               >
@@ -162,7 +168,7 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
               <div className="text-center py-12 text-gray-400">
                 <Users className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                 <p className="font-semibold text-sm">No resources allocated to this project.</p>
-                <button 
+                <button
                   onClick={() => navigate(`/dashboard/${businessId}/project-operations/resources/create?projectId=${project.id}`)}
                   className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold"
                 >
@@ -219,7 +225,7 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Tasks ({tasks.length})</h3>
-              <button 
+              <button
                 onClick={() => navigate(`/dashboard/${businessId}/project-operations/tasks/create?projectId=${project.id}`)}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm"
               >
@@ -265,7 +271,7 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Time Entries ({timeEntries.length})</h3>
-              <button 
+              <button
                 onClick={() => navigate(`/dashboard/${businessId}/project-operations/timesheets/create?projectId=${project.id}`)}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm"
               >
@@ -311,7 +317,7 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Issues ({issues.length})</h3>
-              <button 
+              <button
                 onClick={() => navigate(`/dashboard/${businessId}/project-operations/issues/create?projectId=${project.id}`)}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm"
               >
