@@ -17,6 +17,7 @@ export interface Negotiation {
   customer?: NegotiationCustomer | null;
   customerId?: string;
   stage: string;
+  status?: string;
   priority?: string;
   amount: number;
   origAmount?: number;
@@ -32,6 +33,8 @@ export interface Negotiation {
   salesOwner?: string | null;
   assignedToId?: string | null;
   probability?: number;
+  advancePct?: number;
+  retentionPct?: number;
   paymentTerms?: string;
   addedScope?: string;
   removedScope?: string;

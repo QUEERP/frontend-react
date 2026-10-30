@@ -5,6 +5,8 @@ import { useToast } from '@/hooks/use-toast';
 import { API_ROOT } from "@/config/api";
 
 const MASTER_TYPES = [
+  { key: 'PROJECT_TYPE', label: 'Project Types', defaults: ['Software','Basic','Manufacturing','Consultancy','Marketing','Maintenance','Trading','Interior','Architecture','Healthcare','Education','New Implementation','Upgrade / Expansion','Turnkey Project','System Integration','Other'] },
+  { key: 'EXECUTION_TYPE', label: 'Execution Types', defaults: ['Auto Detect','Service','Product','Hybrid','Turnkey (End-to-End)','Time & Materials','Fixed Price / Milestone','Retainer / Ongoing Support','Dedicated Team','Agile / Sprint-Based','Waterfall'] },
   { key: 'TASK_TYPE', label: 'Task Types', defaults: ['Development','Testing','Meeting','Research','Support','Deployment','Documentation','Review'] },
   { key: 'ISSUE_TYPE', label: 'Issue Types', defaults: ['Bug','Risk','Blocker','Feature','Enhancement','Change'] },
   { key: 'CHANGE_CATEGORY', label: 'Change Categories', defaults: ['Scope','Budget','Timeline','Requirement','Customer','Legal','Technical'] },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {  useNavigate  } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { contractsAPI, Contract, ContractType } from '@/lib/api/contracts'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -28,18 +28,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { 
-  Plus, 
-  MoreHorizontal, 
-  Edit, 
-  Trash2, 
-  FileText, 
+import {
+  Plus,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Eye,
+  Handshake,
+  FileText,
   Calendar,
   DollarSign,
   User,
   Loader2,
   Settings,
   FileSignatureIcon,
+  FileSignature,
   BriefcaseBusinessIcon,
   SearchIcon,
   ShieldCheckIcon
@@ -52,6 +55,11 @@ interface ContractsPageClientProps {
 
 export function ContractsPageClient({ businessId }: ContractsPageClientProps) {
   const navigate = useNavigate()
+  const isProjectOps = typeof window !== 'undefined' && window.location.pathname.includes('/project-operations');
+  const contractsBasePath = isProjectOps
+    ? `/dashboard/${businessId}/project-operations/contracts`
+    : `/dashboard/${businessId}/contracts`;
+
   const [contracts, setContracts] = useState<Contract[]>([])
   const [contractTypes, setContractTypes] = useState<ContractType[]>([])
   const [loading, setLoading] = useState(true)
@@ -93,7 +101,7 @@ export function ContractsPageClient({ businessId }: ContractsPageClientProps) {
 
   // Form handlers
   const handleEdit = (contract: Contract) => {
-    navigate(`/dashboard/${businessId}/contracts/${contract.id}/edit`)
+    navigate(`${contractsBasePath}/${contract.id}/edit`)
   }
 
   const handleDelete = async (contractId: string) => {
@@ -103,7 +111,7 @@ export function ContractsPageClient({ businessId }: ContractsPageClientProps) {
 
   const confirmDelete = async () => {
     if (!contractToDelete) return
-    
+
     try {
       const response = await contractsAPI.deleteContract(businessId, contractToDelete)
       if (response.success) {
@@ -147,11 +155,17 @@ export function ContractsPageClient({ businessId }: ContractsPageClientProps) {
     }
   }
 
-  const formatCurrency = (value: number, currency: string) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: currency || 'INR',
-    }).format(value)
+  const formatCurrency = (value: number, currency?: string) => {
+    const curr = (currency || 'USD').toUpperCase();
+    try {
+      const locale = curr === 'INR' ? 'en-IN' : (curr === 'EUR' ? 'de-DE' : (curr === 'GBP' ? 'en-GB' : 'en-US'));
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: curr,
+      }).format(value || 0);
+    } catch {
+      return curr + ' ' + (value || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
+    }
   }
 
   if (loading) {
@@ -182,7 +196,7 @@ export function ContractsPageClient({ businessId }: ContractsPageClientProps) {
             <Settings className="h-4 w-4 text-muted-foreground" />
             Manage Types
           </Button>
-          <Button onClick={() => navigate(`/dashboard/${businessId}/contracts/add`)} className="rounded-xl h-10 px-6 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-sm transition-all hover:shadow-md gap-2">
+          <Button onClick={() => navigate(`${contractsBasePath}/add`)} className="rounded-xl h-10 px-6 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-sm transition-all hover:shadow-md gap-2">
             <Plus className="h-4 w-4" />
             Create Contract
           </Button>
@@ -208,7 +222,7 @@ export function ContractsPageClient({ businessId }: ContractsPageClientProps) {
               <p className="text-sm text-muted-foreground max-w-sm">
                 Create your first contract to manage business agreements efficiently.
               </p>
-              <Button onClick={() => navigate(`/dashboard/${businessId}/contracts/add`)} className="rounded-xl mt-4 bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm">
+              <Button onClick={() => navigate(`${contractsBasePath}/add`)} className="rounded-xl mt-4 bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm">
                 <Plus className="h-4 w-4" />
                 Create First Contract
               </Button>
@@ -232,7 +246,12 @@ export function ContractsPageClient({ businessId }: ContractsPageClientProps) {
                     <TableRow key={contract.id} className="hover:bg-muted/50 dark:hover:bg-slate-800/30 transition-colors group">
                       <TableCell className="px-6 py-4">
                         <div className="flex flex-col gap-1">
-                          <span className="font-semibold text-foreground dark:text-slate-100 line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{contract.title}</span>
+                          <Link
+                            to={`${contractsBasePath}/${contract.id}`}
+                            className="font-semibold text-foreground dark:text-slate-100 line-clamp-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                          >
+                            {contract.title}
+                          </Link>
                           {contract.description && (
                             <span className="text-xs text-muted-foreground dark:text-slate-400 line-clamp-1 max-w-[200px]">
                               {contract.description}
@@ -291,11 +310,27 @@ export function ContractsPageClient({ businessId }: ContractsPageClientProps) {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="rounded-xl">
+                            <DropdownMenuItem
+                              onClick={() => navigate(`${contractsBasePath}/${contract.id}`)}
+                              className="cursor-pointer rounded-lg text-xs font-medium"
+                            >
+                              <Eye className="mr-2 h-4 w-4 text-indigo-500" />
+                              View Contract
+                            </DropdownMenuItem>
+                            {contract.description?.match(/Negotiation:\s*([A-Za-z0-9-_]+)/i) && (
+                              <DropdownMenuItem
+                                onClick={() => navigate(`/dashboard/${businessId}/project-operations/negotiations/create?edit=${contract.description?.match(/Negotiation:\s*([A-Za-z0-9-_]+)/i)?.[1]}`)}
+                                className="cursor-pointer rounded-lg text-xs font-medium text-orange-600 focus:text-orange-600 focus:bg-orange-50 dark:focus:bg-orange-950/20"
+                              >
+                                <Handshake className="mr-2 h-4 w-4 text-orange-500" />
+                                Edit Negotiation
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => handleEdit(contract)} className="cursor-pointer rounded-lg text-xs font-medium">
                               <Edit className="mr-2 h-4 w-4 text-blue-500" />
                               Edit Contract
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => handleDelete(contract.id)}
                               className="cursor-pointer rounded-lg text-xs font-medium text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-500/10"
                             >
@@ -327,7 +362,7 @@ export function ContractsPageClient({ businessId }: ContractsPageClientProps) {
               </DialogDescription>
             </DialogHeader>
           </div>
-          
+
           <div className="p-6 space-y-6">
             <div className="space-y-2">
               <Label htmlFor="typeName" className="text-xs font-semibold uppercase text-muted-foreground">Type Name</Label>
@@ -384,7 +419,7 @@ export function ContractsPageClient({ businessId }: ContractsPageClientProps) {
               </DialogDescription>
             </DialogHeader>
           </div>
-          
+
           <DialogFooter className="p-6 bg-muted dark:bg-slate-900 border-t border-border dark:border-slate-800 gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => setDeleteDialogOpen(false)} className="rounded-xl h-10 border-border dark:border-slate-800 bg-card dark:bg-slate-950">
               Cancel

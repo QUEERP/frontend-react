@@ -52,7 +52,7 @@ export function DashboardGlobalHeader({ businessId }: { businessId: string }) {
   }, [pathname])
 
   return (
-    <div className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl px-4 py-3 shadow-[0_2px_10px_rgba(0,0,0,0.02)] sm:px-6 lg:px-8 dark:bg-[#121418]/80 dark:border-[#1e2228] dark:shadow-none w-full">
+    <div className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl px-4 py-3 shadow-[0_2px_10px_rgba(0,0,0,0.02)] sm:px-6 lg:px-8 dark:bg-[#121418]/80 dark:border-[#1e2228] dark:shadow-none w-full print:hidden">
       <header className="flex items-center justify-between gap-4 w-full">
         {/* Left Side: Title & Badge */}
         <div className="flex min-w-0 items-center gap-3">

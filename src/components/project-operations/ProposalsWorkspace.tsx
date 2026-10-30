@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, Filter, FileText, Send, CheckCircle2, ArrowRight, Download, Eye, Plus,
   FileSignature, X, ChevronDown, CheckCircle, ArrowDownUp, SlidersHorizontal,
-  MoreVertical, Copy, History, Mail, ArrowUpRight, Trash2, Edit2, XCircle
+  MoreVertical, Copy, History, Mail, ArrowUpRight, Trash2, Edit2, XCircle,
+  Handshake, FileCheck
 } from 'lucide-react';
 import { proposalsAPI, Proposal as Quotation } from '@/lib/api/proposals';
 import { useToast } from "@/components/ui/use-toast";
@@ -695,6 +696,26 @@ export function ProposalsWorkspace({ businessId }: { businessId: string }) {
                               >
                                 <XCircle className="w-3.5 h-3.5 shrink-0" />
                                 <span>Reject Proposal</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/dashboard/${businessId}/project-operations/negotiations/create?proposalId=${prop.id}&proposalNo=${propNum}`);
+                                }}
+                                className="w-full px-3 py-2 text-xs rounded-md flex items-center gap-2 text-blue-600 dark:text-blue-400 font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer"
+                              >
+                                <Handshake className="w-3.5 h-3.5 shrink-0 text-blue-600" />
+                                <span>Create Negotiation</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/dashboard/${businessId}/project-operations/contracts/add?fromProposal=${prop.id}&proposalNo=${propNum}`);
+                                }}
+                                className="w-full px-3 py-2 text-xs rounded-md flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 cursor-pointer"
+                              >
+                                <FileCheck className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                                <span>Create Contract</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={(e) => { e.stopPropagation(); handleAction('convert', prop); }}

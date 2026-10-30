@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { Building2Icon, LayoutDashboardIcon, Plus, UsersIcon, UserIcon, SettingsIcon, FileTextIcon, UserCheckIcon, WalletIcon, CalendarDaysIcon, ChevronDownIcon, CreditCardIcon, ClockIcon, HandCoinsIcon, StoreIcon, ReceiptIcon, ActivityIcon, PackageIcon, Megaphone, CheckSquare, Mail, Phone, BarChart3, Undo2, RefreshCw, ShoppingCart, Truck, ClipboardList, PackageCheck, Tag, Layers, Ruler, AlertTriangle, ScanLine, ArrowLeftRight, History, SlidersHorizontal, QrCode, Archive, TrendingUpIcon, FileSignature, MessageSquare, StickyNote, MailSearch, PieChart, Calculator, Briefcase, Map as MapIcon, Flag, DollarSign, ShieldAlert, HeadphonesIcon } from 'lucide-react'
-import {  useLocation, useNavigate, useSearchParams  } from 'react-router-dom';
+import { Building2Icon, LayoutDashboardIcon, Plus, UsersIcon, UserIcon, SettingsIcon, FileTextIcon, UserCheckIcon, WalletIcon, CalendarDaysIcon, ChevronDownIcon, CreditCardIcon, ClockIcon, HandCoinsIcon, StoreIcon, ReceiptIcon, ActivityIcon, PackageIcon, Megaphone, CheckSquare, Mail, Phone, BarChart3, Undo2, RefreshCw, ShoppingCart, Truck, ClipboardList, PackageCheck, Tag, Layers, Ruler, AlertTriangle, ScanLine, ArrowLeftRight, History, SlidersHorizontal, QrCode, Archive, TrendingUpIcon, FileSignature, MessageSquare, StickyNote, MailSearch, PieChart, Calculator, Briefcase, Map as MapIcon, Flag, DollarSign, ShieldAlert, HeadphonesIcon, FileCheck } from 'lucide-react'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   Sidebar,
@@ -55,7 +55,7 @@ const MENU_CONFIG: Record<string, any> = {
 
 function isMenuVisible(businessType: string | undefined | null, moduleName: string, sectionName?: string, subItemName?: string) {
   if (!businessType || businessType === 'unknown') return true;
-  
+
   const normalizedType = Object.keys(MENU_CONFIG).find(
     k => k.toLowerCase() === businessType.toLowerCase()
   );
@@ -64,7 +64,7 @@ function isMenuVisible(businessType: string | undefined | null, moduleName: stri
   const config = MENU_CONFIG[normalizedType];
 
   if (!sectionName && !subItemName) {
-     return !(config.hiddenModules?.includes(moduleName));
+    return !(config.hiddenModules?.includes(moduleName));
   }
 
   const moduleConfig = config.moduleVisibility?.[moduleName];
@@ -84,8 +84,8 @@ function isMenuVisible(businessType: string | undefined | null, moduleName: stri
       isVisible = moduleConfig[sectionName].some((allowed: string) => allowed.toLowerCase() === subItemName.toLowerCase());
     }
     if (!isVisible && moduleConfig.allowedItems) {
-      isVisible = moduleConfig.allowedItems.some((allowed: string) => 
-        allowed.toLowerCase() === subItemName.toLowerCase() || 
+      isVisible = moduleConfig.allowedItems.some((allowed: string) =>
+        allowed.toLowerCase() === subItemName.toLowerCase() ||
         allowed.toLowerCase() === sectionName.toLowerCase()
       );
     }
@@ -389,22 +389,22 @@ export function AppSidebar() {
 
         const ownedBusinesses = Array.isArray(data.ownedBusinesses)
           ? data.ownedBusinesses.map((item: any) => ({
-              id: item.id,
-              name: item.name,
-              type: 'owned' as const,
-              logoUrl: getBusinessLogo(item),
-            }))
+            id: item.id,
+            name: item.name,
+            type: 'owned' as const,
+            logoUrl: getBusinessLogo(item),
+          }))
           : []
         const memberBusinesses = Array.isArray(data.memberBusinesses)
           ? data.memberBusinesses
-              .map((item: any) => item?.business)
-              .filter((item: any) => item?.id && item?.name)
-              .map((item: any) => ({
-                id: item.id,
-                name: item.name,
-                type: 'member' as const,
-                logoUrl: getBusinessLogo(item),
-              }))
+            .map((item: any) => item?.business)
+            .filter((item: any) => item?.id && item?.name)
+            .map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              type: 'member' as const,
+              logoUrl: getBusinessLogo(item),
+            }))
           : []
 
         const combinedBusinesses = [...ownedBusinesses, ...memberBusinesses]
@@ -433,7 +433,7 @@ export function AppSidebar() {
     const timer = setTimeout(() => {
       fetchUserBusinesses()
     }, 400)
-    
+
     return () => {
       mounted = false
       clearTimeout(timer)
@@ -466,11 +466,11 @@ export function AppSidebar() {
         console.error('Failed to fetch statutory reports for sidebar', err);
       }
     }
-    
+
     const timer = setTimeout(() => {
       fetchStatutoryReports();
     }, 600)
-    
+
     return () => {
       mounted = false
       clearTimeout(timer)
@@ -613,32 +613,32 @@ export function AppSidebar() {
         return normalized !== 'inviteuser' && normalized !== 'customercontact' && normalized !== 'project' && normalized !== 'tasks' && normalized !== 'task'
       })
       .map((moduleItem) => {
-      const key = moduleItem.name.toLowerCase()
-      const routeSuffix = moduleRouteMap[key as keyof typeof moduleRouteMap] || ''
-      const href = routeSuffix ? `${baseDashboardPath}${routeSuffix}` : ''
-      const Icon = moduleIconMap[key as keyof typeof moduleIconMap] || Building2Icon
-      let label = key === 'leave' ? 'Leaves' : key.charAt(0).toUpperCase() + key.slice(1)
+        const key = moduleItem.name.toLowerCase()
+        const routeSuffix = moduleRouteMap[key as keyof typeof moduleRouteMap] || ''
+        const href = routeSuffix ? `${baseDashboardPath}${routeSuffix}` : ''
+        const Icon = moduleIconMap[key as keyof typeof moduleIconMap] || Building2Icon
+        let label = key === 'leave' ? 'Leaves' : key.charAt(0).toUpperCase() + key.slice(1)
 
-      // Apply renames
-      if (key === 'deal') label = 'Deals'
-      if (key === 'sales_returns') label = 'Returns'
-      if (key === 'purchase_returns') label = 'Returns'
-      if (key === 'grn') label = 'Receipts'
-      if (key === 'vendor_bills') label = 'Bills'
-      if (key === 'email_log' || key === 'emaillog') label = 'Email Tracking'
-      if (key === 'report' || key === 'reports') label = 'Analytics'
-      if (key === 'settings') label = 'Administration'
-      if (key === 'leave' || key === 'leaves') label = 'Leave Management'
-      if (key === 'loans' || key === 'loan') label = 'Loans & Advances'
-      if (key === 'bankchange') label = 'Bank Requests'
+        // Apply renames
+        if (key === 'deal') label = 'Deals'
+        if (key === 'sales_returns') label = 'Returns'
+        if (key === 'purchase_returns') label = 'Returns'
+        if (key === 'grn') label = 'Receipts'
+        if (key === 'vendor_bills') label = 'Bills'
+        if (key === 'email_log' || key === 'emaillog') label = 'Email Tracking'
+        if (key === 'report' || key === 'reports') label = 'Analytics'
+        if (key === 'settings') label = 'Administration'
+        if (key === 'leave' || key === 'leaves') label = 'Leave Management'
+        if (key === 'loans' || key === 'loan') label = 'Loans & Advances'
+        if (key === 'bankchange') label = 'Bank Requests'
 
-      return {
-        key,
-        label,
-        href,
-        icon: Icon,
-      }
-    })
+        return {
+          key,
+          label,
+          href,
+          icon: Icon,
+        }
+      })
 
     if (!mapped.some((item) => item.key === 'leave')) {
       mapped.push({
@@ -882,7 +882,7 @@ export function AppSidebar() {
               </div>
             </SelectValue>
           </SelectTrigger>
-          <SelectContent 
+          <SelectContent
             className="
               w-64 border border-blue-100 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-xl 
               bg-card 
@@ -1013,9 +1013,8 @@ export function AppSidebar() {
                           <TrendingUpIcon className="size-4" />
                           <span>Sales</span>
                           <ChevronDownIcon
-                            className={`ml-auto size-4 transition-transform duration-200${
-                              isSalesOpen ? ' rotate-180' : ''
-                            }`}
+                            className={`ml-auto size-4 transition-transform duration-200${isSalesOpen ? ' rotate-180' : ''
+                              }`}
                           />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
@@ -1023,132 +1022,132 @@ export function AppSidebar() {
                         <div className="space-y-1 py-1">
                           {/* GROUP 1: CRM & Customers */}
                           {isMenuVisible(bType, 'Sales', 'CRM & Customers') && (
-                          <Collapsible open={isSalesCrmOpen} onOpenChange={setIsSalesCrmOpen} className="px-2">
-                            <CollapsibleTrigger asChild>
-                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                                <span>CRM & Customers</span>
-                                <ChevronDownIcon className={`size-3 transition-transform ${isSalesCrmOpen ? 'rotate-180' : ''}`} />
-                              </button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                                {[{ href: `${baseDashboardPath}/leads`, label: 'Leads', icon: UserIcon, path: '/leads' },
-                                { href: `${baseDashboardPath}/deals`, label: 'Deals', icon: TrendingUpIcon, path: '/deals' },
-                                { href: `${baseDashboardPath}/customers`, label: 'Customers', icon: UsersIcon, path: '/customers' },
-                                { href: `${baseDashboardPath}/contacts`, label: 'Contacts', icon: UserCheckIcon, path: '/contacts' },
-                              ].filter(item => isMenuVisible(bType, 'Sales', 'CRM & Customers', item.label)).map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          </Collapsible>
+                            <Collapsible open={isSalesCrmOpen} onOpenChange={setIsSalesCrmOpen} className="px-2">
+                              <CollapsibleTrigger asChild>
+                                <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                  <span>CRM & Customers</span>
+                                  <ChevronDownIcon className={`size-3 transition-transform ${isSalesCrmOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                  {[{ href: `${baseDashboardPath}/leads`, label: 'Leads', icon: UserIcon, path: '/leads' },
+                                  { href: `${baseDashboardPath}/deals`, label: 'Deals', icon: TrendingUpIcon, path: '/deals' },
+                                  { href: `${baseDashboardPath}/customers`, label: 'Customers', icon: UsersIcon, path: '/customers' },
+                                  { href: `${baseDashboardPath}/contacts`, label: 'Contacts', icon: UserCheckIcon, path: '/contacts' },
+                                  ].filter(item => isMenuVisible(bType, 'Sales', 'CRM & Customers', item.label)).map(({ href, label, icon: Icon, path }) => (
+                                    <SidebarMenuSubItem key={path}>
+                                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                        <Link to={href} className="flex items-center gap-2">
+                                          <Icon className="size-4" />
+                                          <span>{label}</span>
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </Collapsible>
                           )}
 
                           {/* GROUP 2: Sales Operations */}
                           {isMenuVisible(bType, 'Sales', 'Sales Operations') && (
-                          <Collapsible open={isSalesOpsOpen} onOpenChange={setIsSalesOpsOpen} className="px-2">
-                            <CollapsibleTrigger asChild>
-                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                                <span>Sales Operations</span>
-                                <ChevronDownIcon className={`size-3 transition-transform ${isSalesOpsOpen ? 'rotate-180' : ''}`} />
-                              </button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                                {[{ href: `${baseDashboardPath}/quotations`, label: 'Quotations', icon: FileTextIcon, path: '/quotations' },
-                                { href: `${baseDashboardPath}/sales-orders`, label: 'Sales Orders', icon: FileSignature, path: '/sales-orders' },
-                                { href: `${baseDashboardPath}/invoices`, label: 'Invoices', icon: ReceiptIcon, path: '/invoices' },
-                                { href: `${baseDashboardPath}/payments`, label: 'Payments', icon: WalletIcon, path: '/payments' },
-                                { href: `${baseDashboardPath}/credit-notes`, label: 'Credit Notes', icon: CreditCardIcon, path: '/credit-notes' },
-                                { href: `${baseDashboardPath}/sales-returns`, label: 'Returns', icon: Undo2, path: '/sales-returns' },
-                                { href: `${baseDashboardPath}/recurring-invoices`, label: 'Recurring Invoices', icon: RefreshCw, path: '/recurring-invoices' },
-                              ].filter(item => isMenuVisible(bType, 'Sales', 'Sales Operations', item.label)).map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          </Collapsible>
+                            <Collapsible open={isSalesOpsOpen} onOpenChange={setIsSalesOpsOpen} className="px-2">
+                              <CollapsibleTrigger asChild>
+                                <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                  <span>Sales Operations</span>
+                                  <ChevronDownIcon className={`size-3 transition-transform ${isSalesOpsOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                  {[{ href: `${baseDashboardPath}/quotations`, label: 'Quotations', icon: FileTextIcon, path: '/quotations' },
+                                  { href: `${baseDashboardPath}/sales-orders`, label: 'Sales Orders', icon: FileSignature, path: '/sales-orders' },
+                                  { href: `${baseDashboardPath}/invoices`, label: 'Invoices', icon: ReceiptIcon, path: '/invoices' },
+                                  { href: `${baseDashboardPath}/payments`, label: 'Payments', icon: WalletIcon, path: '/payments' },
+                                  { href: `${baseDashboardPath}/credit-notes`, label: 'Credit Notes', icon: CreditCardIcon, path: '/credit-notes' },
+                                  { href: `${baseDashboardPath}/sales-returns`, label: 'Returns', icon: Undo2, path: '/sales-returns' },
+                                  { href: `${baseDashboardPath}/recurring-invoices`, label: 'Recurring Invoices', icon: RefreshCw, path: '/recurring-invoices' },
+                                  ].filter(item => isMenuVisible(bType, 'Sales', 'Sales Operations', item.label)).map(({ href, label, icon: Icon, path }) => (
+                                    <SidebarMenuSubItem key={path}>
+                                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                        <Link to={href} className="flex items-center gap-2">
+                                          <Icon className="size-4" />
+                                          <span>{label}</span>
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </Collapsible>
                           )}
 
                           {/* GROUP 3: Activities */}
                           {isMenuVisible(bType, 'Sales', 'Activities') && (
-                          <Collapsible open={isSalesActivitiesOpen} onOpenChange={setIsSalesActivitiesOpen} className="px-2">
-                            <CollapsibleTrigger asChild>
-                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                                <span>Activities</span>
-                                <ChevronDownIcon className={`size-3 transition-transform ${isSalesActivitiesOpen ? 'rotate-180' : ''}`} />
-                              </button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                                {[
-                                { href: `${baseDashboardPath}/activities?type=Meeting`, label: 'Meetings', icon: CalendarDaysIcon, path: 'type=Meeting' },
-                                { href: `${baseDashboardPath}/activities?type=Call`, label: 'Calls', icon: Phone, path: 'type=Call' },
-                                { href: `${baseDashboardPath}/crm-tasks`, label: 'Tasks', icon: CheckSquare, path: '/crm-tasks' },
-                                { href: `${baseDashboardPath}/notes`, label: 'Notes', icon: StickyNote, path: '/notes' },
-                                { href: `${baseDashboardPath}/activities`, label: 'Activities', icon: ActivityIcon, path: '/activities' },
-                              ].filter(item => isMenuVisible(bType, 'Sales', 'Activities', item.label)).map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={
-                                    path.startsWith('type=') 
-                                      ? pathname.includes('/activities') && searchParams.get('type') === path.split('=')[1]
-                                      : path === '/activities'
-                                        ? pathname.includes('/activities') && !searchParams.get('type')
-                                        : pathname === href || pathname.startsWith(href + '/')
-                                  }>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          </Collapsible>
+                            <Collapsible open={isSalesActivitiesOpen} onOpenChange={setIsSalesActivitiesOpen} className="px-2">
+                              <CollapsibleTrigger asChild>
+                                <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                  <span>Activities</span>
+                                  <ChevronDownIcon className={`size-3 transition-transform ${isSalesActivitiesOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                  {[
+                                    { href: `${baseDashboardPath}/activities?type=Meeting`, label: 'Meetings', icon: CalendarDaysIcon, path: 'type=Meeting' },
+                                    { href: `${baseDashboardPath}/activities?type=Call`, label: 'Calls', icon: Phone, path: 'type=Call' },
+                                    { href: `${baseDashboardPath}/crm-tasks`, label: 'Tasks', icon: CheckSquare, path: '/crm-tasks' },
+                                    { href: `${baseDashboardPath}/notes`, label: 'Notes', icon: StickyNote, path: '/notes' },
+                                    { href: `${baseDashboardPath}/activities`, label: 'Activities', icon: ActivityIcon, path: '/activities' },
+                                  ].filter(item => isMenuVisible(bType, 'Sales', 'Activities', item.label)).map(({ href, label, icon: Icon, path }) => (
+                                    <SidebarMenuSubItem key={path}>
+                                      <SidebarMenuSubButton asChild size="sm" isActive={
+                                        path.startsWith('type=')
+                                          ? pathname.includes('/activities') && searchParams.get('type') === path.split('=')[1]
+                                          : path === '/activities'
+                                            ? pathname.includes('/activities') && !searchParams.get('type')
+                                            : pathname === href || pathname.startsWith(href + '/')
+                                      }>
+                                        <Link to={href} className="flex items-center gap-2">
+                                          <Icon className="size-4" />
+                                          <span>{label}</span>
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </Collapsible>
                           )}
 
                           {/* GROUP 4: Marketing */}
                           {isMenuVisible(bType, 'Sales', 'Marketing') && (
-                          <Collapsible open={isSalesMarketingOpen} onOpenChange={setIsSalesMarketingOpen} className="px-2">
-                            <CollapsibleTrigger asChild>
-                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                                <span>Marketing</span>
-                                <ChevronDownIcon className={`size-3 transition-transform ${isSalesMarketingOpen ? 'rotate-180' : ''}`} />
-                              </button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                                {[
-                                { href: `${baseDashboardPath}/campaigns`, label: 'Campaigns', icon: Megaphone, path: '/campaigns' },
-                                { href: `${baseDashboardPath}/email-logs`, label: 'Email Tracking', icon: MailSearch, path: '/email-logs' },
-                              ].filter(item => isMenuVisible(bType, 'Sales', 'Marketing', item.label)).map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          </Collapsible>
+                            <Collapsible open={isSalesMarketingOpen} onOpenChange={setIsSalesMarketingOpen} className="px-2">
+                              <CollapsibleTrigger asChild>
+                                <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                  <span>Marketing</span>
+                                  <ChevronDownIcon className={`size-3 transition-transform ${isSalesMarketingOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                  {[
+                                    { href: `${baseDashboardPath}/campaigns`, label: 'Campaigns', icon: Megaphone, path: '/campaigns' },
+                                    { href: `${baseDashboardPath}/email-logs`, label: 'Email Tracking', icon: MailSearch, path: '/email-logs' },
+                                  ].filter(item => isMenuVisible(bType, 'Sales', 'Marketing', item.label)).map(({ href, label, icon: Icon, path }) => (
+                                    <SidebarMenuSubItem key={path}>
+                                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                        <Link to={href} className="flex items-center gap-2">
+                                          <Icon className="size-4" />
+                                          <span>{label}</span>
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </Collapsible>
                           )}
 
 
@@ -1156,12 +1155,12 @@ export function AppSidebar() {
                           {/* Standalone Sales Items */}
                           {isMenuVisible(bType, 'Sales', 'Sales Report') && (
                             <div className="px-2 mt-1">
-                                <SidebarMenuButton asChild size="sm" isActive={pathname.includes('/sales-report')}>
-                                  <Link to={`${baseDashboardPath}/sales-report`} className="flex items-center gap-2">
-                                    <FileTextIcon className="size-4" />
-                                    <span>Sales Report</span>
-                                  </Link>
-                                </SidebarMenuButton>
+                              <SidebarMenuButton asChild size="sm" isActive={pathname.includes('/sales-report')}>
+                                <Link to={`${baseDashboardPath}/sales-report`} className="flex items-center gap-2">
+                                  <FileTextIcon className="size-4" />
+                                  <span>Sales Report</span>
+                                </Link>
+                              </SidebarMenuButton>
                             </div>
                           )}
                         </div>
@@ -1197,100 +1196,100 @@ export function AppSidebar() {
                         <div className="space-y-1 py-1">
                           {/* GROUP 1: Vendors */}
                           {isMenuVisible(bType, 'Procurement', 'Vendors') && (
-                          <Collapsible open={isProcurementVendorsOpen} onOpenChange={setIsProcurementVendorsOpen} className="px-2">
-                            <CollapsibleTrigger asChild>
-                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                                <span>Vendors</span>
-                                <ChevronDownIcon className={`size-3 transition-transform ${isProcurementVendorsOpen ? 'rotate-180' : ''}`} />
-                              </button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                                {[{ href: `${baseDashboardPath}/vendors`, label: 'Vendors', icon: StoreIcon, path: '/vendors' },
-                              ].filter(item => isMenuVisible(bType, 'Procurement', 'Vendors', item.label)).map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          </Collapsible>
+                            <Collapsible open={isProcurementVendorsOpen} onOpenChange={setIsProcurementVendorsOpen} className="px-2">
+                              <CollapsibleTrigger asChild>
+                                <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                  <span>Vendors</span>
+                                  <ChevronDownIcon className={`size-3 transition-transform ${isProcurementVendorsOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                  {[{ href: `${baseDashboardPath}/vendors`, label: 'Vendors', icon: StoreIcon, path: '/vendors' },
+                                  ].filter(item => isMenuVisible(bType, 'Procurement', 'Vendors', item.label)).map(({ href, label, icon: Icon, path }) => (
+                                    <SidebarMenuSubItem key={path}>
+                                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                        <Link to={href} className="flex items-center gap-2">
+                                          <Icon className="size-4" />
+                                          <span>{label}</span>
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </Collapsible>
                           )}
 
                           {/* GROUP 2: Purchasing */}
                           {isMenuVisible(bType, 'Procurement', 'Purchasing') && (
-                          <Collapsible open={isProcurementPurchasingOpen} onOpenChange={setIsProcurementPurchasingOpen} className="px-2">
-                            <CollapsibleTrigger asChild>
-                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                                <span>Purchasing</span>
-                                <ChevronDownIcon className={`size-3 transition-transform ${isProcurementPurchasingOpen ? 'rotate-180' : ''}`} />
-                              </button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                                {[{ href: `${baseDashboardPath}/purchase-requests`, label: 'Purchase Requests', icon: ClipboardList, path: '/purchase-requests' },
-                                { href: `${baseDashboardPath}/purchase-orders`, label: 'Purchase Orders', icon: FileTextIcon, path: '/purchase-orders' },
-                                { href: `${baseDashboardPath}/grn`, label: 'Receipts', icon: PackageCheck, path: '/grn' },
-                                { href: `${baseDashboardPath}/vendor-bills`, label: 'Bills', icon: ReceiptIcon, path: '/vendor-bills' },
-                                { href: `${baseDashboardPath}/vendor-payments`, label: 'Vendor Payments', icon: WalletIcon, path: '/vendor-payments' },
-                                { href: `${baseDashboardPath}/purchase-returns`, label: 'Returns', icon: Undo2, path: '/purchase-returns' },
-                              ].filter(item => isMenuVisible(bType, 'Procurement', 'Purchasing', item.label)).map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          </Collapsible>
+                            <Collapsible open={isProcurementPurchasingOpen} onOpenChange={setIsProcurementPurchasingOpen} className="px-2">
+                              <CollapsibleTrigger asChild>
+                                <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                  <span>Purchasing</span>
+                                  <ChevronDownIcon className={`size-3 transition-transform ${isProcurementPurchasingOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                  {[{ href: `${baseDashboardPath}/purchase-requests`, label: 'Purchase Requests', icon: ClipboardList, path: '/purchase-requests' },
+                                  { href: `${baseDashboardPath}/purchase-orders`, label: 'Purchase Orders', icon: FileTextIcon, path: '/purchase-orders' },
+                                  { href: `${baseDashboardPath}/grn`, label: 'Receipts', icon: PackageCheck, path: '/grn' },
+                                  { href: `${baseDashboardPath}/vendor-bills`, label: 'Bills', icon: ReceiptIcon, path: '/vendor-bills' },
+                                  { href: `${baseDashboardPath}/vendor-payments`, label: 'Vendor Payments', icon: WalletIcon, path: '/vendor-payments' },
+                                  { href: `${baseDashboardPath}/purchase-returns`, label: 'Returns', icon: Undo2, path: '/purchase-returns' },
+                                  ].filter(item => isMenuVisible(bType, 'Procurement', 'Purchasing', item.label)).map(({ href, label, icon: Icon, path }) => (
+                                    <SidebarMenuSubItem key={path}>
+                                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                        <Link to={href} className="flex items-center gap-2">
+                                          <Icon className="size-4" />
+                                          <span>{label}</span>
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </Collapsible>
                           )}
 
                           {/* GROUP 3: Analytics */}
                           {isMenuVisible(bType, 'Procurement', 'Analytics') && (
-                          <Collapsible open={isProcurementAnalyticsOpen} onOpenChange={setIsProcurementAnalyticsOpen} className="px-2">
-                            <CollapsibleTrigger asChild>
-                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                                <span>Analytics</span>
-                                <ChevronDownIcon className={`size-3 transition-transform ${isProcurementAnalyticsOpen ? 'rotate-180' : ''}`} />
-                              </button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                                {[
-                                { href: `${baseDashboardPath}/purchase-reports`, label: 'Procurement Analytics', icon: BarChart3, path: '/purchase-reports' },
-                              ].filter(item => isMenuVisible(bType, 'Procurement', 'Analytics', item.label)).map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          </Collapsible>
+                            <Collapsible open={isProcurementAnalyticsOpen} onOpenChange={setIsProcurementAnalyticsOpen} className="px-2">
+                              <CollapsibleTrigger asChild>
+                                <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                  <span>Analytics</span>
+                                  <ChevronDownIcon className={`size-3 transition-transform ${isProcurementAnalyticsOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                  {[
+                                    { href: `${baseDashboardPath}/purchase-reports`, label: 'Procurement Analytics', icon: BarChart3, path: '/purchase-reports' },
+                                  ].filter(item => isMenuVisible(bType, 'Procurement', 'Analytics', item.label)).map(({ href, label, icon: Icon, path }) => (
+                                    <SidebarMenuSubItem key={path}>
+                                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                        <Link to={href} className="flex items-center gap-2">
+                                          <Icon className="size-4" />
+                                          <span>{label}</span>
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </Collapsible>
                           )}
 
                           {/* Standalone Procurement Items */}
                           {isMenuVisible(bType, 'Procurement', 'Procurement Report') && (
                             <div className="px-2 mt-1">
-                                <SidebarMenuButton asChild size="sm" isActive={pathname.includes('/procurement-report')}>
-                                  <Link to={`${baseDashboardPath}/procurement-report`} className="flex items-center gap-2">
-                                    <FileTextIcon className="size-4" />
-                                    <span>Procurement Report</span>
-                                  </Link>
-                                </SidebarMenuButton>
+                              <SidebarMenuButton asChild size="sm" isActive={pathname.includes('/procurement-report')}>
+                                <Link to={`${baseDashboardPath}/procurement-report`} className="flex items-center gap-2">
+                                  <FileTextIcon className="size-4" />
+                                  <span>Procurement Report</span>
+                                </Link>
+                              </SidebarMenuButton>
                             </div>
                           )}
                         </div>
@@ -1305,7 +1304,7 @@ export function AppSidebar() {
                 if (!isModuleAllocated('inventory')) return null;
                 const bType = business?.businessType || business?.industry || (business as any)?.type || (business as any)?.businessCategory || 'unknown';
                 if (!isMenuVisible(bType, 'Inventory')) return null;
-                
+
                 const products = sidebarModules.find((m) => m.key === 'product' || m.key === 'products')
                 const stock = sidebarModules.find((m) => m.key === 'stock' || m.key === 'stocks')
                 const warehouse = sidebarModules.find((m) => m.key === 'warehouse' || m.key === 'warehouses')
@@ -1336,17 +1335,17 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/categories`, label: 'Categories', icon: Layers, path: '/categories' },
                                 { href: `${baseDashboardPath}/brands`, label: 'Brands', icon: Tag, path: '/brands' },
                                 { href: `${baseDashboardPath}/units`, label: 'Units', icon: Ruler, path: '/units' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
+                                ].map(({ href, label, icon: Icon, path }) => (
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
 
@@ -1364,17 +1363,17 @@ export function AppSidebar() {
                                 { href: `${baseDashboardPath}/stock`, label: 'Stock Overview', icon: PackageCheck, path: '/stock' },
                                 { href: `${baseDashboardPath}/stock-transfers`, label: 'Transfers', icon: ArrowLeftRight, path: '/stock-transfers' },
                                 { href: `${baseDashboardPath}/stock-adjustments`, label: 'Adjustments', icon: SlidersHorizontal, path: '/stock-adjustments' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
+                                ].map(({ href, label, icon: Icon, path }) => (
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
 
@@ -1417,17 +1416,17 @@ export function AppSidebar() {
                               <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
                                 {[{ href: `${baseDashboardPath}/stock-movements`, label: 'Movement History', icon: History, path: '/stock-movements' },
                                 { href: `${baseDashboardPath}/reorder-alerts`, label: 'Reorder Alerts', icon: AlertTriangle, path: '/reorder-alerts' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
+                                ].map(({ href, label, icon: Icon, path }) => (
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
 
@@ -1442,33 +1441,33 @@ export function AppSidebar() {
                             <CollapsibleContent>
                               <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
                                 {[
-                                { href: `${baseDashboardPath}/inventory-dashboard`, label: 'Inventory Analytics', icon: BarChart3, path: '/inventory-dashboard' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
+                                  { href: `${baseDashboardPath}/inventory-dashboard`, label: 'Inventory Analytics', icon: BarChart3, path: '/inventory-dashboard' },
+                                ].map(({ href, label, icon: Icon, path }) => (
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
-                          </div>
+                        </div>
 
-                          {/* Standalone Inventory Items */}
-                          {bType.toLowerCase() === 'trading' && (
-                            <div className="px-2 mt-1">
-                                <SidebarMenuButton asChild size="sm" isActive={pathname.includes('/inventory-report')}>
-                                  <Link to={`${baseDashboardPath}/inventory-report`} className="flex items-center gap-2">
-                                    <FileTextIcon className="size-4" />
-                                    <span>Inventory Report</span>
-                                  </Link>
-                                </SidebarMenuButton>
-                            </div>
-                          )}
+                        {/* Standalone Inventory Items */}
+                        {bType.toLowerCase() === 'trading' && (
+                          <div className="px-2 mt-1">
+                            <SidebarMenuButton asChild size="sm" isActive={pathname.includes('/inventory-report')}>
+                              <Link to={`${baseDashboardPath}/inventory-report`} className="flex items-center gap-2">
+                                <FileTextIcon className="size-4" />
+                                <span>Inventory Report</span>
+                              </Link>
+                            </SidebarMenuButton>
+                          </div>
+                        )}
                       </CollapsibleContent>
                     </Collapsible>
                   </SidebarMenuItem>
@@ -1497,9 +1496,8 @@ export function AppSidebar() {
                           <Building2Icon className="size-4" />
                           <span>Accounting & Finance</span>
                           <ChevronDownIcon
-                            className={`ml-auto size-4 transition-transform duration-200${
-                              isProjectManagementOpen ? ' rotate-180' : ''
-                            }`}
+                            className={`ml-auto size-4 transition-transform duration-200${isProjectManagementOpen ? ' rotate-180' : ''
+                              }`}
                           />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
@@ -1559,197 +1557,198 @@ export function AppSidebar() {
               {isModuleAllocated('project_operations') && (
                 <SidebarMenuItem>
                   <Collapsible open={isProjectOpsOpen} onOpenChange={setIsProjectOpsOpen}>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className='rounded-xl my-0.5' tooltip="Project Operations">
-                      <CheckSquare className="size-4" />
-                      <span>Project Operations</span>
-                      <ChevronDownIcon className={`ml-auto size-4 transition-transform duration-200${isProjectOpsOpen ? ' rotate-180' : ''}`} />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="space-y-1 py-1">
-                      {/* Dashboard */}
-                      <div className="px-2">
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild size="sm" isActive={pathname.endsWith('/project-operations')}>
-                            <Link to={`${baseDashboardPath}/project-operations`} className="flex items-center gap-2">
-                              <LayoutDashboardIcon className="size-4" />
-                              <span>Dashboard</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </div>
-
-                      {/* Pre-Sales */}
-                      {business?.businessType?.toLowerCase() !== 'basic' && (
-                        <Collapsible open={isProjectOpsPreSalesOpen} onOpenChange={setIsProjectOpsPreSalesOpen} className="px-2">
-                          <CollapsibleTrigger asChild>
-                            <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                              <span>Pre-Sales</span>
-                              <ChevronDownIcon className={`size-3 transition-transform ${isProjectOpsPreSalesOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                              {[
-                                { href: `${baseDashboardPath}/project-operations/inquiries`, label: 'Customer Inquiries', icon: MessageSquare, path: '/inquiries' },
-                                { href: `${baseDashboardPath}/project-operations/requirements`, label: 'Requirements', icon: FileTextIcon, path: '/requirements' },
-                                { href: `${baseDashboardPath}/project-operations/estimations`, label: 'Estimations', icon: Calculator, path: '/estimations' },
-                                { href: `${baseDashboardPath}/project-operations/proposals`, label: 'Proposals', icon: FileSignature, path: '/proposals' },
-                                { href: `${baseDashboardPath}/project-operations/negotiations`, label: 'Negotiations', icon: HandCoinsIcon, path: '/negotiations' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      )}
-
-                      {/* Project Management */}
-                      {business?.businessType?.toLowerCase() !== 'basic' && (
-                        <Collapsible open={isProjectOpsManagementOpen} onOpenChange={setIsProjectOpsManagementOpen} className="px-2">
-                          <CollapsibleTrigger asChild>
-                            <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                              <span>Management</span>
-                              <ChevronDownIcon className={`size-3 transition-transform ${isProjectOpsManagementOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                              {[
-                                { href: `${baseDashboardPath}/project-operations/projects`, label: 'Projects', icon: Briefcase, path: '/projects' },
-                                { href: `${baseDashboardPath}/project-operations/planning`, label: 'Planning', icon: MapIcon, path: '/planning' },
-                                { href: `${baseDashboardPath}/project-operations/tasks`, label: 'Tasks', icon: CheckSquare, path: '/tasks' },
-                                { href: `${baseDashboardPath}/project-operations/milestones`, label: 'Milestones', icon: Flag, path: '/milestones' },
-                                { href: `${baseDashboardPath}/project-operations/resources`, label: 'Resources', icon: UsersIcon, path: '/resources' },
-                                { href: `${baseDashboardPath}/project-operations/timesheets`, label: 'Timesheets', icon: ClockIcon, path: '/timesheets' },
-                                { href: `${baseDashboardPath}/project-operations/issues`, label: 'Issues', icon: AlertTriangle, path: '/issues' },
-                                { href: `${baseDashboardPath}/project-operations/change-requests`, label: 'Change Requests', icon: ArrowLeftRight, path: '/change-requests' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      )}
-
-                      {/* Project Finance */}
-                      {business?.businessType?.toLowerCase() !== 'basic' && (
-                        <Collapsible open={isProjectOpsFinanceOpen} onOpenChange={setIsProjectOpsFinanceOpen} className="px-2">
-                          <CollapsibleTrigger asChild>
-                            <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                              <span>Finance</span>
-                              <ChevronDownIcon className={`size-3 transition-transform ${isProjectOpsFinanceOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                              {[
-                                { href: `${baseDashboardPath}/project-operations/budgets`, label: 'Budgets', icon: WalletIcon, path: '/budgets' },
-                                { href: `${baseDashboardPath}/project-operations/expenses`, label: 'Expenses', icon: ReceiptIcon, path: '/expenses' },
-                                { href: `${baseDashboardPath}/project-operations/billing`, label: 'Billing', icon: DollarSign, path: '/billing' },
-                                { href: `${baseDashboardPath}/project-operations/profitability`, label: 'Profitability', icon: TrendingUpIcon, path: '/profitability' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      )}
-
-                      {/* Support */}
-                      {business?.businessType?.toLowerCase() !== 'basic' && (
-                        <Collapsible open={isProjectOpsSupportOpen} onOpenChange={setIsProjectOpsSupportOpen} className="px-2">
-                          <CollapsibleTrigger asChild>
-                            <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                              <span>Support</span>
-                              <ChevronDownIcon className={`size-3 transition-transform ${isProjectOpsSupportOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                              {[
-                                { href: `${baseDashboardPath}/project-operations/warranty`, label: 'Warranty', icon: ShieldAlert, path: '/warranty' },
-                                { href: `${baseDashboardPath}/project-operations/amc`, label: 'AMC', icon: RefreshCw, path: '/amc' },
-                                { href: `${baseDashboardPath}/project-operations/tickets`, label: 'Tickets', icon: HeadphonesIcon, path: '/tickets' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      )}
-
-                      {/* Standalone & Settings */}
-                      <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                        {business?.businessType?.toLowerCase() === 'basic' && (
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className='rounded-xl my-0.5' tooltip="Project Operations">
+                        <CheckSquare className="size-4" />
+                        <span>Project Operations</span>
+                        <ChevronDownIcon className={`ml-auto size-4 transition-transform duration-200${isProjectOpsOpen ? ' rotate-180' : ''}`} />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="space-y-1 py-1">
+                        {/* Dashboard */}
+                        <div className="px-2">
                           <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/project-operations/projects')}>
-                              <Link to={`${baseDashboardPath}/project-operations/projects`} className="flex items-center gap-2">
-                                <Briefcase className="size-4" />
-                                <span>Projects</span>
+                            <SidebarMenuSubButton asChild size="sm" isActive={pathname.endsWith('/project-operations')}>
+                              <Link to={`${baseDashboardPath}/project-operations`} className="flex items-center gap-2">
+                                <LayoutDashboardIcon className="size-4" />
+                                <span>Dashboard</span>
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
-                        )}
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/project-operations/documents')}>
-                            <Link to={`${baseDashboardPath}/project-operations/documents`} className="flex items-center gap-2">
-                              <FileTextIcon className="size-4" />
-                              <span>Documents</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/project-operations/reports')}>
-                            <Link to={`${baseDashboardPath}/project-operations/reports`} className="flex items-center gap-2">
-                              <BarChart3 className="size-4" />
-                              <span>Reports</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/project-operations/masters')}>
-                            <Link to={`${baseDashboardPath}/project-operations/masters`} className="flex items-center gap-2">
-                              <SettingsIcon className="size-4" />
-                              <span>Masters</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
+                        </div>
 
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              </SidebarMenuItem>
+                        {/* Pre-Sales */}
+                        {business?.businessType?.toLowerCase() !== 'basic' && (
+                          <Collapsible open={isProjectOpsPreSalesOpen} onOpenChange={setIsProjectOpsPreSalesOpen} className="px-2">
+                            <CollapsibleTrigger asChild>
+                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                <span>Pre-Sales</span>
+                                <ChevronDownIcon className={`size-3 transition-transform ${isProjectOpsPreSalesOpen ? 'rotate-180' : ''}`} />
+                              </button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                {[
+                                  { href: `${baseDashboardPath}/project-operations/inquiries`, label: 'Customer Inquiries', icon: MessageSquare, path: '/inquiries' },
+                                  { href: `${baseDashboardPath}/project-operations/requirements`, label: 'Requirements', icon: FileTextIcon, path: '/requirements' },
+                                  { href: `${baseDashboardPath}/project-operations/estimations`, label: 'Estimations', icon: Calculator, path: '/estimations' },
+                                  { href: `${baseDashboardPath}/project-operations/proposals`, label: 'Proposals', icon: FileSignature, path: '/proposals' },
+                                  { href: `${baseDashboardPath}/project-operations/negotiations`, label: 'Negotiations', icon: HandCoinsIcon, path: '/negotiations' },
+                                  { href: `${baseDashboardPath}/project-operations/contracts`, label: 'Contracts', icon: FileCheck, path: '/project-operations/contracts' },
+                                ].map(({ href, label, icon: Icon, path }) => (
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+
+                        {/* Project Management */}
+                        {business?.businessType?.toLowerCase() !== 'basic' && (
+                          <Collapsible open={isProjectOpsManagementOpen} onOpenChange={setIsProjectOpsManagementOpen} className="px-2">
+                            <CollapsibleTrigger asChild>
+                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                <span>Management</span>
+                                <ChevronDownIcon className={`size-3 transition-transform ${isProjectOpsManagementOpen ? 'rotate-180' : ''}`} />
+                              </button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                {[
+                                  { href: `${baseDashboardPath}/project-operations/projects`, label: 'Projects', icon: Briefcase, path: '/projects' },
+                                  { href: `${baseDashboardPath}/project-operations/planning`, label: 'Planning', icon: MapIcon, path: '/planning' },
+                                  { href: `${baseDashboardPath}/project-operations/tasks`, label: 'Tasks', icon: CheckSquare, path: '/tasks' },
+                                  { href: `${baseDashboardPath}/project-operations/milestones`, label: 'Milestones', icon: Flag, path: '/milestones' },
+                                  { href: `${baseDashboardPath}/project-operations/resources`, label: 'Resources', icon: UsersIcon, path: '/resources' },
+                                  { href: `${baseDashboardPath}/project-operations/timesheets`, label: 'Timesheets', icon: ClockIcon, path: '/timesheets' },
+                                  { href: `${baseDashboardPath}/project-operations/issues`, label: 'Issues', icon: AlertTriangle, path: '/issues' },
+                                  { href: `${baseDashboardPath}/project-operations/change-requests`, label: 'Change Requests', icon: ArrowLeftRight, path: '/change-requests' },
+                                ].map(({ href, label, icon: Icon, path }) => (
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+
+                        {/* Project Finance */}
+                        {business?.businessType?.toLowerCase() !== 'basic' && (
+                          <Collapsible open={isProjectOpsFinanceOpen} onOpenChange={setIsProjectOpsFinanceOpen} className="px-2">
+                            <CollapsibleTrigger asChild>
+                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                <span>Finance</span>
+                                <ChevronDownIcon className={`size-3 transition-transform ${isProjectOpsFinanceOpen ? 'rotate-180' : ''}`} />
+                              </button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                {[
+                                  { href: `${baseDashboardPath}/project-operations/budgets`, label: 'Budgets', icon: WalletIcon, path: '/budgets' },
+                                  { href: `${baseDashboardPath}/project-operations/expenses`, label: 'Expenses', icon: ReceiptIcon, path: '/expenses' },
+                                  { href: `${baseDashboardPath}/project-operations/billing`, label: 'Billing', icon: DollarSign, path: '/billing' },
+                                  { href: `${baseDashboardPath}/project-operations/profitability`, label: 'Profitability', icon: TrendingUpIcon, path: '/profitability' },
+                                ].map(({ href, label, icon: Icon, path }) => (
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+
+                        {/* Support */}
+                        {business?.businessType?.toLowerCase() !== 'basic' && (
+                          <Collapsible open={isProjectOpsSupportOpen} onOpenChange={setIsProjectOpsSupportOpen} className="px-2">
+                            <CollapsibleTrigger asChild>
+                              <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                <span>Support</span>
+                                <ChevronDownIcon className={`size-3 transition-transform ${isProjectOpsSupportOpen ? 'rotate-180' : ''}`} />
+                              </button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                {[
+                                  { href: `${baseDashboardPath}/project-operations/warranty`, label: 'Warranty', icon: ShieldAlert, path: '/warranty' },
+                                  { href: `${baseDashboardPath}/project-operations/amc`, label: 'AMC', icon: RefreshCw, path: '/amc' },
+                                  { href: `${baseDashboardPath}/project-operations/tickets`, label: 'Tickets', icon: HeadphonesIcon, path: '/tickets' },
+                                ].map(({ href, label, icon: Icon, path }) => (
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+
+                        {/* Standalone & Settings */}
+                        <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                          {business?.businessType?.toLowerCase() === 'basic' && (
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/project-operations/projects')}>
+                                <Link to={`${baseDashboardPath}/project-operations/projects`} className="flex items-center gap-2">
+                                  <Briefcase className="size-4" />
+                                  <span>Projects</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          )}
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/project-operations/documents')}>
+                              <Link to={`${baseDashboardPath}/project-operations/documents`} className="flex items-center gap-2">
+                                <FileTextIcon className="size-4" />
+                                <span>Documents</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/project-operations/reports')}>
+                              <Link to={`${baseDashboardPath}/project-operations/reports`} className="flex items-center gap-2">
+                                <BarChart3 className="size-4" />
+                                <span>Reports</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/project-operations/masters')}>
+                              <Link to={`${baseDashboardPath}/project-operations/masters`} className="flex items-center gap-2">
+                                <SettingsIcon className="size-4" />
+                                <span>Masters</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        </SidebarMenuSub>
+
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
               )}
 
               {/* 6.6 General Report */}
@@ -1776,7 +1775,7 @@ export function AppSidebar() {
                 const bankchange = sidebarModules.find((m) => m.key === 'bankchange')
                 const overtime = sidebarModules.find((m) => m.key === 'overtime')
                 const loans = sidebarModules.find((m) => m.key === 'loans')
-                
+
                 if (!employees && !leaves && !payroll && !bankchange && !overtime && !loans) return null
                 return (
                   <SidebarMenuItem>
@@ -1801,19 +1800,19 @@ export function AppSidebar() {
                             <CollapsibleContent>
                               <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
                                 {[
-                                { href: employees?.href || `${baseDashboardPath}/employees`, label: 'Employees', icon: UsersIcon, path: '/employees' },
-                                { href: `${baseDashboardPath}/attendance`, label: 'Attendance', icon: CalendarDaysIcon, path: '/attendance' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
+                                  { href: employees?.href || `${baseDashboardPath}/employees`, label: 'Employees', icon: UsersIcon, path: '/employees' },
+                                  { href: `${baseDashboardPath}/attendance`, label: 'Attendance', icon: CalendarDaysIcon, path: '/attendance' },
+                                ].map(({ href, label, icon: Icon, path }) => (
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
 
@@ -1828,21 +1827,21 @@ export function AppSidebar() {
                             <CollapsibleContent>
                               <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
                                 {[
-                                { href: leaves?.href || `${baseDashboardPath}/leaves`, label: 'Leave Management', icon: CalendarDaysIcon, path: '/leaves' },
-                                { href: payroll?.href || `${baseDashboardPath}/payrolls`, label: 'Payroll', icon: WalletIcon, path: '/payrolls' },
-                                { href: overtime?.href || `${baseDashboardPath}/overtime`, label: 'Overtime', icon: ClockIcon, path: '/overtime' },
-                                { href: loans?.href || `${baseDashboardPath}/loans`, label: 'Loans & Advances', icon: HandCoinsIcon, path: '/loans' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
+                                  { href: leaves?.href || `${baseDashboardPath}/leaves`, label: 'Leave Management', icon: CalendarDaysIcon, path: '/leaves' },
+                                  { href: payroll?.href || `${baseDashboardPath}/payrolls`, label: 'Payroll', icon: WalletIcon, path: '/payrolls' },
+                                  { href: overtime?.href || `${baseDashboardPath}/overtime`, label: 'Overtime', icon: ClockIcon, path: '/overtime' },
+                                  { href: loans?.href || `${baseDashboardPath}/loans`, label: 'Loans & Advances', icon: HandCoinsIcon, path: '/loans' },
+                                ].map(({ href, label, icon: Icon, path }) => (
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
 
@@ -1857,20 +1856,20 @@ export function AppSidebar() {
                             <CollapsibleContent>
                               <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
                                 {[
-                                { href: bankchange?.href || `${baseDashboardPath}/bank-change-requests`, label: 'Bank Requests', icon: CreditCardIcon, path: '/bank-change-requests' },
-                                { href: `${baseDashboardPath}/documents`, label: 'Documents', icon: FileTextIcon, path: '/documents' },
-                                { href: `${baseDashboardPath}/employee-documents`, label: 'Employee Documents', icon: FileTextIcon, path: '/employee-documents' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
+                                  { href: bankchange?.href || `${baseDashboardPath}/bank-change-requests`, label: 'Bank Requests', icon: CreditCardIcon, path: '/bank-change-requests' },
+                                  { href: `${baseDashboardPath}/documents`, label: 'Documents', icon: FileTextIcon, path: '/documents' },
+                                  { href: `${baseDashboardPath}/employee-documents`, label: 'Employee Documents', icon: FileTextIcon, path: '/employee-documents' },
+                                ].map(({ href, label, icon: Icon, path }) => (
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
 
@@ -1888,16 +1887,16 @@ export function AppSidebar() {
                                   { href: `${baseDashboardPath}/hr-analytics`, label: 'HR Analytics', icon: BarChart3, path: '/hr-analytics' },
                                   { href: `${baseDashboardPath}/hr-report`, label: 'HR Report', icon: PieChart, path: '/hr-report' },
                                 ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
+                                  <SidebarMenuSubItem key={path}>
+                                    <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                      <Link to={href} className="flex items-center gap-2">
+                                        <Icon className="size-4" />
+                                        <span>{label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
                         </div>
@@ -1934,112 +1933,112 @@ export function AppSidebar() {
                 if (!isModuleAllocated('statutory')) return null;
                 const bType = business?.businessType || business?.industry || (business as any)?.type || (business as any)?.businessCategory || 'unknown';
                 if (!isMenuVisible(bType, 'Statutory Reports')) return null;
-                
+
                 return (
-              <SidebarMenuItem>
-                <Collapsible open={isStatutoryOpen} onOpenChange={setIsStatutoryOpen}>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className='rounded-xl my-0.5' tooltip="Statutory Reports">
-                      <FileTextIcon className="size-4" />
-                      <span>Statutory Reports</span>
-                      <ChevronDownIcon className={`ml-auto size-4 transition-transform duration-200${isStatutoryOpen ? ' rotate-180' : ''}`} />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="space-y-1 py-1">
-                      <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/statutory/dashboard')}>
-                            <Link to={`${baseDashboardPath}/statutory/dashboard`} className="flex items-center gap-2">
-                              <LayoutDashboardIcon className="size-4" />
-                              <span>Dashboard</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                  <SidebarMenuItem>
+                    <Collapsible open={isStatutoryOpen} onOpenChange={setIsStatutoryOpen}>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton className='rounded-xl my-0.5' tooltip="Statutory Reports">
+                          <FileTextIcon className="size-4" />
+                          <span>Statutory Reports</span>
+                          <ChevronDownIcon className={`ml-auto size-4 transition-transform duration-200${isStatutoryOpen ? ' rotate-180' : ''}`} />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="space-y-1 py-1">
+                          <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/statutory/dashboard')}>
+                                <Link to={`${baseDashboardPath}/statutory/dashboard`} className="flex items-center gap-2">
+                                  <LayoutDashboardIcon className="size-4" />
+                                  <span>Dashboard</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
 
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild size="sm" isActive={pathname === `${baseDashboardPath}/statutory/tax` || pathname.startsWith(`${baseDashboardPath}/statutory/tax/`)}>
-                            <Link to={`${baseDashboardPath}/statutory/tax`} className="flex items-center gap-2">
-                              <BarChart3 className="size-4" />
-                              <span>Tax Reports</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild size="sm" isActive={pathname === `${baseDashboardPath}/statutory/tax` || pathname.startsWith(`${baseDashboardPath}/statutory/tax/`)}>
+                                <Link to={`${baseDashboardPath}/statutory/tax`} className="flex items-center gap-2">
+                                  <BarChart3 className="size-4" />
+                                  <span>Tax Reports</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
 
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild size="sm" isActive={pathname === `${baseDashboardPath}/statutory/currency` || pathname.startsWith(`${baseDashboardPath}/statutory/currency/`)}>
-                            <Link to={`${baseDashboardPath}/statutory/currency`} className="flex items-center gap-2">
-                              <DollarSign className="size-4" />
-                              <span>Currency Reports</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild size="sm" isActive={pathname === `${baseDashboardPath}/statutory/currency` || pathname.startsWith(`${baseDashboardPath}/statutory/currency/`)}>
+                                <Link to={`${baseDashboardPath}/statutory/currency`} className="flex items-center gap-2">
+                                  <DollarSign className="size-4" />
+                                  <span>Currency Reports</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
 
-                        {/* Statutory Reports List */}
-                        <div className="pt-2 pb-1">
-                          <div className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            Returns
-                          </div>
+                            {/* Statutory Reports List */}
+                            <div className="pt-2 pb-1">
+                              <div className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Returns
+                              </div>
+                            </div>
+                            {statutoryReportsList.map((report) => (
+                              <SidebarMenuSubItem key={report.code}>
+                                <SidebarMenuSubButton asChild size="sm" isActive={pathname === `${baseDashboardPath}/statutory/returns/${report.code}` || pathname.startsWith(`${baseDashboardPath}/statutory/returns/${report.code}/`)}>
+                                  <Link to={`${baseDashboardPath}/statutory/returns/${report.code}`} className="flex items-center gap-2">
+                                    <FileTextIcon className="size-4" />
+                                    <span>{report.name}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+
+
+                            <Collapsible open={isStatutoryRegistersOpen} onOpenChange={setIsStatutoryRegistersOpen} className="px-2">
+                              <CollapsibleTrigger asChild>
+                                <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
+                                  <span>Registers</span>
+                                  <ChevronDownIcon className={`size-3 transition-transform ${isStatutoryRegistersOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
+                                  {[{ href: `${baseDashboardPath}/statutory/registers/sales-register`, label: 'Sales Register', icon: TrendingUpIcon, path: '/sales-register' },
+                                  { href: `${baseDashboardPath}/statutory/registers/purchase-register`, label: 'Purchase Register', icon: ShoppingCart, path: '/purchase-register' },
+                                  ].map(({ href, label, icon: Icon, path }) => (
+                                    <SidebarMenuSubItem key={path}>
+                                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
+                                        <Link to={href} className="flex items-center gap-2">
+                                          <Icon className="size-4" />
+                                          <span>{label}</span>
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/statutory/generated')}>
+                                <Link to={`${baseDashboardPath}/statutory/generated`} className="flex items-center gap-2">
+                                  <History className="size-4" />
+                                  <span>Generated Reports</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/statutory/settings')}>
+                                <Link to={`${baseDashboardPath}/statutory/settings`} className="flex items-center gap-2">
+                                  <SettingsIcon className="size-4" />
+                                  <span>Settings</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          </SidebarMenuSub>
                         </div>
-                        {statutoryReportsList.map((report) => (
-                          <SidebarMenuSubItem key={report.code}>
-                            <SidebarMenuSubButton asChild size="sm" isActive={pathname === `${baseDashboardPath}/statutory/returns/${report.code}` || pathname.startsWith(`${baseDashboardPath}/statutory/returns/${report.code}/`)}>
-                              <Link to={`${baseDashboardPath}/statutory/returns/${report.code}`} className="flex items-center gap-2">
-                                <FileTextIcon className="size-4" />
-                                <span>{report.name}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-
-
-                        <Collapsible open={isStatutoryRegistersOpen} onOpenChange={setIsStatutoryRegistersOpen} className="px-2">
-                          <CollapsibleTrigger asChild>
-                            <button className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                              <span>Registers</span>
-                              <ChevronDownIcon className={`size-3 transition-transform ${isStatutoryRegistersOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub className="space-y-0.5 mt-1 border-l-2 border-border ml-2.5 pl-2">
-                              {[{ href: `${baseDashboardPath}/statutory/registers/sales-register`, label: 'Sales Register', icon: TrendingUpIcon, path: '/sales-register' },
-                                { href: `${baseDashboardPath}/statutory/registers/purchase-register`, label: 'Purchase Register', icon: ShoppingCart, path: '/purchase-register' },
-                              ].map(({ href, label, icon: Icon, path }) => (
-                                <SidebarMenuSubItem key={path}>
-                                  <SidebarMenuSubButton asChild size="sm" isActive={pathname === href || pathname.startsWith(href + '/')}>
-                                    <Link to={href} className="flex items-center gap-2">
-                                      <Icon className="size-4" />
-                                      <span>{label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </Collapsible>
-
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/statutory/generated')}>
-                            <Link to={`${baseDashboardPath}/statutory/generated`} className="flex items-center gap-2">
-                              <History className="size-4" />
-                              <span>Generated Reports</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild size="sm" isActive={pathname.includes('/statutory/settings')}>
-                            <Link to={`${baseDashboardPath}/statutory/settings`} className="flex items-center gap-2">
-                              <SettingsIcon className="size-4" />
-                              <span>Settings</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              </SidebarMenuItem>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </SidebarMenuItem>
                 );
               })()}
 
