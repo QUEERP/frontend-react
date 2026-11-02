@@ -382,6 +382,7 @@ export function DashboardPageClient({ businessId }: { businessId: string }) {
             Authorization: `Bearer ${token}`,
 
             'x-business-id': businessId,
+            'x-skip-crud-tracking': 'true',
 
           },
 
@@ -438,7 +439,9 @@ export function DashboardPageClient({ businessId }: { businessId: string }) {
         setPayments(merged)
 
       } catch (err: any) {
-
+        if (err?.name === 'AbortError' || err?.message?.includes('already in progress')) {
+          return
+        }
         toast({
 
           title: 'Failed to load payments',

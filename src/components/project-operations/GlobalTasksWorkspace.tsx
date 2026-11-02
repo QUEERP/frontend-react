@@ -2,7 +2,7 @@ import { toast } from 'sonner';
 import React, { useState, useEffect, useMemo } from 'react';
 import {  useParams  } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import { Search, Filter, CheckSquare, Plus, List, LayoutGrid, Clock, X, ChevronDown, Download, FileText, AlertTriangle, CheckCircle, Loader2, SlidersHorizontal, Activity } from 'lucide-react';
+import { Search, Filter, CheckSquare, Plus, List, LayoutGrid, Clock, X, ChevronDown, Download, FileText, AlertTriangle, CheckCircle, Loader2, SlidersHorizontal, Activity, Briefcase } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -33,6 +33,7 @@ export function GlobalTasksWorkspace({ businessId: propBusinessId }: { businessI
   const [tasks, setTasks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [plannings, setPlannings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -55,15 +56,22 @@ export function GlobalTasksWorkspace({ businessId: propBusinessId }: { businessI
                   document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] || '';
         }
         const h = { 'Authorization': `Bearer ${token}`, 'x-business-id': businessId };
-        const [tRes, pRes, uRes] = await Promise.all([
+        const [tRes, pRes, uRes, plRes] = await Promise.all([
           fetch(`${API}/api/projects/global/tasks`, { headers: h }),
           fetch(`${API}/api/projects`, { headers: h }),
           fetch(`${API}/api/employees`, { headers: h }),
+          fetch(`${API}/api/projects/global/plannings`, { headers: h }).catch(() => null),
         ]);
-        const [td, pd, ud] = await Promise.all([tRes.json(), pRes.json(), uRes.json()]);
+        const [td, pd, ud, pld] = await Promise.all([
+          tRes.json(),
+          pRes.json(),
+          uRes.json(),
+          plRes ? plRes.json() : { plannings: [] },
+        ]);
         setTasks(td.data || td.tasks || []);
         setProjects(pd.data || pd.projects || []);
         setUsers(ud.data || ud.users || []);
+        setPlannings(pld?.data || pld?.plannings || []);
       } catch (e) { console.error(e); } finally { setLoading(false); }
     };
     load();
@@ -72,11 +80,12 @@ export function GlobalTasksWorkspace({ businessId: propBusinessId }: { businessI
   const filtered = useMemo(() => {
     const s = debouncedSearch.toLowerCase();
     return tasks.filter(t => {
-      if (s && ![(t.title || ''), (t.taskCode || ''), (t.project?.projectName || ''), (t.assignee?.name || ''), (t.milestone || '')].some(v => v.toLowerCase().includes(s))) return false;
+      if (s && ![(t.title || ''), (t.taskNumber || ''), (t.taskCode || ''), (t.project?.projectName || ''), (t.planning?.planName || ''), (t.planning?.planCode || ''), (t.assignee?.name || ''), (t.assignedTo?.name || ''), (t.milestone || '')].some(v => v.toLowerCase().includes(s))) return false;
       if (filters.status && t.status !== filters.status) return false;
       if (filters.priority && t.priority !== filters.priority) return false;
       if (filters.project && t.projectId !== filters.project) return false;
-      if (filters.assignee && t.assigneeId !== filters.assignee) return false;
+      if (filters.planning && t.planningId !== filters.planning && t.planning?.id !== filters.planning) return false;
+      if (filters.assignee && t.assigneeId !== filters.assignee && t.assignedToId !== filters.assignee) return false;
       return true;
     });
   }, [tasks, debouncedSearch, filters]);
@@ -261,11 +270,19 @@ export function GlobalTasksWorkspace({ businessId: propBusinessId }: { businessI
                             <CheckSquare className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
                             <div>
                               <p className="font-bold text-gray-900 dark:text-white">{t.title}</p>
-                              <p className="text-[10px] text-gray-400">{t.taskCode || '-'}</p>
+                              <p className="text-[10px] text-gray-400 font-semibold">{t.taskNumber || t.taskCode || '-'}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-5 py-3.5 text-gray-600 dark:text-gray-300 text-xs">{t.project?.projectName || t.project?.name || '-'}</td>
+                        <td className="px-5 py-3.5 text-gray-600 dark:text-gray-300 text-xs">
+                          <div className="font-semibold text-gray-900 dark:text-gray-100">{t.project?.projectName || t.project?.name || '-'}</div>
+                          {t.planning && (
+                            <div className="flex items-center gap-1 text-[11px] text-blue-600 dark:text-blue-400 mt-0.5 font-medium">
+                              <Briefcase className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate max-w-[170px]" title={`${t.planning.planCode} • ${t.planning.planName}`}>{t.planning.planCode} • {t.planning.planName}</span>
+                            </div>
+                          )}
+                        </td>
                         <td className="px-5 py-3.5 text-gray-500 text-xs">{t.milestone || '-'}</td>
                         <td className="px-5 py-3.5">
                           {t.assignee ? (
@@ -313,7 +330,13 @@ export function GlobalTasksWorkspace({ businessId: propBusinessId }: { businessI
                   {colTasks.map(t => (
                     <div key={t.id} className="bg-white dark:bg-gray-900 rounded-lg p-3.5 border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                       <p className="text-xs font-bold text-gray-900 dark:text-white mb-1.5 leading-snug">{t.title}</p>
-                      <p className="text-[10px] text-gray-400 mb-2">{t.project?.projectName || ''}</p>
+                      <p className="text-[10px] text-gray-400 mb-1">{t.project?.projectName || ''}</p>
+                      {t.planning && (
+                        <div className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 dark:text-blue-400 mb-2 truncate">
+                          <Briefcase className="w-2.5 h-2.5 flex-shrink-0" />
+                          <span className="truncate">{t.planning.planCode}</span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between">
                         <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase ${PRIORITY_COLORS[t.priority] || PRIORITY_COLORS.MEDIUM}`}>{t.priority || 'MED'}</span>
                         {t.assignee && <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-black flex items-center justify-center">{(t.assignee?.name || 'U')[0]}</div>}
@@ -357,6 +380,13 @@ export function GlobalTasksWorkspace({ businessId: propBusinessId }: { businessI
                 <select value={filters.project || ''} onChange={e => setFilters(prev => ({ ...prev, project: e.target.value }))} className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none">
                   <option value="">All Projects</option>
                   {projects.map((p: any) => <option key={p.id} value={p.id}>{p.projectName}</option>)}
+                </select>
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Planning / Master Schedule</p>
+                <select value={filters.planning || ''} onChange={e => setFilters(prev => ({ ...prev, planning: e.target.value }))} className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none">
+                  <option value="">All Schedules</option>
+                  {plannings.map((pl: any) => <option key={pl.id} value={pl.id}>{pl.planCode} • {pl.planName}</option>)}
                 </select>
               </div>
               <div>

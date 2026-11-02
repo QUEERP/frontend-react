@@ -291,6 +291,137 @@ const MilestoneWorkspaceTab = ({ project, businessId, navigate }: any) => {
   );
 };
 
+
+const PlanningWorkspaceTab = ({ project, businessId, navigate }: any) => {
+  const plannings = project?.plannings || [];
+  return (
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">
+            Planning Management ({plannings.length})
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">Master schedules, execution models, and timelines for {project?.projectName || 'this project'}</p>
+        </div>
+        <button 
+          onClick={() => navigate(`/dashboard/${businessId}/project-operations/planning/create?projectId=${project?.id}`)}
+          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+        >
+          <Map className="w-3.5 h-3.5" /> + New Master Schedule
+        </button>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        {plannings.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Map className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">No planning records found for {project?.projectName || 'this project'}</h4>
+            <p className="text-xs text-gray-500 mb-4 max-w-sm mx-auto">Create a master schedule to map deliverables, timeline dependencies, and budgets.</p>
+            <button 
+              onClick={() => navigate(`/dashboard/${businessId}/project-operations/planning/create?projectId=${project?.id}`)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              + Create First Master Schedule
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                <tr>
+                  <th className="px-6 py-3.5 font-bold">Schedule / Code</th>
+                  <th className="px-6 py-3.5 font-bold">Model / Department</th>
+                  <th className="px-6 py-3.5 font-bold">Timeline</th>
+                  <th className="px-6 py-3.5 font-bold">Status</th>
+                  <th className="px-6 py-3.5 font-bold">Progress</th>
+                  <th className="px-6 py-3.5 font-bold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {plannings.map((plan: any) => {
+                  const startDateStr = plan.startDate ? new Date(plan.startDate).toLocaleDateString() : 'TBD';
+                  const endDateStr = plan.endDate ? new Date(plan.endDate).toLocaleDateString() : 'TBD';
+                  const progress = plan.completionPercentage || 0;
+                  return (
+                    <tr 
+                      key={plan.id} 
+                      className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer group"
+                      onClick={() => navigate(`/dashboard/${businessId}/project-operations/planning/${plan.id}`)}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">
+                            {plan.planName || 'Unnamed Schedule'}
+                          </span>
+                          <span className="text-xs font-mono text-gray-400 mt-0.5">{plan.planCode || '—'}</span>
+                          {plan.phase && (
+                            <span className="text-[11px] text-gray-500 mt-0.5">Phase: {plan.phase}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-xs">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-semibold text-blue-600 dark:text-blue-400">
+                            {plan.execType || 'Turnkey'}
+                          </span>
+                          <span className="text-gray-500 dark:text-gray-400">{plan.department || '—'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-medium text-gray-600 dark:text-gray-300">
+                        <div className="flex flex-col gap-0.5">
+                          <span>{startDateStr} → {endDateStr}</span>
+                          {plan.duration != null && (
+                            <span className="text-[11px] text-gray-400 font-mono">({plan.duration} Days)</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={plan.status || 'ACTIVE'} size="sm" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="w-28 space-y-1">
+                          <div className="flex justify-between text-xs font-bold text-gray-700 dark:text-gray-300">
+                            <span>{progress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/dashboard/${businessId}/project-operations/planning/${plan.id}`)}
+                            title="View Schedule"
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/dashboard/${businessId}/project-operations/planning/${plan.id}/edit`)}
+                            title="Edit Schedule"
+                            className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const TimesheetWorkspaceTab = ({ project, businessId, navigate }: any) => {
   const times = project?.timeEntries || [];
   const totalLoggedHours = times.reduce((sum: number, t: any) => sum + (t.hours || 0), 0);
@@ -660,6 +791,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isLeftPaneOpen, setIsLeftPaneOpen] = useState(true);
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [sortOrder, setSortOrder] = useState('Newest First');
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -924,17 +1056,28 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-[calc(100vh-11rem)]">
+      <div className="flex flex-1 min-h-[calc(100vh-11rem)] relative">
         {/* LEFT PANE: List */}
-        <div className="w-[380px] lg:w-[420px] flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col shadow-sm relative z-20 sticky top-0 self-start max-h-[calc(100vh-4.25rem)]">
-          <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-3 bg-gray-50/50 dark:bg-gray-900/50 flex-none">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input 
-                type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search projects by code, name, customer..." 
-                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none shadow-sm"
-              />
+        <div className={`flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col shadow-sm relative z-20 sticky top-0 self-start max-h-[calc(100vh-4.25rem)] transition-all duration-300 ease-in-out ${isLeftPaneOpen ? 'w-[380px] lg:w-[420px]' : 'w-0 border-r-0 overflow-hidden opacity-0 pointer-events-none'}`}>
+          <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-3 bg-gray-50/50 dark:bg-gray-900/50 flex-none min-w-[380px]">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search projects by code, name, customer..." 
+                  className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none shadow-sm"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLeftPaneOpen(false)}
+                title="Collapse projects panel"
+                aria-label="Collapse projects panel"
+                className="p-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer flex-shrink-0"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
             </div>
             <div className="flex gap-2">
               <button onClick={() => setIsFilterOpen(true)} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold border rounded-lg transition-colors cursor-pointer ${Object.keys(filters).length > 0 ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
@@ -1030,6 +1173,20 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
 
         {/* RIGHT PANE: Details Workspace */}
         <div data-lenis-prevent className="flex-1 min-w-0 flex flex-col bg-gray-50/50 dark:bg-gray-950/30 relative z-10">
+          {!isLeftPaneOpen && (
+            <div className="px-6 py-2.5 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-none sticky top-0 z-30 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setIsLeftPaneOpen(true)}
+                title="Open projects list"
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+              >
+                <ChevronRight className="w-4 h-4" />
+                <span>Show Projects List</span>
+              </button>
+              <span className="text-xs text-gray-400 font-medium">Projects panel collapsed</span>
+            </div>
+          )}
           {selectedProject ? (
             <>
               {/* Header */}
@@ -1237,6 +1394,10 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                     <TimelineWorkspaceTab project={selectedProject} />
                   )}
 
+                  {activeTab === 'planning' && (
+                    <PlanningWorkspaceTab project={selectedProject} businessId={businessId} navigate={navigate} />
+                  )}
+
                   {activeTab !== 'overview' && 
                    activeTab !== 'resources' && 
                    activeTab !== 'tasks' && 
@@ -1244,7 +1405,8 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                    activeTab !== 'timesheets' && 
                    activeTab !== 'issues' && 
                    activeTab !== 'team' && 
-                   activeTab !== 'timeline' && (
+                   activeTab !== 'timeline' && 
+                   activeTab !== 'planning' && (
                     <GenericWorkspaceTab title={tabs.find(t => t.id === activeTab)?.label || 'Workspace'} project={selectedProject} />
                   )}
                 </div>
