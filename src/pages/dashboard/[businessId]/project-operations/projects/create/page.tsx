@@ -9,8 +9,9 @@ import {
   ArrowLeft, Save, ChevronDown, CheckCircle, Info, FileText, User,
   Target, Cpu, Calendar, DollarSign, Users, AlertTriangle,
   Paperclip, Plus, Trash2, ShieldCheck, Box, Briefcase, Settings,
-  Layout, Activity, Clock
+  Layout, Activity, Clock, UploadCloud, File, X, ChevronRight, Check
 } from 'lucide-react';
+
 import { useToast } from "@/components/ui/use-toast";
 import { getCookie } from '@/lib/utils';
 import { UserSelect } from "@/components/project-operations/UserSelect";
@@ -20,6 +21,25 @@ import { BasicProjectForm } from "@/components/dashboard/basic-project-form";
 import { projectOperationsAPI } from "@/lib/api/project-operations";
 import { TIMEZONE_GROUPS } from "@/lib/constants/timezones";
 
+const formatFileSize = (bytes: number) => {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+};
+
+const getCurrencySymbol = (curr: string) => {
+  switch (curr) {
+    case 'INR': return '₹';
+    case 'EUR': return '€';
+    case 'GBP': return '£';
+    case 'AED': return 'د.إ';
+    case 'USD':
+    default: return '$';
+  }
+};
+
 // ------------------------------------------------------------------
 // REUSABLE COMPONENTS
 // ------------------------------------------------------------------
@@ -28,11 +48,12 @@ const InputField = ({ label, type = "text", value, onChange, placeholder, requir
   const displayVal = (value === null || value === undefined) ? '' : value;
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-        {label} {required && <span className="text-red-500">*</span>}
+      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-1 whitespace-nowrap min-h-[1.25rem]">
+        <span>{label}</span>
+        {required && <span className="text-red-500 font-bold inline-block leading-none">*</span>}
       </label>
       <div className="relative flex items-center">
-        {prefix && <div className="absolute left-3 text-gray-500">{prefix}</div>}
+        {prefix && <div className="absolute left-3 text-gray-500 text-sm font-medium select-none pointer-events-none">{prefix}</div>}
         {multiline ? (
           <textarea
             value={displayVal}
@@ -55,7 +76,7 @@ const InputField = ({ label, type = "text", value, onChange, placeholder, requir
             className={`w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 transition-all outline-none ${prefix ? 'pl-9' : ''} ${suffix ? 'pr-9' : ''}`}
           />
         )}
-        {suffix && <div className="absolute right-3 text-gray-500">{suffix}</div>}
+        {suffix && <div className="absolute right-3 text-gray-500 text-sm">{suffix}</div>}
       </div>
     </div>
   );
@@ -63,8 +84,9 @@ const InputField = ({ label, type = "text", value, onChange, placeholder, requir
 
 const SelectField = ({ label, value, onChange, options, required = false, icon: Icon }: any) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-      {label} {required && <span className="text-red-500">*</span>}
+    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-1 whitespace-nowrap min-h-[1.25rem]">
+      <span>{label}</span>
+      {required && <span className="text-red-500 font-bold inline-block leading-none">*</span>}
     </label>
     <div className="relative flex items-center">
       {Icon && <div className="absolute left-3 text-gray-500"><Icon className="w-4 h-4" /></div>}
@@ -186,6 +208,35 @@ export default function CreateProjectPage() {
   });
 
   const [team, setTeam] = useState<{ id: number, role: string, member: string }[]>([]);
+  type AttachedProjectDoc = {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    category: string;
+    file?: File;
+    fileUrl?: string;
+  };
+  const [manualDocuments, setManualDocuments] = useState<AttachedProjectDoc[]>([]);
+  const [selectedDocCategory, setSelectedDocCategory] = useState<string>('Contract & Scope');
+
+  const handleFilesSelected = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const newDocs: AttachedProjectDoc[] = Array.from(files).map((f) => ({
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      name: f.name,
+      size: f.size,
+      type: f.type || 'application/octet-stream',
+      category: selectedDocCategory,
+      file: f,
+      fileUrl: URL.createObjectURL(f),
+    }));
+    setManualDocuments(prev => [...prev, ...newDocs]);
+    toast({
+      title: "File(s) Attached",
+      description: `${newDocs.length} file(s) added under ${selectedDocCategory}.`
+    });
+  };
 
   const { customers, loading: loadingCustomers, error: errorCustomers, retry: retryCustomers } = useBusinessCustomers(businessId);
   const [requirements, setRequirements] = useState<any[]>([]);
@@ -458,8 +509,37 @@ export default function CreateProjectPage() {
 
       const createdId = data.project?.id || data.data?.id || data.id;
 
-      if (actionType === 'planning' && createdId) {
-        navigate(`/dashboard/${businessId}/project-operations/projects/${createdId}?tab=planning`);
+      if (!formData.attachDocs && manualDocuments.length > 0 && createdId) {
+        try {
+          for (const doc of manualDocuments) {
+            await fetch(`${API_BASE}/api/project-operations/documents`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'x-business-id': businessId as string,
+                'x-skip-crud-tracking': 'true',
+              },
+              body: JSON.stringify({
+                title: doc.name,
+                fileUrl: doc.fileUrl || `uploads/projects/${createdId}/${doc.name}`,
+                fileType: doc.type,
+                fileSize: doc.size,
+                folder: doc.category,
+                projectId: createdId,
+                entityType: 'PROJECT',
+                entityId: createdId,
+                description: `Manual attachment under ${doc.category}`,
+              })
+            });
+          }
+        } catch (docErr) {
+          console.error("Failed to register attached documents:", docErr);
+        }
+      }
+
+      if (actionType === 'planning') {
+        navigate(`/dashboard/${businessId}/project-operations/planning${createdId ? `?projectId=${createdId}` : ''}`);
       } else {
         navigate(`/dashboard/${businessId}/project-operations/projects`);
       }
@@ -698,11 +778,36 @@ export default function CreateProjectPage() {
 
 
             <SectionCard title="Financial details" icon={DollarSign}>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <InputField label="Estimated Budget" type="number" prefix="$" value={formData.estBudget} onChange={(val: any) => handleChange('estBudget', val)} placeholder="0" />
-                <InputField label="Approved Budget" type="number" prefix="$" value={formData.appBudget} onChange={(val: any) => handleChange('appBudget', val)} placeholder="0" required />
-                <SelectField label="Currency" value={formData.currency} onChange={(val: any) => handleChange('currency', val)} options={['USD', 'EUR', 'GBP', 'INR', 'AED']} />
-                <SelectField label="Billing Type" value={formData.billingType} onChange={(val: any) => handleChange('billingType', val)} options={['Fixed Price', 'Time & Material', 'Retainer']} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                <InputField 
+                  label="Estimated Budget" 
+                  type="number" 
+                  prefix={getCurrencySymbol(formData.currency)} 
+                  value={formData.estBudget} 
+                  onChange={(val: any) => handleChange('estBudget', val)} 
+                  placeholder="0" 
+                />
+                <InputField 
+                  label="Approved Budget" 
+                  type="number" 
+                  prefix={getCurrencySymbol(formData.currency)} 
+                  value={formData.appBudget} 
+                  onChange={(val: any) => handleChange('appBudget', val)} 
+                  placeholder="0" 
+                  required 
+                />
+                <SelectField 
+                  label="Currency" 
+                  value={formData.currency} 
+                  onChange={(val: any) => handleChange('currency', val)} 
+                  options={['USD', 'EUR', 'GBP', 'INR', 'AED']} 
+                />
+                <SelectField 
+                  label="Billing Type" 
+                  value={formData.billingType} 
+                  onChange={(val: any) => handleChange('billingType', val)} 
+                  options={['Fixed Price', 'Time & Material', 'Retainer']} 
+                />
               </div>
             </SectionCard>
 
@@ -784,22 +889,152 @@ export default function CreateProjectPage() {
                 <SelectField label="Complexity" value={formData.complexity} onChange={(val: any) => handleChange('complexity', val)} options={['Standard', 'Complex', 'Highly Complex']} />
                 <div className="flex items-center gap-2 pt-6">
                   <input type="checkbox" id="approvalReq" checked={formData.approvalRequired} onChange={(e) => handleChange('approvalRequired', e.target.checked)} className="w-4 h-4 text-blue-600 rounded" />
-                  <label htmlFor="approvalReq" className="text-sm font-medium text-gray-700 dark:text-gray-300">Requires Executive Approval</label>
+                  <label htmlFor="approvalReq" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">Requires Executive Approval</label>
                 </div>
               </div>
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl flex items-start gap-4">
-                <Paperclip className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div>
+
+              <div className="p-4 bg-blue-50/60 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl flex items-start gap-4">
+                <Paperclip className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-bold text-blue-900 dark:text-blue-100">Automatic Document Linking</h4>
                   <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 leading-relaxed">
-                    By default, this project will automatically inherit and link all documents from the selected Requirement ({formData.linkedReq || 'None'}), Estimate, and Proposal. Check the box below to confirm.
+                    By default, this project will automatically inherit and link all documents from the selected Requirement ({formData.linkedReq || 'None'}), Estimate, and Proposal. Uncheck the box below to attach custom project documents manually.
                   </p>
-                  <label className="flex items-center gap-2 mt-3 cursor-pointer">
-                    <input type="checkbox" checked={formData.attachDocs} onChange={(e) => handleChange('attachDocs', e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-gray-300" />
-                    <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">Link source documents to this project</span>
+                  <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={formData.attachDocs} 
+                      onChange={(e) => handleChange('attachDocs', e.target.checked)} 
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer" 
+                    />
+                    <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                      Link source documents to this project
+                    </span>
                   </label>
                 </div>
               </div>
+
+              {!formData.attachDocs && (
+                <div className="mt-5 p-5 bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl space-y-4 animate-in fade-in duration-300">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 dark:border-gray-700 pb-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <UploadCloud className="w-4 h-4 text-blue-600" />
+                        Manual Document Attachment
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-0.5">Upload project charters, NDAs, technical scopes, or contracts</p>
+                    </div>
+                    <span className="text-xs font-semibold px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full w-fit">
+                      {manualDocuments.length} Attached
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1.5 block">
+                        Document Category / Folder
+                      </label>
+                      <select
+                        value={selectedDocCategory}
+                        onChange={(e) => setSelectedDocCategory(e.target.value)}
+                        className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none focus:border-blue-500"
+                      >
+                        <option value="Contract & Scope">Contract & Scope</option>
+                        <option value="Technical Specification">Technical Specification</option>
+                        <option value="Financial & Cost Sheet">Financial & Cost Sheet</option>
+                        <option value="Project Schedule">Project Schedule</option>
+                        <option value="Legal & NDA">Legal & NDA</option>
+                        <option value="General Attachments">General Attachments</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1.5 block">
+                        Quick Add Files
+                      </label>
+                      <label className="flex items-center justify-center gap-2 w-full p-2.5 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-dashed border-blue-300 dark:border-blue-700 rounded-lg text-sm font-medium text-blue-700 dark:text-blue-300 cursor-pointer transition-colors">
+                        <UploadCloud className="w-4 h-4" />
+                        <span>Choose Files to Attach...</span>
+                        <input
+                          type="file"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => {
+                            handleFilesSelected(e.target.files);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <label 
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleFilesSelected(e.dataTransfer.files);
+                    }}
+                    className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-xl bg-gray-50/50 dark:bg-gray-900/30 transition-all cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                      <UploadCloud className="w-5 h-5" />
+                    </div>
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 text-center">
+                      Click to browse or drag and drop project files here
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      PDF, DOCX, XLSX, PNG, JPG up to 25MB each
+                    </p>
+                    <input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        handleFilesSelected(e.target.files);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+
+                  {manualDocuments.length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Attached Files ({manualDocuments.length})
+                      </div>
+                      <div className="divide-y divide-gray-100 dark:divide-gray-700/60 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-900">
+                        {manualDocuments.map((doc) => (
+                          <div key={doc.id} className="p-3 flex items-center justify-between gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg flex-shrink-0">
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                  {doc.name}
+                                </div>
+                                <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                                  <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded font-medium">{doc.category}</span>
+                                  <span>•</span>
+                                  <span>{formatFileSize(doc.size)}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setManualDocuments((prev) => prev.filter((d) => d.id !== doc.id))}
+                              title="Remove file"
+                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors cursor-pointer flex-shrink-0"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </SectionCard>
 
             {/* Bottom Actions Bar */}
@@ -860,7 +1095,7 @@ export default function CreateProjectPage() {
                   </div>
                   <div className="flex justify-between items-end border-b border-gray-100 dark:border-gray-800 pb-3">
                     <span className="text-xs font-bold text-gray-500 uppercase">Budget</span>
-                    <span className="text-sm font-bold text-green-600">${Number(formData.appBudget).toLocaleString()}</span>
+                    <span className="text-sm font-bold text-green-600">{getCurrencySymbol(formData.currency)}{Number(formData.appBudget || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-end border-b border-gray-100 dark:border-gray-800 pb-3">
                     <span className="text-xs font-bold text-gray-500 uppercase">Duration</span>
@@ -877,7 +1112,7 @@ export default function CreateProjectPage() {
                   <div className="flex justify-between items-end pt-1">
                     <span className="text-xs font-bold text-gray-500 uppercase">Linked Docs</span>
                     <span className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5 text-blue-500" /> {formData.attachDocs && formData.linkedReq ? '3 Files' : '0 Files'}
+                      <FileText className="w-3.5 h-3.5 text-blue-500" /> {formData.attachDocs ? (formData.linkedReq ? '3 Files (Inherited)' : '0 Files') : `${manualDocuments.length} Attached`}
                     </span>
                   </div>
                 </div>

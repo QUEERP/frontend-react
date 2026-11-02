@@ -3,6 +3,20 @@ import { Loader2Icon } from 'lucide-react'
 
 const CRUD_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
+const QUERY_URL_PATTERNS = [
+  '/by-invoices',
+  '/query',
+  '/search',
+  '/filter',
+  '/list',
+  '/bulk-get',
+  '/lookup',
+]
+
+function isQueryLikeUrl(url: string): boolean {
+  return QUERY_URL_PATTERNS.some((pattern) => url.toLowerCase().includes(pattern))
+}
+
 type GlobalLoadingContextValue = {
   isCrudLoading: boolean
 }
@@ -71,11 +85,17 @@ export function GlobalLoadingProvider({ children }: { children: React.ReactNode 
       const hasBusinessHeader = Boolean(getHeaderValue(init?.headers, 'x-business-id'))
       const isApiCall = url.includes('/api/')
 
+      const skipTracking =
+        getHeaderValue(init?.headers, 'x-skip-crud-tracking') === 'true' ||
+        getHeaderValue(init?.headers, 'x-read-only') === 'true' ||
+        isQueryLikeUrl(url);
+
       const isTrackedCrud =
         isApiCall &&
         hasAuthHeader &&
         hasBusinessHeader &&
-        CRUD_METHODS.has(method)
+        CRUD_METHODS.has(method) &&
+        !skipTracking;
 
       if (!isTrackedCrud) {
         return originalFetch(input, init)

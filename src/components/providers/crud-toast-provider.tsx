@@ -87,8 +87,9 @@ export function CrudToastProvider() {
       const hasBusinessHeader = Boolean(getHeaderValue(init?.headers, 'x-business-id'))
       const isApiCall = url.includes('/api/')
       const isPreview = url.includes('/preview')
+      const skipTracking = getHeaderValue(init?.headers, 'x-skip-crud-tracking') === 'true'
 
-      if (!isApiCall || !hasAuthHeader || !hasBusinessHeader || isPreview) {
+      if (!isApiCall || !hasAuthHeader || !hasBusinessHeader || isPreview || skipTracking) {
         return originalFetch(input, init)
       }
 

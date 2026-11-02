@@ -1,8 +1,7 @@
 import { toast } from 'sonner';
-import React, { useState, useEffect, use } from 'react';
-import {  Link , useParams } from 'react-router-dom';
-import {  useNavigate  } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, ChevronDown, Briefcase, Calendar, Users, Target, DollarSign, Paperclip, Info } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, CheckCircle, ChevronDown, Briefcase, Calendar, Users, Target, DollarSign, Paperclip, Info, Layers } from 'lucide-react';
 import { UserSelect } from "@/components/project-operations/UserSelect";
 import { useToast } from '@/components/ui/use-toast';
 
@@ -18,9 +17,14 @@ const Input = ({ type = 'text', value, onChange, placeholder, className = '' }: 
     className={`w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none transition-all ${className}`} />
 );
 
-const Select = ({ value, onChange, children }: any) => (
+const Select = ({ value, onChange, disabled, children }: any) => (
   <div className="relative">
-    <select value={value} onChange={e => onChange(e.target.value)} className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none cursor-pointer appearance-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all">
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      disabled={disabled}
+      className={`w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none appearance-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all ${disabled ? 'opacity-60 cursor-not-allowed bg-gray-100 dark:bg-gray-800' : 'cursor-pointer'}`}
+    >
       {children}
     </select>
     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -46,26 +50,100 @@ const Section = ({ title, icon: Icon, children }: any) => {
 export default function CreateTaskPage() {
   const routerParams = useParams() as any;
   const { businessId } = routerParams;
+  const [searchParams] = useSearchParams();
+  const queryProjectId = searchParams.get('projectId') || '';
+  const queryPlanningId = searchParams.get('planningId') || '';
 
-  
   const navigate = useNavigate();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [plannings, setPlannings] = useState<any[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
 
   const [form, setForm] = useState({
-    title: '', taskCode: 'TSK-' + Math.floor(10000 + Math.random() * 90000),
-    projectId: '', phase: '', milestone: '', sprint: '',
-    assigneeId: '', department: '',
-    priority: '', status: '',
-    startDate: '', dueDate: '', estimatedHours: '', actualHours: '',
-    progress: 0, dependency: '', description: '',
-    subTask: '', sequence: '', criticalTask: false, recurring: false,
-    estimatedCost: '', actualCost: '', currency: '', notes: '',
+    title: '',
+    taskCode: 'TSK-' + Math.floor(10000 + Math.random() * 90000),
+    projectId: queryProjectId,
+    planningId: queryPlanningId,
+    phase: '',
+    milestone: '',
+    sprint: '',
+    assigneeId: '',
+    department: '',
+    priority: '',
+    status: '',
+    startDate: '',
+    dueDate: '',
+    estimatedHours: '',
+    actualHours: '',
+    progress: 0,
+    dependency: '',
+    description: '',
+    subTask: '',
+    sequence: '',
+    criticalTask: false,
+    recurring: false,
+    estimatedCost: '',
+    actualCost: '',
+    currency: '',
+    notes: '',
   });
 
   const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
+
+  const applyPlanningData = (plan: any) => {
+    if (!plan) return;
+    setForm(prev => ({
+      ...prev,
+      planningId: plan.id || plan._id,
+      projectId: plan.projectId || prev.projectId,
+      phase: plan.phase || prev.phase,
+      sprint: plan.sprint || prev.sprint,
+      milestone: plan.milestone || prev.milestone,
+      priority: plan.priority || prev.priority,
+      department: plan.department || prev.department,
+      startDate: plan.startDate ? new Date(plan.startDate).toISOString().split('T')[0] : prev.startDate,
+      dueDate: plan.endDate
+        ? new Date(plan.endDate).toISOString().split('T')[0]
+        : (plan.expectedCompletion ? new Date(plan.expectedCompletion).toISOString().split('T')[0] : prev.dueDate),
+      estimatedHours: prev.estimatedHours || (plan.estimatedHours ? String(plan.estimatedHours) : ''),
+      criticalTask: plan.criticalTask !== undefined ? plan.criticalTask : prev.criticalTask,
+      recurring: plan.recurring !== undefined ? plan.recurring : prev.recurring,
+      currency: plan.currency || prev.currency,
+      estimatedCost: prev.estimatedCost || (plan.estimatedCost ? String(plan.estimatedCost) : ''),
+      title: prev.title || plan.taskTitle || '',
+      description: prev.description || plan.description || '',
+    }));
+  };
+
+  const handleProjectChange = (projId: string) => {
+    const p = projects.find(x => x.id === projId || x._id === projId);
+    setForm(prev => {
+      const currentPlan = plannings.find(pl => (pl.id === prev.planningId || pl._id === prev.planningId));
+      const isPlanValid = currentPlan && currentPlan.projectId === projId;
+      return {
+        ...prev,
+        projectId: projId,
+        planningId: isPlanValid ? prev.planningId : '',
+        department: p?.department || prev.department,
+      };
+    });
+  };
+
+  const handlePlanningChange = (planId: string) => {
+    if (!planId) {
+      set('planningId', '');
+      return;
+    }
+    const plan = plannings.find(p => p.id === planId || p._id === planId);
+    if (plan) {
+      applyPlanningData(plan);
+    } else {
+      set('planningId', planId);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -83,16 +161,43 @@ export default function CreateTaskPage() {
         else if (c.includes('uae') || c.includes('arab') || c === 'ae') set('currency', 'AED');
       }).catch(() => {});
 
-      const [pRes, uRes] = await Promise.all([
-        fetch(`${API}/api/projects`, { headers: h }),
-        fetch(`${API}/api/employees`, { headers: h }),
-      ]);
-      const [pd, ud] = await Promise.all([pRes.json(), uRes.json()]);
-      setProjects(pd.data || pd.projects || []);
-      setUsers(ud.data || ud.users || []);
+      try {
+        setLoadingPlans(true);
+        const [pRes, uRes, plRes] = await Promise.all([
+          fetch(`${API}/api/projects`, { headers: h }),
+          fetch(`${API}/api/employees`, { headers: h }),
+          fetch(`${API}/api/projects/global/plannings`, { headers: h }),
+        ]);
+        const [pd, ud, pld] = await Promise.all([pRes.json(), uRes.json(), plRes.json()]);
+        const projs = pd.data || pd.projects || [];
+        const usrs = ud.data || ud.users || [];
+        const plans = pld.data || pld.plannings || [];
+
+        setProjects(projs);
+        setUsers(usrs);
+        setPlannings(plans);
+
+        if (queryPlanningId) {
+          const matchedPlan = plans.find((p: any) => p.id === queryPlanningId || p._id === queryPlanningId);
+          if (matchedPlan) {
+            applyPlanningData(matchedPlan);
+          }
+        } else if (queryProjectId) {
+          const matchedProj = projs.find((p: any) => p.id === queryProjectId || p._id === queryProjectId);
+          setForm(prev => ({
+            ...prev,
+            projectId: queryProjectId,
+            department: matchedProj?.department || prev.department,
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load initial data:', err);
+      } finally {
+        setLoadingPlans(false);
+      }
     };
     load();
-  }, [businessId]);
+  }, [businessId, queryPlanningId, queryProjectId]);
 
   const handleSubmit = async (publish = false) => {
     if (!form.title || !form.projectId || !form.startDate || !form.dueDate || !form.estimatedHours) {
@@ -111,6 +216,7 @@ export default function CreateTaskPage() {
         headers: { 'Authorization': `Bearer ${token}`, 'x-business-id': businessId as string, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           projectId: form.projectId,
+          planningId: form.planningId || undefined,
           title: form.title,
           description: form.description || undefined,
           priority: form.priority || undefined,
@@ -119,7 +225,7 @@ export default function CreateTaskPage() {
           estimatedHours: parseFloat(form.estimatedHours) || 0,
           actualHours: parseFloat(form.actualHours) || 0,
           completionPercentage: form.progress,
-          status: publish ? 'IN_PROGRESS' : 'TODO',
+          status: publish ? 'IN_PROGRESS' : (form.status || 'TODO'),
           assignedToId: form.assigneeId || undefined,
         }),
       });
@@ -131,7 +237,12 @@ export default function CreateTaskPage() {
     } finally { setSaving(false); }
   };
 
+  const availablePlannings = form.projectId
+    ? plannings.filter(p => p.projectId === form.projectId)
+    : plannings;
+
   const selProj = projects.find(p => p.id === form.projectId || p._id === form.projectId);
+  const selPlan = plannings.find(p => p.id === form.planningId || p._id === form.planningId);
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)] bg-gray-50 dark:bg-gray-950">
@@ -150,7 +261,7 @@ export default function CreateTaskPage() {
                 Create Project Task
                 <span className="text-[11px] px-2.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full font-black tracking-widest">{form.taskCode}</span>
               </h1>
-              <p className="text-sm text-gray-500 mt-0.5">Define task scope, assign resources, and set timelines.</p>
+              <p className="text-sm text-gray-500 mt-0.5">Define task scope, connect to planning schedule, assign resources, and set timelines.</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -170,24 +281,82 @@ export default function CreateTaskPage() {
           <div className="flex-1 min-w-0">
             <Section title="1. General Information" icon={Briefcase}>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <div className="lg:col-span-3">
+                {/* Project Selection */}
+                <div className="lg:col-span-2">
                   <Field label="Project" required>
-                    <Select value={form.projectId} onChange={(v: string) => {
-                      const p = projects.find(x => x.id === v || x._id === v);
-                      setForm(prev => ({ ...prev, projectId: v, department: p?.department || prev.department }));
-                    }}>
+                    <Select value={form.projectId} onChange={handleProjectChange}>
                       <option value="">Select Project...</option>
-                      {projects.map((p: any) => <option key={p.id || p._id} value={p.id || p._id}>{p.projectCode} — {p.projectName}</option>)}
+                      {projects.map((p: any) => (
+                        <option key={p.id || p._id} value={p.id || p._id}>
+                          {p.projectCode} — {p.projectName}
+                        </option>
+                      ))}
                     </Select>
                   </Field>
                 </div>
-                <div className="lg:col-span-2"><Field label="Task Title" required><Input value={form.title} onChange={(v: string) => set('title', v)} placeholder="e.g. Implement Authentication Module" /></Field></div>
+
+                {/* Planning Selection */}
+                <div className="lg:col-span-1">
+                  <Field label="Planning / Master Schedule">
+                    <Select
+                      value={form.planningId}
+                      onChange={handlePlanningChange}
+                      disabled={loadingPlans}
+                    >
+                      <option value="">
+                        {!form.projectId
+                          ? "Select Project first..."
+                          : availablePlannings.length === 0
+                          ? "No plannings for this project"
+                          : "None (Direct Project Task)"}
+                      </option>
+                      {availablePlannings.map((plan: any) => (
+                        <option key={plan.id || plan._id} value={plan.id || plan._id}>
+                          {plan.planCode} • {plan.planName} {plan.phase ? `(${plan.phase})` : ''}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  {selPlan && (
+                    <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-[11px] text-blue-700 dark:text-blue-300 font-semibold truncate">
+                      <CheckCircle className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                      <span className="truncate">Linked: <strong className="font-bold">{selPlan.planCode}</strong> — {selPlan.planName}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="lg:col-span-2">
+                  <Field label="Task Title" required>
+                    <Input value={form.title} onChange={(v: string) => set('title', v)} placeholder="e.g. Implement Authentication Module" />
+                  </Field>
+                </div>
                 <Field label="Phase"><Input value={form.phase} onChange={(v: string) => set('phase', v)} placeholder="e.g. Phase 1" /></Field>
                 <Field label="Sprint"><Input value={form.sprint} onChange={(v: string) => set('sprint', v)} placeholder="e.g. Sprint 3" /></Field>
                 <Field label="Milestone"><Input value={form.milestone} onChange={(v: string) => set('milestone', v)} placeholder="e.g. Beta Launch" /></Field>
-                <Field label="Priority"><Select value={form.priority} onChange={(v: string) => set('priority', v)}><option value="">Select Priority...</option><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="CRITICAL">Critical</option></Select></Field>
-                <Field label="Status"><Select value={form.status} onChange={(v: string) => set('status', v)}><option value="">Select Status...</option><option value="PENDING">Pending</option><option value="IN_PROGRESS">In Progress</option><option value="REVIEW">Review</option><option value="BLOCKED">Blocked</option><option value="COMPLETED">Completed</option></Select></Field>
-                <div className="lg:col-span-3"><Field label="Description"><textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3} className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none focus:border-blue-500 resize-y transition-all" placeholder="Describe the task in detail..." /></Field></div>
+                <Field label="Priority">
+                  <Select value={form.priority} onChange={(v: string) => set('priority', v)}>
+                    <option value="">Select Priority...</option>
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="CRITICAL">Critical</option>
+                  </Select>
+                </Field>
+                <Field label="Status">
+                  <Select value={form.status} onChange={(v: string) => set('status', v)}>
+                    <option value="">Select Status...</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="REVIEW">Review</option>
+                    <option value="BLOCKED">Blocked</option>
+                    <option value="COMPLETED">Completed</option>
+                  </Select>
+                </Field>
+                <div className="lg:col-span-3">
+                  <Field label="Description">
+                    <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3} className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none focus:border-blue-500 resize-y transition-all" placeholder="Describe the task in detail..." />
+                  </Field>
+                </div>
               </div>
             </Section>
 
@@ -255,17 +424,18 @@ export default function CreateTaskPage() {
                 <div className="p-4 space-y-3.5 text-sm divide-y divide-gray-100 dark:divide-gray-800">
                   {[
                     { label: 'Project', val: selProj?.projectName || '—' },
-                    { label: 'Priority', val: form.priority },
-                    { label: 'Status', val: form.status.replace('_', ' ') },
+                    { label: 'Planning', val: selPlan ? `${selPlan.planCode} • ${selPlan.planName}` : 'None (Direct Task)' },
+                    { label: 'Priority', val: form.priority || '—' },
+                    { label: 'Status', val: (form.status || 'TODO').replace('_', ' ') },
                     { label: 'Start Date', val: form.startDate || '—' },
                     { label: 'Due Date', val: form.dueDate || '—' },
                     { label: 'Est. Hours', val: form.estimatedHours ? `${form.estimatedHours}h` : '—' },
                     { label: 'Progress', val: `${form.progress}%` },
-                    { label: 'Est. Cost', val: form.estimatedCost ? `${form.currency} ${Number(form.estimatedCost).toLocaleString()}` : '—' },
+                    { label: 'Est. Cost', val: form.estimatedCost ? `${form.currency || '$'} ${Number(form.estimatedCost).toLocaleString()}` : '—' },
                   ].map((r, i) => (
                     <div key={i} className="flex justify-between items-center pt-3 first:pt-0">
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{r.label}</span>
-                      <span className="text-xs font-bold text-gray-900 dark:text-white text-right max-w-[130px] truncate">{r.val}</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white text-right max-w-[140px] truncate" title={r.val}>{r.val}</span>
                     </div>
                   ))}
                 </div>
