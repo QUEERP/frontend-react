@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Map, CheckSquare, Flag, Users, Calendar,
   FileText, Clock, Receipt, Package, ShoppingCart, DollarSign,
@@ -28,6 +28,38 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
   const timeEntries = project?.timeEntries || [];
   const issues = project?.issues || [];
 
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+
+  const handleUpdateTaskStatus = async (taskId: string, newStatus: string) => {
+    try {
+      setUpdatingTaskId(taskId);
+      const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
+      let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token || token === 'null' || token === 'undefined') {
+        token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] ||
+          document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] || '';
+      }
+      const res = await fetch(`${API}/api/projects/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-business-id': businessId
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          completionPercentage: newStatus === 'DONE' ? 100 : (newStatus === 'IN_PROGRESS' ? 50 : 0)
+        })
+      });
+      if (!res.ok) throw new Error('Failed to update task status');
+      if (onProjectUpdate) onProjectUpdate();
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setUpdatingTaskId(null);
+    }
+  };
+
   // Determine which tabs to show based on Execution Type
   const tabs = useMemo(() => {
     const isService = project.executionType === "SERVICE" || project.executionType === "HYBRID";
@@ -37,11 +69,11 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
     const allTabs = [
       { id: "overview", label: "Overview", icon: LayoutDashboard, show: true },
       { id: "resources", label: "Resources", icon: Users, show: !isBasic, count: allocations.length },
-      { id: "tasks", label: "Tasks", icon: CheckSquare, show: !isBasic && (isService || isProduct), count: tasks.length },
+      { id: "tasks", label: "Tasks", icon: CheckSquare, show: !isBasic || tasks.length > 0, count: tasks.length },
+      { id: "planning", label: "Planning", icon: Map, show: !isBasic || (project?.plannings && project.plannings.length > 0), count: (project?.plannings || []).length },
       { id: "milestones", label: "Milestones", icon: Flag, show: !isBasic && isService, count: milestones.length },
       { id: "time-tracking", label: "Time Tracking", icon: Clock, show: !isBasic && isService, count: timeEntries.length },
       { id: "issues", label: "Issues", icon: AlertCircle, show: !isBasic, count: issues.length },
-      { id: "planning", label: "Planning", icon: Map, show: !isBasic },
       { id: "documents", label: "Documents", icon: FileText, show: !isBasic },
       { id: "billing", label: "Billing", icon: DollarSign, show: !isBasic },
       { id: "risks", label: "Risks", icon: ShieldAlert, show: !isBasic },
@@ -49,7 +81,7 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
     ];
 
     return allTabs.filter(t => t.show);
-  }, [project.executionType, business?.businessType, allocations.length, tasks.length, milestones.length, timeEntries.length, issues.length]);
+  }, [project.executionType, project?.plannings, business?.businessType, allocations.length, tasks.length, milestones.length, timeEntries.length, issues.length]);
 
   return (
     <div>
@@ -63,8 +95,8 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center px-5 py-4 text-sm font-bold transition-colors border-b-2 whitespace-nowrap cursor-pointer ${isActive
-                  ? "border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 bg-blue-50/50 dark:bg-gray-700/50"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                ? "border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 bg-blue-50/50 dark:bg-gray-700/50"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                 }`}
             >
               <Icon className="w-4 h-4 mr-2" />
@@ -224,7 +256,10 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
         {activeTab === 'tasks' && (
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Tasks ({tasks.length})</h3>
+              <div>
+                <h3 className="text-lg font-bold">Project Tasks ({tasks.length})</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Execution tasks connected to this project and its planning schedules.</p>
+              </div>
               <button
                 onClick={() => navigate(`/dashboard/${businessId}/project-operations/tasks/create?projectId=${project.id}`)}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm"
@@ -236,29 +271,179 @@ export default function ProjectDetailTabs({ project, businessId, onProjectUpdate
               <div className="text-center py-12 text-gray-400">
                 <CheckSquare className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                 <p className="font-semibold text-sm">No tasks created yet.</p>
+                <button
+                  onClick={() => navigate(`/dashboard/${businessId}/project-operations/tasks/create?projectId=${project.id}`)}
+                  className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm"
+                >
+                  + Add First Task
+                </button>
               </div>
             ) : (
               <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded-xl">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
                     <tr>
-                      <th className="px-4 py-3">Title</th>
+                      <th className="px-4 py-3">Task Title</th>
+                      <th className="px-4 py-3">Planning Schedule</th>
                       <th className="px-4 py-3">Assignee</th>
-                      <th className="px-4 py-3">Due Date</th>
+                      <th className="px-4 py-3">Progress</th>
                       <th className="px-4 py-3">Priority</th>
                       <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Due Date</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {tasks.map((t: any) => (
                       <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                        <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{t.title}</td>
+                        <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                          <div>{t.title}</div>
+                          <div className="text-[11px] font-mono text-gray-400">{t.taskNumber || t.taskCode || ''}</div>
+                        </td>
+                        <td className="px-4 py-3 text-xs">
+                          {t.planning ? (
+                            <Link
+                              to={`/dashboard/${businessId}/project-operations/planning/${t.planning.id || t.planningId}`}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded font-semibold hover:underline"
+                            >
+                              <Map className="w-3 h-3 flex-shrink-0" />
+                              <span className="font-mono font-bold">{t.planning.planCode}</span>
+                              <span className="truncate max-w-[120px]">— {t.planning.planName}</span>
+                            </Link>
+                          ) : (
+                            <span className="text-gray-400 italic">Direct Project Task</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-xs">{t.assignedTo?.name || 'Unassigned'}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500">{t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'N/A'}</td>
+                        <td className="px-4 py-3 text-xs">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${t.status === 'DONE' ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                style={{ width: `${t.completionPercentage || (t.status === 'DONE' ? 100 : 0)}%` }}
+                              />
+                            </div>
+                            <span className="font-bold text-[11px] text-gray-600 dark:text-gray-300">
+                              {t.completionPercentage || (t.status === 'DONE' ? 100 : 0)}%
+                            </span>
+                          </div>
+                        </td>
                         <td className="px-4 py-3 text-xs">{t.priority || 'Normal'}</td>
-                        <td className="px-4 py-3"><StatusBadge status={t.status || 'PENDING'} size="sm" /></td>
+                        <td className="px-4 py-3">
+                          <select
+                            value={t.status === 'DONE' ? 'DONE' : (t.status || 'TODO')}
+                            disabled={updatingTaskId === t.id}
+                            onChange={(e) => handleUpdateTaskStatus(t.id, e.target.value)}
+                            className="text-xs font-bold px-2.5 py-1 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <option value="TODO">TODO</option>
+                            <option value="IN_PROGRESS">IN PROGRESS</option>
+                            <option value="DONE">DONE (COMPLETED)</option>
+                          </select>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-gray-500">{t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'N/A'}</td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PLANNING TAB */}
+        {activeTab === 'planning' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-bold">Planning Schedules ({project?.plannings?.length || 0})</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Master schedules and execution timelines linked to this project.</p>
+              </div>
+              <button
+                onClick={() => navigate(`/dashboard/${businessId}/project-operations/planning/create?projectId=${project.id}`)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm"
+              >
+                + Create Schedule
+              </button>
+            </div>
+            {(!project.plannings || project.plannings.length === 0) ? (
+              <div className="text-center py-12 text-gray-400 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-gray-900/50">
+                <Map className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p className="font-semibold text-sm text-gray-700 dark:text-gray-300">No planning schedules created yet.</p>
+                <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">Create a master schedule to define task owners, estimates, and connect execution tasks.</p>
+                <button
+                  onClick={() => navigate(`/dashboard/${businessId}/project-operations/planning/create?projectId=${project.id}`)}
+                  className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm"
+                >
+                  + Add First Schedule
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded-xl">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
+                    <tr>
+                      <th className="px-4 py-3">Code</th>
+                      <th className="px-4 py-3">Schedule Name</th>
+                      <th className="px-4 py-3">Phase / Sprint</th>
+                      <th className="px-4 py-3">Timeline</th>
+                      <th className="px-4 py-3">Tasks</th>
+                      <th className="px-4 py-3">Progress</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {project.plannings.map((plan: any) => {
+                      const planTaskCount = tasks.filter((t: any) => t.planningId === plan.id).length;
+                      return (
+                        <tr key={plan.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                          <td className="px-4 py-3">
+                            <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">{plan.planCode}</span>
+                          </td>
+                          <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                            <Link to={`/dashboard/${businessId}/project-operations/planning/${plan.id}`} className="hover:text-blue-600 hover:underline">
+                              {plan.planName}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500">
+                            {plan.phase || plan.sprint ? `${plan.phase || ''} ${plan.sprint ? `(${plan.sprint})` : ''}`.trim() : (plan.execType || '—')}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500">
+                            {plan.startDate ? new Date(plan.startDate).toLocaleDateString() : '—'} → {plan.endDate ? new Date(plan.endDate).toLocaleDateString() : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-xs font-bold text-gray-700 dark:text-gray-300">
+                            {planTaskCount} tasks
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                <div className={`h-full ${plan.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-blue-500'}`} style={{ width: `${plan.completionPercentage || 0}%` }} />
+                              </div>
+                              <span className="text-xs font-bold">{plan.completionPercentage || 0}%</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusBadge status={plan.status || 'DRAFT'} size="sm" />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Link
+                                to={`/dashboard/${businessId}/project-operations/tasks/create?projectId=${project.id}&planningId=${plan.id}`}
+                                className="px-2.5 py-1 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 rounded"
+                              >
+                                + Add Task
+                              </Link>
+                              <Link
+                                to={`/dashboard/${businessId}/project-operations/planning/${plan.id}`}
+                                className="px-2.5 py-1 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 rounded"
+                              >
+                                View
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

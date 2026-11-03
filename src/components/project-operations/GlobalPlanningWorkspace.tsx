@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search, Plus, Calendar, Clock, Users, DollarSign, AlertTriangle,
   CheckCircle, FileText, Download, Filter, X, ChevronDown, Briefcase,
-  Target, MoreVertical, Eye, Edit, Trash2, ArrowUpRight
+  Target, MoreVertical, Eye, Edit, Trash2, ArrowUpRight, RotateCcw
 } from 'lucide-react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -52,6 +52,50 @@ export function GlobalPlanningWorkspace({ businessId: propBusinessId }: { busine
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [deleteModalPlan, setDeleteModalPlan] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const handleToggleComplete = async (plan: any, targetStatus?: string) => {
+    const nextStatus = targetStatus || (plan.status === 'COMPLETED' ? 'ACTIVE' : 'COMPLETED');
+    const isCompleted = nextStatus === 'COMPLETED';
+    try {
+      setTogglingId(plan.id);
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
+      const payload = {
+        status: nextStatus,
+        completionPercentage: isCompleted ? 100 : 0,
+        currentProgress: isCompleted ? 100 : 0,
+        progressStatus: isCompleted ? 'Completed' : 'In Progress'
+      };
+      const res = await fetch(`${API_BASE}/api/projects/global/plannings/${plan.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`,
+          'x-business-id': businessId
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to update schedule status');
+      }
+      toast({
+        title: isCompleted ? "Schedule Completed" : "Schedule Reopened",
+        description: isCompleted
+          ? `"${plan.planName}" (${plan.planCode}) marked as 100% completed.`
+          : `"${plan.planName}" reopened as Active.`
+      });
+      await fetchPlannings();
+    } catch (err: any) {
+      toast({
+        title: "Update Error",
+        description: err.message,
+        variant: "destructive"
+      });
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   useEffect(() => {
     function handleDocClick(e: MouseEvent) {
@@ -64,9 +108,10 @@ export function GlobalPlanningWorkspace({ businessId: propBusinessId }: { busine
   }, []);
 
   const getToken = () => {
-    let token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
-    if (!token || token === 'null') {
-      token = document.cookie.split('; ').find(r => r.startsWith('token='))?.split('=')[1] || '';
+    let token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('accessToken')) : '';
+    if (!token || token === 'null' || token === 'undefined') {
+      token = document.cookie.split('; ').find(r => r.startsWith('token='))?.split('=')[1] ||
+        document.cookie.split('; ').find(r => r.startsWith('accessToken='))?.split('=')[1] || '';
     }
     return token;
   };
@@ -239,115 +284,254 @@ export function GlobalPlanningWorkspace({ businessId: propBusinessId }: { busine
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-700 text-[11px] font-black text-gray-500 uppercase tracking-widest">
+                <thead className="bg-gray-50/80 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 text-[11px] font-black text-gray-500 uppercase tracking-wider">
                   <tr>
-                    <th className="px-5 py-4">Plan Code</th>
-                    <th className="px-5 py-4">Plan Name</th>
-                    <th className="px-5 py-4">Project</th>
-                    <th className="px-5 py-4">Phase</th>
-                    <th className="px-5 py-4">Status</th>
-                    <th className="px-5 py-4">Priority</th>
-                    <th className="px-5 py-4">Start Date</th>
-                    <th className="px-5 py-4">End Date</th>
-                    <th className="px-5 py-4">Task</th>
-                    <th className="px-5 py-4">Completion</th>
-                    <th className="px-5 py-4">Est. Cost</th>
-                    <th className="px-5 py-4">Risk Level</th>
-                    <th className="px-5 py-4 text-right">Actions</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Plan Code</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Plan Name</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Project</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Phase / Model</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Status</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Priority</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Timeline</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Tasks</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Completion</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Est. Cost</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Risk</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {filtered.map(p => (
-                    <tr
-                      key={p.id}
-                      className="hover:bg-blue-50/40 dark:hover:bg-gray-800/40 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/dashboard/${businessId}/project-operations/planning/${p.id}`)}
-                    >
-                      <td className="px-5 py-4">
-                        <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">{p.planCode}</span>
-                      </td>
-                      <td className="px-5 py-4 font-semibold text-gray-900 dark:text-white max-w-[180px] truncate">{p.planName}</td>
-                      <td className="px-5 py-4 text-gray-600 dark:text-gray-400 text-xs">
-                        {p.project ? `${p.project.projectCode} - ${p.project.projectName}` : '—'}
-                      </td>
-                      <td className="px-5 py-4 text-gray-500 text-xs">{p.phase || '-'}</td>
-                      <td className="px-5 py-4"><StatusBadge status={p.status} /></td>
-                      <td className="px-5 py-4"><PriorityBadge priority={p.priority} /></td>
-                      <td className="px-5 py-4 text-xs text-gray-500">{fmt(p.startDate)}</td>
-                      <td className="px-5 py-4 text-xs text-gray-500">{fmt(p.endDate)}</td>
-                      <td className="px-5 py-4 text-xs text-gray-700 dark:text-gray-300 max-w-[140px] truncate">{p.taskTitle || '-'}</td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden w-16">
-                            <div className="h-1.5 bg-blue-500 rounded-full" style={{ width: `${p.completionPercentage || 0}%` }} />
-                          </div>
-                          <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{p.completionPercentage || 0}%</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-xs font-bold text-green-700">${(p.estimatedCost || 0).toLocaleString()}</td>
-                      <td className="px-5 py-4">
-                        {p.riskLevel ? (
-                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${p.riskLevel === 'High' ? 'bg-red-100 text-red-700' : p.riskLevel === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                            {p.riskLevel}
-                          </span>
-                        ) : <span className="text-gray-400">-</span>}
-                      </td>
-                      <td className="px-5 py-4 text-right action-menu-container" onClick={(e) => e.stopPropagation()}>
-                        <div className="relative inline-block text-left">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuId(openMenuId === p.id ? null : p.id);
-                            }}
-                            title="Actions menu"
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
+                  {filtered.map(p => {
+                    const isCompleted = p.status === 'COMPLETED';
+                    const isToggling = togglingId === p.id;
+                    const hasPhase = Boolean(p.phase);
+                    const taskCount = (p.tasks && p.tasks.length) || (p.taskTitle ? 1 : 0);
 
-                          {openMenuId === p.id && (
-                            <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOpenMenuId(null);
-                                  navigate(`/dashboard/${businessId}/project-operations/planning/${p.id}`);
-                                }}
-                                className="w-full px-3.5 py-2 text-left text-xs font-semibold flex items-center gap-2.5 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 transition-colors cursor-pointer"
-                              >
-                                <Eye className="w-3.5 h-3.5 text-blue-500" />
-                                <span>View Details</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOpenMenuId(null);
-                                  navigate(`/dashboard/${businessId}/project-operations/planning/${p.id}/edit`);
-                                }}
-                                className="w-full px-3.5 py-2 text-left text-xs font-semibold flex items-center gap-2.5 text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-600 transition-colors cursor-pointer"
-                              >
-                                <Edit className="w-3.5 h-3.5 text-amber-500" />
-                                <span>Edit Schedule</span>
-                              </button>
-                              <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOpenMenuId(null);
-                                  setDeleteModalPlan(p);
-                                }}
-                                className="w-full px-3.5 py-2 text-left text-xs font-semibold flex items-center gap-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                <span>Delete</span>
-                              </button>
+                    return (
+                      <tr
+                        key={p.id}
+                        className="hover:bg-blue-50/40 dark:hover:bg-gray-800/40 transition-colors cursor-pointer group"
+                        onClick={() => navigate(`/dashboard/${businessId}/project-operations/planning/${p.id}`)}
+                      >
+                        {/* Plan Code */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-md border border-blue-100 dark:border-blue-800/60 whitespace-nowrap shadow-2xs">
+                            {p.planCode}
+                          </span>
+                        </td>
+
+                        {/* Plan Name */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <span className="font-semibold text-gray-900 dark:text-white block max-w-[200px] truncate group-hover:text-blue-600 transition-colors" title={p.planName}>
+                            {p.planName}
+                          </span>
+                        </td>
+
+                        {/* Project */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {p.project ? (
+                            <div className="flex items-center gap-1.5 text-xs">
+                              <span className="font-mono text-[11px] font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                                {p.project.projectCode}
+                              </span>
+                              <span className="font-medium text-gray-700 dark:text-gray-300 max-w-[140px] truncate" title={p.project.projectName}>
+                                {p.project.projectName}
+                              </span>
                             </div>
+                          ) : (
+                            <span className="text-gray-400 text-xs">—</span>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+
+                        {/* Phase / Model */}
+                        <td className="px-4 py-3.5 whitespace-nowrap text-xs">
+                          {hasPhase ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                              {p.phase}
+                            </span>
+                          ) : (p.sprint || p.execType) ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                              {p.sprint || p.execType}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">—</span>
+                          )}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <StatusBadge status={p.status} />
+                        </td>
+
+                        {/* Priority */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <PriorityBadge priority={p.priority} />
+                        </td>
+
+                        {/* Timeline */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <div className="flex flex-col text-xs leading-tight">
+                            <span className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                              {fmt(p.startDate)} → {fmt(p.endDate)}
+                            </span>
+                            {p.duration ? (
+                              <span className="text-[11px] text-gray-400 mt-0.5 font-medium">{p.duration} days</span>
+                            ) : null}
+                          </div>
+                        </td>
+
+                        {/* Tasks */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {taskCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">
+                              {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">—</span>
+                          )}
+                        </td>
+
+                        {/* Completion */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-300 ${(p.completionPercentage || 0) >= 100 ? 'bg-emerald-500' : 'bg-blue-600'
+                                  }`}
+                                style={{ width: `${Math.min(100, Math.max(0, p.completionPercentage || 0))}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300 w-8">
+                              {p.completionPercentage || 0}%
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Est. Cost */}
+                        <td className="px-4 py-3.5 whitespace-nowrap text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                          ${(p.estimatedCost || 0).toLocaleString()}
+                        </td>
+
+                        {/* Risk Level */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {p.riskLevel ? (
+                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${p.riskLevel === 'High' || p.riskLevel === 'Critical' ? 'bg-red-100 text-red-700' : p.riskLevel === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                              {p.riskLevel}
+                            </span>
+                          ) : <span className="text-gray-400 text-xs">—</span>}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-4 py-3.5 whitespace-nowrap text-right action-menu-container" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-2">
+                            {/* Complete Button */}
+                            {isCompleted ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleComplete(p, 'ACTIVE');
+                                }}
+                                disabled={isToggling}
+                                title="Schedule is completed. Click to reopen as Active."
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 rounded-lg transition-all cursor-pointer shadow-2xs"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                <span>Completed</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleComplete(p, 'COMPLETED');
+                                }}
+                                disabled={isToggling}
+                                title="Mark schedule and all connected tasks as completed"
+                                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-lg transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                              >
+                                {isToggling ? (
+                                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                )}
+                                <span>Complete</span>
+                              </button>
+                            )}
+
+                            {/* Three Dots Menu */}
+                            <div className="relative inline-block text-left">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenMenuId(openMenuId === p.id ? null : p.id);
+                                }}
+                                title="Actions menu"
+                                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+
+                              {openMenuId === p.id && (
+                                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenMenuId(null);
+                                      handleToggleComplete(p, isCompleted ? 'ACTIVE' : 'COMPLETED');
+                                    }}
+                                    className={`w-full px-3.5 py-2 text-left text-xs font-semibold flex items-center gap-2.5 transition-colors cursor-pointer ${isCompleted
+                                        ? 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                        : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'
+                                      }`}
+                                  >
+                                    {isCompleted ? <RotateCcw className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                                    <span>{isCompleted ? 'Reopen Schedule' : 'Mark as Completed'}</span>
+                                  </button>
+                                  <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenMenuId(null);
+                                      navigate(`/dashboard/${businessId}/project-operations/planning/${p.id}`);
+                                    }}
+                                    className="w-full px-3.5 py-2 text-left text-xs font-semibold flex items-center gap-2.5 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 transition-colors cursor-pointer"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-blue-500" />
+                                    <span>View Details</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenMenuId(null);
+                                      navigate(`/dashboard/${businessId}/project-operations/planning/${p.id}/edit`);
+                                    }}
+                                    className="w-full px-3.5 py-2 text-left text-xs font-semibold flex items-center gap-2.5 text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-600 transition-colors cursor-pointer"
+                                  >
+                                    <Edit className="w-3.5 h-3.5 text-amber-500" />
+                                    <span>Edit Schedule</span>
+                                  </button>
+                                  <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenMenuId(null);
+                                      setDeleteModalPlan(p);
+                                    }}
+                                    className="w-full px-3.5 py-2 text-left text-xs font-semibold flex items-center gap-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Delete</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

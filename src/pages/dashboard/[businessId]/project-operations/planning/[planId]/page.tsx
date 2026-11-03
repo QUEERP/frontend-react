@@ -65,6 +65,85 @@ export default function PlanningViewPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [previewingDoc, setPreviewingDoc] = useState<{ title: string; fileUrl: string; fileType?: string; fileSize?: number } | null>(null);
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+
+  const handleTogglePlanningComplete = async (targetStatus?: string) => {
+    if (!planning) return;
+    const nextStatus = targetStatus || (planning.status === 'COMPLETED' ? 'ACTIVE' : 'COMPLETED');
+    const isCompleted = nextStatus === 'COMPLETED';
+    try {
+      setIsTogglingStatus(true);
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
+      const payload = {
+        status: nextStatus,
+        completionPercentage: isCompleted ? 100 : 0,
+        currentProgress: isCompleted ? 100 : 0,
+        progressStatus: isCompleted ? 'Completed' : 'In Progress'
+      };
+      const res = await fetch(`${API_BASE}/api/projects/global/plannings/${planId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`,
+          'x-business-id': businessId
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to update schedule status');
+      }
+      toast({
+        title: isCompleted ? "Schedule Completed" : "Schedule Reopened",
+        description: isCompleted
+          ? `"${planning.planName}" (${planning.planCode}) marked as 100% completed.`
+          : `"${planning.planName}" reopened as Active.`
+      });
+      await loadData();
+    } catch (err: any) {
+      toast({
+        title: "Update Error",
+        description: err.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  };
+
+  const handleTaskStatusChange = async (taskId: string, newStatus: string) => {
+    try {
+      setUpdatingTaskId(taskId);
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
+      const res = await fetch(`${API_BASE}/api/projects/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`,
+          'x-business-id': businessId
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          completionPercentage: newStatus === 'DONE' ? 100 : (newStatus === 'IN_PROGRESS' ? 50 : 0)
+        })
+      });
+      if (!res.ok) throw new Error('Failed to update task status');
+      toast({
+        title: "Task Updated",
+        description: `Task status changed to ${newStatus.replace('_', ' ')}. Schedule progress synchronized.`
+      });
+      await loadData();
+    } catch (err: any) {
+      toast({
+        title: "Update Error",
+        description: err.message,
+        variant: "destructive"
+      });
+    } finally {
+      setUpdatingTaskId(null);
+    }
+  };
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return '—';
@@ -340,6 +419,34 @@ export default function PlanningViewPage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2.5 flex-shrink-0">
+            {planning.status !== 'COMPLETED' ? (
+              <button
+                type="button"
+                onClick={() => handleTogglePlanningComplete('COMPLETED')}
+                disabled={isTogglingStatus}
+                title="Mark this schedule and connected tasks as 100% completed"
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isTogglingStatus ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <CheckCircle className="w-3.5 h-3.5" />
+                )}
+                <span>Complete Schedule</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleTogglePlanningComplete('ACTIVE')}
+                disabled={isTogglingStatus}
+                title="Schedule is completed. Click to reopen as Active."
+                className="px-3.5 py-2 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Completed (Reopen)</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => window.print()}
@@ -593,7 +700,7 @@ export default function PlanningViewPage() {
 
                     <div>
                       <span className="text-gray-400 font-medium">Phase</span>
-                      <p className="font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{planning.phase || '—'}</p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{planning.phase || planning.sprint || planning.execType || '—'}</p>
                     </div>
 
                     <div>
@@ -934,9 +1041,16 @@ export default function PlanningViewPage() {
                             <td className="py-2.5 px-3 text-gray-900 dark:text-white font-bold">{tsk.title}</td>
                             <td className="py-2.5 px-3 text-gray-600 dark:text-gray-300">{tsk.assignedTo?.name || '-'}</td>
                             <td className="py-2.5 px-3">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                {(tsk.status || 'TODO').replace('_', ' ')}
-                              </span>
+                              <select
+                                value={tsk.status === 'DONE' ? 'DONE' : (tsk.status || 'TODO')}
+                                disabled={updatingTaskId === tsk.id}
+                                onChange={(e) => handleTaskStatusChange(tsk.id, e.target.value)}
+                                className="text-xs font-bold px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer outline-none focus:ring-1 focus:ring-blue-500"
+                              >
+                                <option value="TODO">TODO</option>
+                                <option value="IN_PROGRESS">IN PROGRESS</option>
+                                <option value="DONE">DONE (COMPLETED)</option>
+                              </select>
                             </td>
                             <td className="py-2.5 px-3">
                               <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300">{tsk.priority || '-'}</span>

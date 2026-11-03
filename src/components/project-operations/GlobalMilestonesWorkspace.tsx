@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect, useMemo } from 'react';
-import {  useParams  } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { Search, Filter, Flag, CalendarCheck, AlertTriangle, Plus, List, LayoutGrid, Download, FileText, CheckCircle, ChevronDown, CheckSquare, Activity, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { API_ROOT } from "@/config/api";
 
 const STATUS_COLORS: Record<string, string> = {
+  NOT_STARTED: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
   COMPLETED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   IN_PROGRESS: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   PLANNED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
@@ -29,6 +30,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export function GlobalMilestonesWorkspace({ businessId: propBusinessId }: { businessId?: string }) {
   const params = useParams();
+  const navigate = useNavigate();
   const businessId = (propBusinessId || params?.businessId) as string;
   const { toast } = useToast();
   const [view, setView] = useState<'list' | 'kanban'>('list');
@@ -137,7 +139,7 @@ export function GlobalMilestonesWorkspace({ businessId: propBusinessId }: { busi
     }
   };
 
-  const kanbanCols = ['PLANNED', 'IN_PROGRESS', 'PENDING_REVIEW', 'DELAYED', 'COMPLETED'];
+  const kanbanCols = ['NOT_STARTED', 'IN_PROGRESS', 'PENDING_REVIEW', 'AT_RISK', 'DELAYED', 'COMPLETED'];
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-950 overflow-hidden relative">
@@ -241,25 +243,34 @@ export function GlobalMilestonesWorkspace({ businessId: propBusinessId }: { busi
                     <th className="px-5 py-3.5">Project</th>
                     <th className="px-5 py-3.5">Owner</th>
                     <th className="px-5 py-3.5">Status</th>
+                    <th className="px-5 py-3.5">Progress</th>
                     <th className="px-5 py-3.5">Target Date</th>
-                    <th className="px-5 py-3.5">Payment %</th>
+                    <th className="px-5 py-3.5">Billing %</th>
+                    <th className="px-5 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {filtered.map(m => {
                     const isDelayed = m.status === 'DELAYED' || (m.dueDate && new Date(m.dueDate) < new Date() && m.status !== 'COMPLETED');
                     return (
-                      <tr key={m.id || m._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group cursor-pointer">
+                      <tr 
+                        key={m.id || m._id} 
+                        onClick={() => navigate(`/dashboard/${businessId}/project-operations/milestones/${m.id || m._id}`)}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group cursor-pointer"
+                      >
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
                             <Flag className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
                             <div>
-                              <p className="font-bold text-gray-900 dark:text-white">{m.name}</p>
-                              <p className="text-[10px] text-gray-400">{m.milestoneCode || '-'}</p>
+                              <p className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">{m.name}</p>
+                              <p className="text-[10px] text-gray-400 font-mono">{m.milestoneCode || '-'}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-5 py-3.5 text-gray-600 dark:text-gray-300 text-xs">{m.project?.projectName || m.project?.name || '-'}</td>
+                        <td className="px-5 py-3.5 text-gray-600 dark:text-gray-300 text-xs">
+                          <span className="font-medium text-gray-800 dark:text-gray-200">{m.project?.projectName || m.project?.name || '-'}</span>
+                          {m.planning && <span className="block text-[10px] text-gray-400 truncate">{m.planning.planName}</span>}
+                        </td>
                         <td className="px-5 py-3.5">
                           {m.owner ? (
                             <div className="flex items-center gap-2">
@@ -271,12 +282,28 @@ export function GlobalMilestonesWorkspace({ businessId: propBusinessId }: { busi
                         <td className="px-5 py-3.5">
                           <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-full ${STATUS_COLORS[m.status] || STATUS_COLORS.DRAFT}`}>{(m.status || 'DRAFT').replace('_', ' ')}</span>
                         </td>
-                        <td className={`px-5 py-3.5 text-xs font-medium ${isDelayed ? 'text-red-500' : 'text-gray-500'}`}>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2 w-28">
+                            <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${m.completion || 0}%` }} />
+                            </div>
+                            <span className="text-[11px] font-bold text-gray-500">{m.completion || 0}%</span>
+                          </div>
+                        </td>
+                        <td className={`px-5 py-3.5 text-xs font-medium ${isDelayed ? 'text-red-500 font-bold' : 'text-gray-500'}`}>
                           {isDelayed && <AlertTriangle className="w-3 h-3 inline mr-1" />}
                           {m.dueDate ? new Date(m.dueDate).toLocaleDateString() : '-'}
                         </td>
                         <td className="px-5 py-3.5">
                           <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{m.weight ? `${m.weight}%` : '-'}</span>
+                        </td>
+                        <td className="px-5 py-3.5 text-right" onClick={e => e.stopPropagation()}>
+                          <button 
+                            onClick={() => navigate(`/dashboard/${businessId}/project-operations/milestones/${m.id || m._id}`)}
+                            className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline"
+                          >
+                            View
+                          </button>
                         </td>
                       </tr>
                     );
@@ -300,7 +327,7 @@ export function GlobalMilestonesWorkspace({ businessId: propBusinessId }: { busi
                   </div>
                   <div className="p-3 flex-1 overflow-y-auto space-y-3">
                     {colMilestones.map(m => (
-                      <div key={m.id || m._id} className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing group">
+                      <div key={m.id || m._id} onClick={() => navigate(`/dashboard/${businessId}/project-operations/milestones/${m.id || m._id}`)} className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer group hover:border-blue-400">
                         <div className="flex justify-between items-start mb-2">
                           <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm ${PRIORITY_COLORS[m.priority] || PRIORITY_COLORS.MEDIUM}`}>{m.priority || 'MEDIUM'}</span>
                           {m.weight && <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">{m.weight}%</span>}

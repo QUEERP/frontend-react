@@ -202,6 +202,7 @@ export default function CreatePlanningPage({ planIdProp }: { planIdProp?: string
     isBlob?: boolean;
   } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [projectMilestones, setProjectMilestones] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -220,6 +221,7 @@ export default function CreatePlanningPage({ planIdProp }: { planIdProp?: string
     duration: '',
     workingDays: '',
     milestone: '',
+    milestoneId: '',
     dependency: '',
     expectedCompletion: '',
 
@@ -425,6 +427,16 @@ export default function CreatePlanningPage({ planIdProp }: { planIdProp?: string
       const headers = { 'Authorization': `Bearer ${token}`, 'x-business-id': businessId as string };
 
       const p = (currentProjectsList || projects).find(x => x.id === projId || x._id === projId);
+      // Also fetch milestones for this project to populate milestone dropdown
+      try {
+        const msRes = await fetch(`${API_BASE}/api/milestones?projectId=${projId}`, { headers });
+        const msData = await msRes.json();
+        if (msData?.success && msData?.milestones) {
+          setProjectMilestones(msData.milestones);
+        }
+      } catch (msErr) {
+        console.error('Error fetching project milestones for planning:', msErr);
+      }
 
       // Fetch detailed project info from /api/projects/:id (which has projectManager, allocations, budget, dates)
       let proj = p;
@@ -622,6 +634,7 @@ export default function CreatePlanningPage({ planIdProp }: { planIdProp?: string
                 duration: plan.duration != null ? String(plan.duration) : '',
                 workingDays: plan.workingDays != null ? String(plan.workingDays) : '',
                 milestone: plan.milestone || '',
+                milestoneId: plan.milestoneId || (plan.milestones?.[0]?.id) || '',
                 dependency: plan.dependency || '',
                 projectManager: plan.projectManagerId || '',
                 department: typeof plan.department === 'object' && plan.department ? (plan.department.name || 'Engineering') : (plan.department || 'Engineering'),
@@ -727,6 +740,7 @@ export default function CreatePlanningPage({ planIdProp }: { planIdProp?: string
         duration: formData.duration ? parseInt(formData.duration) : undefined,
         workingDays: formData.workingDays ? parseInt(formData.workingDays) : undefined,
         milestone: formData.milestone || undefined,
+        milestoneId: formData.milestoneId || undefined,
         dependency: formData.dependency || undefined,
         projectManagerId: formData.projectManager || undefined,
         taskOwnerId: formData.taskOwnerIds.length > 0 ? formData.taskOwnerIds.join(',') : (formData.taskOwner || undefined),
@@ -991,7 +1005,38 @@ export default function CreatePlanningPage({ planIdProp }: { planIdProp?: string
                 <InputField label="Duration (Days)" type="number" value={formData.duration} onChange={(val: any) => handleChange('duration', val)} placeholder="e.g. 60" />
                 <InputField label="Working Days" type="number" value={formData.workingDays} onChange={(val: any) => handleChange('workingDays', val)} placeholder="e.g. 45" />
 
-                <InputField label="Milestone" value={formData.milestone} onChange={(val: any) => handleChange('milestone', val)} placeholder="Linked milestone name..." />
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                      Linked Milestone
+                    </label>
+                    {formData.milestone && (
+                      <span className="text-[10px] text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded font-bold">
+                        Linked
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={formData.milestoneId || ''}
+                      onChange={(e) => {
+                        const mId = e.target.value;
+                        const sel = projectMilestones.find((m: any) => m.id === mId);
+                        handleChange('milestoneId', mId);
+                        handleChange('milestone', sel ? sel.name : '');
+                      }}
+                      disabled={!formData.projectId}
+                      className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none cursor-pointer focus:border-blue-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{formData.projectId ? 'Select Project Milestone (Optional)...' : 'Select Project First...'}</option>
+                      {projectMilestones.map((m: any) => (
+                        <option key={m.id} value={m.id}>
+                          {m.milestoneCode} — {m.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 <InputField label="Dependency (Task Code)" value={formData.dependency} onChange={(val: any) => handleChange('dependency', val)} placeholder="e.g. TSK-1002" />
               </div>
             </SectionCard>
