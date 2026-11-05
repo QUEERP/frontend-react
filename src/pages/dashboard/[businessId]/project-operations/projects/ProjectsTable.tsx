@@ -31,6 +31,7 @@ interface ProjectsTableProps {
   searchTerm: string;
   setSearchTerm: (val: string) => void;
   filteredProjects: any[];
+  onDeleteProject?: (project: any) => void;
 }
 
 export function ProjectsTable({ 
@@ -39,7 +40,8 @@ export function ProjectsTable({
   loading, 
   searchTerm, 
   setSearchTerm,
-  filteredProjects 
+  filteredProjects,
+  onDeleteProject
 }: ProjectsTableProps) {
   const navigate = useNavigate();
 
@@ -194,7 +196,7 @@ export function ProjectsTable({
                                   <Edit className="mr-2 h-4 w-4" /> Edit project
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600" onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenuItem className="text-red-600" onClick={(e) => { e.stopPropagation(); onDeleteProject && onDeleteProject(proj); }}>
                                   <Trash2 className="mr-2 h-4 w-4" /> Delete project
                                 </DropdownMenuItem>
                               </DropdownMenuContent>

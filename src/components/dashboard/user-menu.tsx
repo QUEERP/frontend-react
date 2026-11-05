@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/components/ui/use-toast'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
+import { clearAuthSession } from '@/lib/auth'
+import { getCookie } from '@/lib/utils'
 
 type MeUser = {
   id: string
@@ -23,19 +25,6 @@ type MeUser = {
   email: string
 }
 
-function getCookie(name: string) {
-  if (typeof document === 'undefined') return ''
-  const match = document.cookie.match(
-    new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\]\\^])/g, '\\$1') + '=([^;]*)'),
-  )
-  return match ? decodeURIComponent(match[1]) : ''
-}
-
-function clearCookie(name: string) {
-  if (typeof document === 'undefined') return
-  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
-  document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax${secure}`
-}
 
 function parseMeUser(payload: any): MeUser | null {
   if (payload?.data && typeof payload.data === 'object' && payload.data.email) {
@@ -135,16 +124,9 @@ export function UserMenu() {
   }, [user?.name])
 
   const handleLogout = React.useCallback(() => {
-    clearCookie('token')
-    clearCookie('accessToken')
-    clearCookie('activeBusinessId')
-    try {
-      localStorage.removeItem('activeBusinessId')
-      localStorage.removeItem('businessName')
-    } catch {}
-    toast({ title: 'Logged out successfully' })
-    navigate('/signin')
-  }, [navigate])
+    clearAuthSession()
+    window.location.href = '/signin?logged_out=true'
+  }, [])
 
   return (
       <DropdownMenu>

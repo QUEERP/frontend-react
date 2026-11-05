@@ -1,10 +1,9 @@
-
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, X, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getAuthenticatedRedirectUrl } from '@/lib/auth';
+import { getAuthenticatedRedirectUrl, clearAuthSession } from '@/lib/auth';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -69,7 +68,6 @@ export default function Navbar() {
                 width={660}
                 height={180}
                 className="h-9 md:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
-                
               />
             </div>
           </Link>
@@ -89,23 +87,44 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-3 relative z-50">
+          <div className="hidden md:flex items-center gap-2.5 relative z-50">
             {isLoggedIn ? (
-              <Link to={dashboardUrl}>
-                <Button className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white shadow-[0_4px_14px_0_rgb(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-0.5 font-medium px-6 rounded-full transition-all duration-300 ease-out group flex items-center gap-2">
-                  Open Dashboard
-                  <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+              <div className="flex items-center gap-2">
+                <Link to={dashboardUrl}>
+                  <Button className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white shadow-[0_4px_14px_0_rgb(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-0.5 font-medium px-6 rounded-full transition-all duration-300 ease-out group flex items-center gap-2">
+                    Open Dashboard
+                    <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    clearAuthSession();
+                    window.location.href = '/signin?logged_out=true';
+                  }}
+                  className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-full transition-colors"
+                >
+                  Sign Out
                 </Button>
-              </Link>
+              </div>
             ) : (
               <>
-                <Link to="/signin"
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
+                <Link
+                  to="/signin"
+                  className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link to="/register">
-                  <Button className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white shadow-[0_4px_14px_0_rgb(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-0.5 font-medium px-6 rounded-full transition-all duration-300 ease-out group flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="cursor-pointer border-slate-300 hover:border-blue-500 text-slate-700 hover:text-blue-600 font-semibold px-4 py-2 rounded-full transition-all duration-300 ease-out hover:bg-blue-50/50"
+                  >
+                    Sign Up
+                  </Button>
+                </Link>
+                <Link to="/register?trial=90">
+                  <Button className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white shadow-[0_4px_14px_0_rgb(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-0.5 font-semibold px-5 rounded-full transition-all duration-300 ease-out group flex items-center gap-1.5">
                     Start Free Trial
                     <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                   </Button>
@@ -151,22 +170,44 @@ export default function Navbar() {
           ))}
           <div className="flex flex-col gap-3 mt-8">
             {isLoggedIn ? (
-              <Link to={dashboardUrl} onClick={() => setIsMobileMenuOpen(false)}>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20 font-medium py-7 text-lg rounded-2xl transition-all">
-                  Open Dashboard
-                </Button>
-              </Link>
+              <div className="flex flex-col gap-3">
+                <Link to={dashboardUrl} onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20 font-medium py-7 text-lg rounded-2xl transition-all">
+                    Open Dashboard
+                  </Button>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    clearAuthSession();
+                    window.location.href = '/signin?logged_out=true';
+                  }}
+                  className="w-full py-3.5 text-center text-sm font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-2xl transition-colors cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
             ) : (
               <>
-                <Link to="/signin"
+                <Link
+                  to="/signin"
                   className="w-full py-4 text-center text-lg font-medium text-slate-800 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Sign In
                 </Link>
-                <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20 font-medium py-7 text-lg rounded-2xl transition-all">
-                    Start Free Trial
+                <Link
+                  to="/register"
+                  className="w-full py-4 text-center text-lg font-semibold text-blue-600 border-2 border-blue-200 bg-blue-50/50 hover:bg-blue-100 rounded-2xl transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Sign Up
+                </Link>
+                <Link to="/register?trial=90" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20 font-medium py-7 text-lg rounded-2xl transition-all flex items-center justify-center gap-2">
+                    Start Free Trial (90 Days)
+                    <ChevronRight className="w-5 h-5" />
                   </Button>
                 </Link>
               </>

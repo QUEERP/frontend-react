@@ -56,14 +56,55 @@ export function setCookie(name: string, value: string, days = 7) {
 
 export function clearCookie(name: string) {
   if (typeof document === 'undefined') return
-  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
-  document.cookie = `${name}=; Path=/; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secure}`
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : ''
+  const hostParts = hostname ? hostname.split('.') : []
+  
+  // Domains to try: Always include host-only ('')
+  const domains: string[] = ['']
+  if (hostname && hostname !== 'localhost' && !hostname.startsWith('127.')) {
+    domains.push(hostname, '.' + hostname)
+    if (hostParts.length > 2) {
+      const root = hostParts.slice(-2).join('.')
+      domains.push(root, '.' + root)
+    }
+  }
+
+  const paths = ['/', '', '/dashboard', '/signin', '/api']
+
+  for (const d of domains) {
+    for (const p of paths) {
+      const dAttr = d ? `; Domain=${d}` : ''
+      const pAttr = p ? `; Path=${p}` : ''
+      document.cookie = `${name}=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${pAttr}${dAttr}; SameSite=Lax`
+      document.cookie = `${name}=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${pAttr}${dAttr}; SameSite=Strict`
+      document.cookie = `${name}=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${pAttr}${dAttr}; SameSite=None; Secure`
+      document.cookie = `${name}=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${pAttr}${dAttr}`
+    }
+  }
+
   try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.removeItem(name)
+    if (typeof window !== 'undefined') {
+      if (window.localStorage) {
+        window.localStorage.removeItem(name)
+      }
+      if (window.sessionStorage) {
+        window.sessionStorage.removeItem(name)
+      }
     }
   } catch {
     // Ignore storage errors
+  }
+}
+
+export function clearAllCookies() {
+  if (typeof document === 'undefined') return
+  const cookies = document.cookie.split(';')
+  for (const c of cookies) {
+    const eqPos = c.indexOf('=')
+    const name = (eqPos > -1 ? c.substring(0, eqPos) : c).trim()
+    if (name) {
+      clearCookie(name)
+    }
   }
 }
 

@@ -269,7 +269,7 @@ export default function CreateMilestonePage() {
             setForm(prev => ({
               ...prev,
               planningId: urlPlanningId,
-              phase: matchedPlan?.phase || prev.phase,
+              phase: matchedPlan?.phase || (matchedPlan?.taskTitle ? `${matchedPlan.taskTitle.charAt(0).toUpperCase() + matchedPlan.taskTitle.slice(1)} Phase` : (matchedPlan?.planName || prev.phase)),
               sprint: matchedPlan?.sprint || prev.sprint
             }));
           }
@@ -620,10 +620,11 @@ export default function CreateMilestonePage() {
                     value={form.planningId} 
                     onChange={(v: string) => {
                       const pl = formOptions.plans.find(p => p.id === v);
+                      const autoPhase = pl?.phase || (pl?.taskTitle ? `${pl.taskTitle.charAt(0).toUpperCase() + pl.taskTitle.slice(1)} Phase` : (pl?.planName ? `${pl.planName}` : ''));
                       setForm(prev => ({
                         ...prev,
                         planningId: v,
-                        phase: pl?.phase || prev.phase,
+                        phase: v ? autoPhase : '',
                         sprint: pl?.sprint || '',
                         projectManagerId: pl?.projectManagerId || prev.projectManagerId
                       }));

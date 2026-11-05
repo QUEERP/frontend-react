@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Building2Icon, LayoutDashboardIcon, Plus, UsersIcon, UserIcon, SettingsIcon, FileTextIcon, UserCheckIcon, WalletIcon, CalendarDaysIcon, ChevronDownIcon, CreditCardIcon, ClockIcon, HandCoinsIcon, StoreIcon, ReceiptIcon, ActivityIcon, PackageIcon, Megaphone, CheckSquare, Mail, Phone, BarChart3, Undo2, RefreshCw, ShoppingCart, Truck, ClipboardList, PackageCheck, Tag, Layers, Ruler, AlertTriangle, ScanLine, ArrowLeftRight, History, SlidersHorizontal, QrCode, Archive, TrendingUpIcon, FileSignature, MessageSquare, StickyNote, MailSearch, PieChart, Calculator, Briefcase, Map as MapIcon, Flag, DollarSign, ShieldAlert, HeadphonesIcon, FileCheck } from 'lucide-react'
+import { LogOut, Building2Icon, LayoutDashboardIcon, Plus, UsersIcon, UserIcon, SettingsIcon, FileTextIcon, UserCheckIcon, WalletIcon, CalendarDaysIcon, ChevronDownIcon, CreditCardIcon, ClockIcon, HandCoinsIcon, StoreIcon, ReceiptIcon, ActivityIcon, PackageIcon, Megaphone, CheckSquare, Mail, Phone, BarChart3, Undo2, RefreshCw, ShoppingCart, Truck, ClipboardList, PackageCheck, Tag, Layers, Ruler, AlertTriangle, ScanLine, ArrowLeftRight, History, SlidersHorizontal, QrCode, Archive, TrendingUpIcon, FileSignature, MessageSquare, StickyNote, MailSearch, PieChart, Calculator, Briefcase, Map as MapIcon, Flag, DollarSign, ShieldAlert, HeadphonesIcon, FileCheck } from 'lucide-react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
@@ -27,6 +27,7 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
+import { clearAuthSession } from '@/lib/auth'
 
 type ModuleItem = {
   id: string
@@ -815,6 +816,12 @@ export function AppSidebar() {
         return
       }
 
+      if (value === 'logout') {
+        clearAuthSession()
+        window.location.href = '/signin?logged_out=true'
+        return
+      }
+
       if (!value || value === currentBusinessId) {
         return
       }
@@ -936,6 +943,21 @@ export function AppSidebar() {
               <div className="flex items-center justify-center gap-2 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                 <Plus className="size-4" />
                 <span>New business</span>
+              </div>
+            </SelectItem>
+            <div className="my-1 border-t border-border dark:border-[#23272c]" />
+            <SelectItem
+              value="logout"
+              className="
+                bg-background transition-colors cursor-pointer
+                hover:bg-rose-50 focus:bg-rose-50
+                dark:hover:bg-rose-950/30 dark:focus:bg-rose-950/30
+                px-3 py-2 text-rose-600 dark:text-rose-400
+              "
+            >
+              <div className="flex items-center gap-2 py-1.5 text-xs font-medium">
+                <LogOut className="size-4" />
+                <span>Log Out</span>
               </div>
             </SelectItem>
           </SelectContent>
@@ -2104,10 +2126,18 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="gap-2">
-        {/* <div className="text-muted-foreground px-2 text-xs">
-          ⌘B to toggle sidebar
-        </div> */}
+      <SidebarFooter className="gap-2 p-3 border-t border-border/40">
+        <button
+          type="button"
+          onClick={() => {
+            clearAuthSession()
+            window.location.href = '/signin?logged_out=true'
+          }}
+          className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-all cursor-pointer"
+        >
+          <LogOut className="size-4 text-rose-500" />
+          <span>Log Out</span>
+        </button>
       </SidebarFooter>
     </Sidebar>
   )

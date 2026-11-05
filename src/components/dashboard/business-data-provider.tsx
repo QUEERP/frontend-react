@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { getCookie, clearCookie } from '@/lib/utils'
+import { clearAuthSession } from '@/lib/auth'
 
 type Business = any
 
@@ -45,9 +46,13 @@ export function BusinessDataProvider({
     try {
       setLoading(true)
       setError(null)
-      const token = getCookie('token') || getCookie('accessToken')
+            const token = getCookie('token') || getCookie('accessToken') || (typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('accessToken') : null)
       if (!token || token.trim().length === 0) {
-        throw new Error('Missing token')
+        clearAuthSession()
+        if (typeof window !== 'undefined') {
+          window.location.href = '/'
+        }
+        return
       }
       const idFromCookie = getCookie('activeBusinessId')
       let id = businessId && String(businessId).trim().length > 0 ? businessId : (idFromCookie || '')
@@ -72,10 +77,10 @@ export function BusinessDataProvider({
       )
       const data = await res.json()
       if (res.status === 401 || data?.message === 'User not found') {
-        clearCookie('token')
-        clearCookie('accessToken')
+        clearAuthSession()
+        // tokens cleared
         if (typeof window !== 'undefined') {
-          window.location.href = '/signin'
+          window.location.href = '/'
         }
         return
       }

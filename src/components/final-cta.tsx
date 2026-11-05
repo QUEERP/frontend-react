@@ -41,7 +41,7 @@ export default function FinalCTA() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto justify-center items-center">
-              <Link to="/register" className="w-full sm:w-auto">
+              <Link to="/register?trial=90" className="w-full sm:w-auto">
                 <button className="w-full cursor-pointer group relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-600 font-bold rounded-2xl text-lg transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] shadow-lg overflow-hidden">
                   <span className="relative z-10 flex items-center gap-2">
                     Start Your Free Trial

@@ -191,7 +191,7 @@ export default function Pricing() {
                   )}
                 </div>
 
-                <Link to="/register"
+                <Link to={typeof plan.monthlyPrice === "number" ? "/register?trial=90" : "/register"}
                   className={cn(
                     "w-full py-4 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 group/btn",
                     plan.highlighted

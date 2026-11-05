@@ -1,4 +1,4 @@
-import { toast } from 'sonner';
+import { toast as sonnerToast } from 'sonner';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -6,7 +6,7 @@ import {
   Map, CheckSquare, Flag, Users, Clock, Receipt, Package, ShoppingCart, 
   DollarSign, AlertCircle, ShieldAlert, GitPullRequest, HeadphonesIcon, 
   BarChart, Activity, Download, FileText, LayoutGrid, List, SlidersHorizontal, X, ArrowRight, Eye, Edit, Copy, Trash2, CheckCircle2, Lock, Settings,
-  ChevronLeft, ChevronRight, Plus, ExternalLink
+  ChevronLeft, ChevronRight, Plus, ExternalLink, Upload, Paperclip
 } from 'lucide-react';
 import { StatusBadge } from '@/components/project-operations/StatusBadge';
 import { ProgressBar } from '@/components/project-operations/ProgressBar';
@@ -753,6 +753,754 @@ const TimelineWorkspaceTab = ({ project }: any) => {
   );
 };
 
+
+// ------------------------------------------------------------------
+// DOCUMENTS WORKSPACE TAB
+// ------------------------------------------------------------------
+
+const DocumentWorkspaceTab = ({ project, businessId, onRefresh }: any) => {
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFolder, setSelectedFolder] = useState('ALL');
+  const [docForm, setDocForm] = useState({
+    title: '',
+    folder: 'General',
+    description: '',
+    fileUrl: '',
+    fileType: '',
+    fileSize: 0,
+    mimeType: ''
+  });
+
+  const docs = project?.documents || [];
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setDocForm(prev => ({
+        ...prev,
+        title: prev.title || file.name,
+        fileUrl: reader.result as string,
+        fileType: file.type || file.name.split('.').pop() || 'unknown',
+        fileSize: file.size,
+        mimeType: file.type || 'application/octet-stream'
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docForm.fileUrl || !docForm.title.trim()) {
+      sonnerToast.error('Please select a file and provide a document title.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
+      const getCookie = (name: string) => {
+        if (typeof document === 'undefined') return '';
+        const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\\^])/g, '\\$1') + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : '';
+      };
+      let token = getCookie('token') || getCookie('accessToken');
+      if (!token && typeof window !== 'undefined') {
+        token = localStorage.getItem('token') || localStorage.getItem('accessToken') || '';
+      }
+
+      const res = await fetch(`${API_BASE}/api/project-operations/documents`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          projectId: project.id,
+          entityType: 'PROJECT',
+          entityId: project.id,
+          title: docForm.title.trim(),
+          fileUrl: docForm.fileUrl,
+          fileType: docForm.fileType,
+          fileSize: docForm.fileSize,
+          mimeType: docForm.mimeType,
+          folder: docForm.folder,
+          description: docForm.description
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        sonnerToast.success('Document uploaded successfully.');
+        setIsUploadOpen(false);
+        setDocForm({ title: '', folder: 'General', description: '', fileUrl: '', fileType: '', fileSize: 0, mimeType: '' });
+        onRefresh();
+      } else {
+        sonnerToast.error(data.message || 'Failed to upload document.');
+      }
+    } catch (err: any) {
+      sonnerToast.error(err.message || 'Error uploading document.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (docId: string) => {
+    if (!window.confirm('Are you sure you want to delete this document?')) return;
+    setDeletingId(docId);
+    try {
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
+      const getCookie = (name: string) => {
+        if (typeof document === 'undefined') return '';
+        const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\\^])/g, '\\$1') + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : '';
+      };
+      let token = getCookie('token') || getCookie('accessToken');
+      if (!token && typeof window !== 'undefined') {
+        token = localStorage.getItem('token') || localStorage.getItem('accessToken') || '';
+      }
+
+      const res = await fetch(`${API_BASE}/api/project-operations/documents/${docId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        sonnerToast.success('Document deleted successfully.');
+        onRefresh();
+      } else {
+        sonnerToast.error(data.message || 'Failed to delete document.');
+      }
+    } catch (err: any) {
+      sonnerToast.error(err.message || 'Error deleting document.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '—';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  };
+
+  const filteredDocs = docs.filter((d: any) => {
+    const matchesSearch = !searchTerm || d.title?.toLowerCase().includes(searchTerm.toLowerCase()) || d.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFolder = selectedFolder === 'ALL' || d.folder === selectedFolder;
+    return matchesSearch && matchesFolder;
+  });
+
+  const folders = Array.from(new Set(['General', 'Planning', 'Specifications', 'Contracts', 'Deliverables', ...docs.map((d: any) => d.folder).filter(Boolean)]));
+
+  return (
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Tab Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+            <FileText className="w-4 h-4 text-blue-600" /> Documents & Attachments ({docs.length})
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">Manage and organize all files, specs, and deliverables for {project?.projectName}</p>
+        </div>
+        <button 
+          onClick={() => setIsUploadOpen(true)}
+          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+        >
+          <Upload className="w-3.5 h-3.5" /> Upload Document
+        </button>
+      </div>
+
+      {/* Filter / Search Bar */}
+      <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-100 dark:border-gray-800 text-xs">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search documents by name or notes..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-gray-400 font-bold uppercase text-[10px]">Folder:</span>
+          <select
+            value={selectedFolder}
+            onChange={e => setSelectedFolder(e.target.value)}
+            className="py-1.5 px-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium cursor-pointer"
+          >
+            <option value="ALL">All Folders ({docs.length})</option>
+            {folders.map(f => (
+              <option key={f as string} value={f as string}>{f as string}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Documents List */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        {filteredDocs.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <FileText className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">
+              {docs.length === 0 ? 'No documents uploaded yet' : 'No matching documents found'}
+            </h4>
+            <p className="text-xs text-gray-500 mb-4 max-w-sm mx-auto">
+              {docs.length === 0 
+                ? `Attach blueprints, scopes, contracts, or planning files to ${project?.projectName || 'this project'}.`
+                : 'Try adjusting your search filter.'}
+            </p>
+            {docs.length === 0 && (
+              <button 
+                onClick={() => setIsUploadOpen(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer"
+              >
+                Upload First Document
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            {filteredDocs.map((doc: any) => {
+              const isPdf = doc.title?.toLowerCase().endsWith('.pdf') || doc.mimeType?.includes('pdf') || doc.fileType?.includes('pdf');
+              const isImage = /\.(png|jpe?g|webp|gif|svg)$/i.test(doc.title) || doc.mimeType?.startsWith('image/');
+              
+              return (
+                <div key={doc.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex-shrink-0 mt-0.5">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs font-black text-gray-900 dark:text-white truncate max-w-md">{doc.title}</h4>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                          {doc.folder || 'General'}
+                        </span>
+                        {doc.entityType && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                            {doc.entityType}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-gray-400 mt-1 font-medium">
+                        <span>{formatFileSize(doc.fileSize)}</span>
+                        <span>•</span>
+                        <span>{doc.createdAt ? new Date(doc.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}</span>
+                        {doc.description && (
+                          <>
+                            <span>•</span>
+                            <span className="truncate max-w-xs text-gray-500">{doc.description}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDoc(doc)}
+                      className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> Preview
+                    </button>
+                    {doc.fileUrl && (
+                      <a
+                        href={doc.fileUrl}
+                        download={doc.title}
+                        className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Download
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      disabled={deletingId === doc.id}
+                      onClick={() => handleDelete(doc.id)}
+                      className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Upload Document Modal */}
+      {isUploadOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setIsUploadOpen(false)} />
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-800 z-10 animate-in zoom-in-95 duration-150">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Upload className="w-4 h-4 text-blue-600" /> Upload Project Document
+              </h3>
+              <button onClick={() => setIsUploadOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+
+            <form onSubmit={handleUploadSubmit} className="space-y-4 text-xs font-semibold">
+              <div>
+                <label className="block text-gray-600 dark:text-gray-300 mb-1.5 font-bold uppercase text-[10px]">Select File *</label>
+                <input
+                  type="file"
+                  required
+                  onChange={handleFileChange}
+                  className="w-full p-2 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-600 dark:text-gray-300 mb-1 font-bold uppercase text-[10px]">Document Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. System Architecture Diagram"
+                  value={docForm.title}
+                  onChange={e => setDocForm(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-normal"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 mb-1 font-bold uppercase text-[10px]">Folder Category</label>
+                  <select
+                    value={docForm.folder}
+                    onChange={e => setDocForm(prev => ({ ...prev, folder: e.target.value }))}
+                    className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-normal"
+                  >
+                    <option value="General">General</option>
+                    <option value="Planning">Planning</option>
+                    <option value="Specifications">Specifications</option>
+                    <option value="Contracts">Contracts</option>
+                    <option value="Deliverables">Deliverables</option>
+                    <option value="Architecture">Architecture</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 mb-1 font-bold uppercase text-[10px]">File Size</label>
+                  <div className="p-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-500 font-normal">
+                    {formatFileSize(docForm.fileSize)}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-600 dark:text-gray-300 mb-1 font-bold uppercase text-[10px]">Description / Scope Notes</label>
+                <textarea
+                  rows={2}
+                  placeholder="Optional brief description of this document..."
+                  value={docForm.description}
+                  onChange={e => setDocForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-normal"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsUploadOpen(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {uploading ? 'Uploading...' : 'Upload File'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Document Preview Modal */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setPreviewDoc(null)} />
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden z-10 animate-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-lg">{previewDoc.title}</h3>
+                <p className="text-xs text-gray-400">{formatFileSize(previewDoc.fileSize)} • {previewDoc.folder}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {previewDoc.fileUrl && (
+                  <a
+                    href={previewDoc.fileUrl}
+                    download={previewDoc.title}
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-1"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </a>
+                )}
+                <button onClick={() => setPreviewDoc(null)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto p-4 flex items-center justify-center min-h-[350px] max-h-[70vh] bg-gray-100 dark:bg-gray-950">
+              {previewDoc.title?.toLowerCase().endsWith('.pdf') || previewDoc.mimeType?.includes('pdf') || previewDoc.fileType?.includes('pdf') ? (
+                <iframe src={previewDoc.fileUrl} title={previewDoc.title} className="w-full h-full min-h-[500px] border-0 rounded-lg" />
+              ) : previewDoc.fileType?.startsWith('image/') || /\.(png|jpe?g|svg|webp|gif)$/i.test(previewDoc.title) ? (
+                <img src={previewDoc.fileUrl} alt={previewDoc.title} className="max-h-[65vh] max-w-full object-contain rounded-lg shadow-md mx-auto" />
+              ) : (
+                <div className="text-center p-8">
+                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Preview not supported for this file type.</p>
+                  <a href={previewDoc.fileUrl} download={previewDoc.title} className="mt-3 inline-flex items-center gap-1 text-xs text-blue-600 font-bold hover:underline">
+                    <Download className="w-3.5 h-3.5" /> Download file instead
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ------------------------------------------------------------------
+// RISKS WORKSPACE TAB
+// ------------------------------------------------------------------
+
+const RiskWorkspaceTab = ({ project, businessId, onRefresh }: any) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRisk, setEditingRisk] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    probability: 'MEDIUM',
+    impact: 'MEDIUM',
+    mitigation: '',
+    status: 'Active'
+  });
+
+  const risks = project?.risks || [];
+
+  const handleOpenCreate = () => {
+    setEditingRisk(null);
+    setForm({ title: '', description: '', probability: 'MEDIUM', impact: 'MEDIUM', mitigation: '', status: 'Active' });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (risk: any) => {
+    setEditingRisk(risk);
+    setForm({
+      title: risk.title || '',
+      description: risk.description || '',
+      probability: risk.probability || 'MEDIUM',
+      impact: risk.impact || 'MEDIUM',
+      mitigation: risk.mitigation || '',
+      status: risk.status || 'Active'
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title.trim()) {
+      sonnerToast.error('Risk title is required.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
+      const getCookie = (name: string) => {
+        if (typeof document === 'undefined') return '';
+        const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\\^])/g, '\\$1') + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : '';
+      };
+      let token = getCookie('token') || getCookie('accessToken');
+      if (!token && typeof window !== 'undefined') {
+        token = localStorage.getItem('token') || localStorage.getItem('accessToken') || '';
+      }
+
+      const url = editingRisk 
+        ? `${API_BASE}/api/project-operations/risks/${editingRisk.id}`
+        : `${API_BASE}/api/project-operations/${project.id}/risks`;
+      const method = editingRisk ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(form)
+      });
+      const data = await res.json();
+      if (data.success) {
+        sonnerToast.success(editingRisk ? 'Risk updated successfully.' : 'Risk logged successfully.');
+        setIsModalOpen(false);
+        onRefresh();
+      } else {
+        sonnerToast.error(data.message || 'Failed to save risk.');
+      }
+    } catch (err: any) {
+      sonnerToast.error(err.message || 'Error saving risk.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (riskId: string) => {
+    if (!window.confirm('Are you sure you want to delete this risk?')) return;
+    try {
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
+      const getCookie = (name: string) => {
+        if (typeof document === 'undefined') return '';
+        const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\\^])/g, '\\$1') + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : '';
+      };
+      let token = getCookie('token') || getCookie('accessToken');
+      if (!token && typeof window !== 'undefined') {
+        token = localStorage.getItem('token') || localStorage.getItem('accessToken') || '';
+      }
+
+      const res = await fetch(`${API_BASE}/api/project-operations/risks/${riskId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        sonnerToast.success('Risk removed.');
+        onRefresh();
+      } else {
+        sonnerToast.error(data.message || 'Failed to delete risk.');
+      }
+    } catch (err: any) {
+      sonnerToast.error(err.message || 'Error deleting risk.');
+    }
+  };
+
+  const getProbBadge = (val: string) => {
+    switch (val?.toUpperCase()) {
+      case 'CRITICAL': return 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300 border-red-200';
+      case 'HIGH': return 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300 border-orange-200';
+      case 'MEDIUM': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300 border-yellow-200';
+      default: return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200';
+    }
+  };
+
+  return (
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-amber-500" /> Risk Register ({risks.length})
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">Identify, evaluate, and track mitigation plans for {project?.projectName}</p>
+        </div>
+        <button 
+          onClick={handleOpenCreate}
+          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" /> + Identify Risk
+        </button>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        {risks.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">No risks identified yet</h4>
+            <p className="text-xs text-gray-500 mb-4 max-w-sm mx-auto">
+              Maintain project health by recording potential project risks, likelihood, and mitigation steps.
+            </p>
+            <button 
+              onClick={handleOpenCreate}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              Identify First Risk
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            {risks.map((risk: any) => (
+              <div key={risk.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                <div className="space-y-1.5 min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="text-xs font-black text-gray-900 dark:text-white">{risk.title}</h4>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getProbBadge(risk.probability)}`}>
+                      Prob: {risk.probability || 'MEDIUM'}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getProbBadge(risk.impact)}`}>
+                      Impact: {risk.impact || 'MEDIUM'}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      risk.status === 'Closed' ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' :
+                      risk.status === 'Mitigated' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' :
+                      'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                    }`}>
+                      {risk.status || 'Active'}
+                    </span>
+                  </div>
+
+                  {risk.description && (
+                    <p className="text-xs text-gray-500 line-clamp-2">{risk.description}</p>
+                  )}
+
+                  {risk.mitigation && (
+                    <div className="text-[11px] text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg border border-gray-100 dark:border-gray-800">
+                      <strong className="text-gray-800 dark:text-gray-200">Mitigation: </strong>{risk.mitigation}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                  <button
+                    onClick={() => handleOpenEdit(risk)}
+                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors cursor-pointer"
+                    title="Edit Risk"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(risk.id)}
+                    className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors cursor-pointer"
+                    title="Delete Risk"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add / Edit Risk Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setIsModalOpen(false)} />
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-800 z-10 animate-in zoom-in-95 duration-150">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-amber-500" />
+                {editingRisk ? 'Edit Project Risk' : 'Identify New Project Risk'}
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs font-semibold">
+              <div>
+                <label className="block text-gray-600 dark:text-gray-300 mb-1 font-bold uppercase text-[10px]">Risk Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Vendor delay on key components"
+                  value={form.title}
+                  onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-normal"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 mb-1 font-bold uppercase text-[10px]">Probability</label>
+                  <select
+                    value={form.probability}
+                    onChange={e => setForm(prev => ({ ...prev, probability: e.target.value }))}
+                    className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-normal"
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="CRITICAL">Critical</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 mb-1 font-bold uppercase text-[10px]">Impact</label>
+                  <select
+                    value={form.impact}
+                    onChange={e => setForm(prev => ({ ...prev, impact: e.target.value }))}
+                    className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-normal"
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="CRITICAL">Critical</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-600 dark:text-gray-300 mb-1 font-bold uppercase text-[10px]">Status</label>
+                <select
+                  value={form.status}
+                  onChange={e => setForm(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-normal"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Mitigated">Mitigated</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-600 dark:text-gray-300 mb-1 font-bold uppercase text-[10px]">Description</label>
+                <textarea
+                  rows={2}
+                  placeholder="Describe the cause and risk factors..."
+                  value={form.description}
+                  onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-normal"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-600 dark:text-gray-300 mb-1 font-bold uppercase text-[10px]">Mitigation Plan</label>
+                <textarea
+                  rows={2}
+                  placeholder="Steps taken to prevent or resolve this risk..."
+                  value={form.mitigation}
+                  onChange={e => setForm(prev => ({ ...prev, mitigation: e.target.value }))}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-normal"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold disabled:opacity-50"
+                >
+                  {submitting ? 'Saving...' : editingRisk ? 'Update Risk' : 'Add Risk'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const GenericWorkspaceTab = ({ title, project }: any) => (
   <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
     <div className="flex justify-between items-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
@@ -797,6 +1545,46 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<any>(null);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
+
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+    setIsDeletingProject(true);
+    try {
+      const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
+      const getCookie = (name: string) => {
+        if (typeof document === 'undefined') return '';
+        const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}\\\^])/g, '\\$1') + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : '';
+      };
+      let token = getCookie('token') || getCookie('accessToken');
+      if (!token && typeof window !== 'undefined') {
+        token = localStorage.getItem('token') || localStorage.getItem('accessToken') || '';
+      }
+
+      const res = await fetch(`${API_BASE}/api/project-operations/${projectToDelete.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        sonnerToast.success(`Project "${projectToDelete.projectName}" deleted successfully.`);
+        if (selectedProject?.id === projectToDelete.id) {
+          setSelectedProject(null);
+        }
+        setProjectToDelete(null);
+        fetchProjects();
+      } else {
+        sonnerToast.error(data.message || 'Failed to delete project.');
+      }
+    } catch (err: any) {
+      sonnerToast.error(err.message || 'Error deleting project.');
+    } finally {
+      setIsDeletingProject(false);
+    }
+  };
 
   const scrollTabs = (direction: 'left' | 'right') => {
     if (tabContainerRef.current) {
@@ -991,15 +1779,20 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
         searchTerm={searchTerm} 
         setSearchTerm={setSearchTerm} 
         filteredProjects={filteredProjects} 
+        onDeleteProject={(p) => setProjectToDelete(p)}
       />
     );
   }
 
-  // Pre-calculated stats for the selected project
-  const completedTasks = (selectedProject?.tasks || []).filter((t: any) => t.status === 'COMPLETED').length;
-  const pendingTasks = (selectedProject?.tasks || []).filter((t: any) => t.status !== 'COMPLETED').length;
+    // Pre-calculated stats for the selected project
+  const isTaskDone = (t: any) => t.status === 'DONE' || t.status === 'COMPLETED';
+  const completedTasks = (selectedProject?.tasks || []).filter(isTaskDone).length;
+  const pendingTasks = (selectedProject?.tasks || []).filter((t: any) => !isTaskDone(t)).length;
   const totalTasks = (selectedProject?.tasks || []).length;
-  const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (selectedProject?.completionPercentage || 0);
+  const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const projectProgress = typeof selectedProject?.completionPercentage === 'number' && selectedProject.completionPercentage > 0
+    ? selectedProject.completionPercentage
+    : (totalTasks > 0 ? taskCompletionRate : 0);
   const openIssues = (selectedProject?.issues || []).filter((i: any) => i.status !== 'CLOSED' && i.status !== 'RESOLVED').length;
   const identifiedRisks = (selectedProject?.risks || []).length;
   const hoursLogged = (selectedProject?.timeEntries || []).reduce((sum: number, t: any) => sum + (t.hours || 0), 0);
@@ -1290,7 +2083,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                         </div>
                         <div className="bg-gradient-to-br from-blue-900 to-blue-800 p-5 rounded-xl shadow-lg text-white">
                           <p className="text-[10px] text-blue-300 uppercase font-black tracking-widest mb-1.5 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" /> Completion</p>
-                          <h3 className="text-2xl font-black">{selectedProject.completionPercentage ?? taskCompletionRate}%</h3>
+                          <h3 className="text-2xl font-black">{projectProgress}%</h3>
                         </div>
                       </div>
 
@@ -1311,7 +2104,7 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
                             </div>
                           </div>
                           <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mt-4">
-                            <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${taskCompletionRate}%` }}></div>
+                            <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${projectProgress}%` }}></div>
                           </div>
                         </div>
 
@@ -1420,6 +2213,45 @@ export default function ProjectsWorkspace({ businessId: propBusinessId }: { busi
           )}
         </div>
       </div>
+
+      {/* Delete Project Confirmation Modal */}
+      {projectToDelete && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setProjectToDelete(null)} />
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-800 z-10 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 rounded-xl">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">Delete Project</h3>
+                <p className="text-xs text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+              Are you sure you want to delete project <strong className="text-gray-900 dark:text-white">{projectToDelete.projectName}</strong> ({projectToDelete.projectCode})? All associated tasks, schedules, and documents will be removed.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={isDeletingProject}
+                onClick={() => setProjectToDelete(null)}
+                className="px-4 py-2 text-xs font-bold bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingProject}
+                onClick={handleDeleteProject}
+                className="px-4 py-2 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isDeletingProject ? 'Deleting...' : 'Delete Project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter Panel Slide-over */}
       {isFilterOpen && (

@@ -696,6 +696,28 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Send subscription deadline email notice via Nodemailer
+  const handleSendDeadlineNotice = async (businessId: string, businessName: string) => {
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${API_BASE}/api/subscriptions/send-deadline-notice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ businessId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || 'Failed to send deadline notice');
+      }
+      toast.success(`Subscription deadline email sent for "${businessName}"`);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to send deadline notice email');
+    }
+  };
+
   // Action: Toggle User status
   const handleToggleUserStatus = async (user: PlatformUser) => {
     const token = getAuthToken();
@@ -991,6 +1013,10 @@ export default function AdminDashboardPage() {
   const getPlanBadge = (planName?: string | null) => {
     const plan = planName || 'Standard';
     const lower = plan.toLowerCase();
+
+    if (lower.includes('trial')) {
+      return <Badge variant="secondary" className="bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-700 font-bold">⭐ {plan}</Badge>;
+    }
 
     if (lower.includes('enterprise') || lower.includes('custom')) {
       return <Badge variant="secondary" className="bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800 font-bold">{plan}</Badge>;

@@ -679,6 +679,68 @@ export default function PlanningViewPage() {
           {/* Tab Content 1: Overview & Schedule */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* Prominent Schedule Progress & Execution Meter */}
+              <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-xl">
+                      <Target className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                        Schedule Progress & Execution Meter
+                      </h3>
+                      <p className="text-xs text-gray-500">Real-time progress tracking and completion status</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-2xl font-black ${
+                      (planning.completionPercentage || 0) >= 100 
+                        ? 'text-emerald-600 dark:text-emerald-400' 
+                        : 'text-blue-600 dark:text-blue-400'
+                    }`}>
+                      {planning.completionPercentage || 0}%
+                    </span>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                      planning.status === 'COMPLETED' || (planning.completionPercentage || 0) >= 100
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                        : planning.progressStatus === 'Delayed'
+                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+                        : planning.progressStatus === 'At Risk'
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                        : 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+                    }`}>
+                      {planning.progressStatus || (planning.status === 'COMPLETED' ? 'Completed' : 'On Track')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Large Progress Bar */}
+                <div className="w-full bg-gray-100 dark:bg-gray-800 h-3.5 rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      (planning.completionPercentage || 0) >= 100 ? 'bg-emerald-500' : 'bg-blue-600'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(0, planning.completionPercentage || 0))}%` }}
+                  />
+                </div>
+
+                {/* Progress Metrics Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                  <div className="p-3 bg-blue-50/50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/40">
+                    <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">Initial Progress</span>
+                    <p className="text-xl font-black text-gray-900 dark:text-white mt-1">{planning.initialProgress || 0}%</p>
+                  </div>
+                  <div className="p-3 bg-purple-50/50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-900/40">
+                    <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider block">Current Progress</span>
+                    <p className="text-xl font-black text-gray-900 dark:text-white mt-1">{planning.currentProgress || 0}%</p>
+                  </div>
+                  <div className="p-3 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-900/40">
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Overall Completion</span>
+                    <p className="text-xl font-black text-gray-900 dark:text-white mt-1">{planning.completionPercentage || 0}%</p>
+                  </div>
+                </div>
+              </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* General Information Card */}
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xs space-y-4">

@@ -3,25 +3,42 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Quote } from 'lucide-react';
+import { Quote, Eye, EyeOff } from 'lucide-react';
 import { setCookie, clearCookie } from '@/lib/utils';
-import { getAuthenticatedRedirectUrl } from '@/lib/auth';
+import { clearAuthSession } from '@/lib/auth';
 
 export default function SignIn() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_BASE || '';
 
-  // Auto-redirect if already signed in (e.g. user closed browser and came back)
+  // Handle logout message or incoming from email without force-redirecting away
   useEffect(() => {
-    const redirectUrl = getAuthenticatedRedirectUrl();
-    if (redirectUrl) {
-      navigate(redirectUrl, { replace: true });
+    const params = new URLSearchParams(window.location.search);
+    const isLoggedOut = params.get('logged_out') === 'true';
+    const isFromEmail = params.get('from_email') === 'true';
+
+    // In all cases on /signin, cleanly wipe any prior user's stale auth session
+    clearAuthSession();
+
+    if (isLoggedOut) {
+      toast.success('Logged out successfully');
+      window.history.replaceState({}, '', '/signin');
+    } else if (isFromEmail) {
+      const emailParam = params.get('email');
+      if (emailParam) {
+        try {
+          setEmail(decodeURIComponent(emailParam));
+        } catch {
+          setEmail(emailParam);
+        }
+      }
     }
-  }, [navigate]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,10 +81,16 @@ export default function SignIn() {
         return;
       }
 
+      const params = new URLSearchParams(window.location.search);
+      const targetBusinessId = params.get('businessId');
+
       const businesses: Array<{ businessId: string }> = Array.isArray(data.businesses) ? data.businesses : [];
 
-      if (businesses.length > 0 && businesses[0]?.businessId) {
-        const activeBusinessId = String(businesses[0].businessId);
+      // If user came with a specific businessId from email, check if it belongs to them
+      const matched = targetBusinessId && businesses.find((b) => String(b.businessId) === String(targetBusinessId));
+      const activeBusinessId = matched ? String(matched.businessId) : (businesses[0]?.businessId ? String(businesses[0].businessId) : null);
+
+      if (activeBusinessId) {
         setCookie('activeBusinessId', activeBusinessId, 7);
         clearCookie('isSubscriptionAdmin');
         clearCookie('userRole');
@@ -78,7 +101,7 @@ export default function SignIn() {
         clearCookie('activeBusinessId');
         clearCookie('isSubscriptionAdmin');
         clearCookie('userRole');
-        toast.success('Logged in successfully — let\'s create your first business');
+        toast.success("Logged in successfully — let's create your first business");
         navigate('/create-business');
       }
     } catch (err) {
@@ -103,7 +126,7 @@ export default function SignIn() {
         >
           {/* Logo */}
           <Link to="/" className="inline-block mb-12 transition-transform hover:scale-105">
-            <img src="/que-logo.png" alt="QueErp" width={660} height={180} className="h-9 w-auto"  />
+            <img src="/que-logo.png" alt="QueErp" width={660} height={180} className="h-9 w-auto" />
           </Link>
 
           {/* Header */}
@@ -144,14 +167,24 @@ export default function SignIn() {
                   Forgot password?
                 </Link>
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-5 py-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-medium"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-5 py-4 pr-12 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-medium"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none p-1 cursor-pointer"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </motion.div>
 
             <motion.div
@@ -205,14 +238,12 @@ export default function SignIn() {
             <Quote className="w-16 h-16 opacity-50" />
           </div>
           <h2 className="text-4xl font-bold text-white mb-8 leading-tight">
-            "QueErp completely transformed how we handle our regulatory compliance and invoicing. It's incredibly fast and secure."
+            &quot;QueErp completely transformed how we handle our regulatory compliance and invoicing. It&apos;s incredibly fast and secure.&quot;
           </h2>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-blue-400 flex items-center justify-center font-bold text-blue-950 text-lg">
-
             </div>
             <div>
-
               <p className="text-blue-200 font-medium">Que Infotech</p>
             </div>
           </div>

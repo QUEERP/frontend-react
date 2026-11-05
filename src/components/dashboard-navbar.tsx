@@ -1,3 +1,4 @@
+import { clearAuthSession } from '@/lib/auth';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -21,7 +22,7 @@ export default function DashboardNavbar() {
       <div className="flex items-center justify-between w-full">
         {/* Left side - Logo and Business Name */}
         <div className="flex items-center gap-4">
-          <Link to="/">
+          <Link to="/" >
             <img src="/logo-light.png" alt="QueErp" width={660} height={180} className="h-14 md:h-16 w-auto"  />
           </Link>
           <div className="hidden md:block">
@@ -65,15 +66,18 @@ export default function DashboardNavbar() {
           </motion.button>
 
           {/* Logout */}
-          <Link to="/">
-            <motion.button
-              className="text-xl hover:bg-destructive/10 p-2 rounded-lg transition-colors"
-              whileHover={{ scale: 1.05 }}
-              title="Logout"
-            >
-              🚪
-            </motion.button>
-          </Link>
+          <motion.button
+            type="button"
+            className="text-xl hover:bg-destructive/10 p-2 rounded-lg transition-colors cursor-pointer"
+            whileHover={{ scale: 1.05 }}
+            title="Logout"
+            onClick={() => {
+              clearAuthSession()
+              window.location.href = '/signin?logged_out=true'
+            }}
+          >
+            🚪
+          </motion.button>
         </div>
       </div>
     </motion.nav>
