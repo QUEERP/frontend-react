@@ -1,4 +1,4 @@
-import { getCookie, clearCookie, setCookie } from './utils';
+import { getCookie, clearCookie, setCookie, clearAllCookies } from './utils';
 
 /**
  * Safely decodes the payload of a JWT token in the browser.
@@ -109,19 +109,31 @@ export function getAuthenticatedRedirectUrl(customToken?: string): string | null
  * Clears all auth-related cookies and localStorage entries across the app.
  */
 export function clearAuthSession(): void {
-  clearCookie('token');
-  clearCookie('accessToken');
-  clearCookie('isSubscriptionAdmin');
-  clearCookie('userRole');
-  clearCookie('activeBusinessId');
+  const keys = [
+    'token',
+    'accessToken',
+    'isSubscriptionAdmin',
+    'userRole',
+    'activeBusinessId',
+    'businessId',
+    'last_business_id',
+    'businessName',
+    'user',
+    'userData',
+    'role',
+    'permissions',
+    'employeeId'
+  ];
+
+  for (const k of keys) {
+    clearCookie(k);
+  }
+  clearAllCookies();
 
   if (typeof window !== 'undefined') {
     try {
-      localStorage.removeItem('token');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('isSubscriptionAdmin');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('activeBusinessId');
+      localStorage.clear();
+      sessionStorage.clear();
     } catch {
       // Ignore
     }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Flag, Plus, Calendar, DollarSign, CheckCircle, AlertTriangle, Clock, ArrowRight, Layers 
+import {
+  Flag, Plus, Calendar, DollarSign, CheckCircle, AlertTriangle, Clock, ArrowRight, Layers
 } from 'lucide-react';
 import { StatusBadge } from '@/components/project-operations/StatusBadge';
 import { ProgressBar } from '@/components/project-operations/ProgressBar';
@@ -23,8 +23,8 @@ export function MilestoneWorkspace({ project }: { project: any }) {
         const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5002').replace(/\/$/, '');
         let token = localStorage.getItem('token');
         if (!token || token === 'null' || token === 'undefined') {
-          token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] || 
-                  document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] || '';
+          token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] ||
+            document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] || '';
         }
         const res = await fetch(`${API}/api/milestones?projectId=${projectId}`, {
           headers: {
@@ -51,7 +51,7 @@ export function MilestoneWorkspace({ project }: { project: any }) {
     const total = milestones.length;
     const completed = milestones.filter(m => m.status === 'COMPLETED' || m.completion === 100).length;
     const now = new Date();
-    const overdue = milestones.filter(m => 
+    const overdue = milestones.filter(m =>
       m.dueDate && new Date(m.dueDate) < now && m.status !== 'COMPLETED' && m.status !== 'CANCELLED'
     ).length;
 
@@ -90,7 +90,7 @@ export function MilestoneWorkspace({ project }: { project: any }) {
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Milestones</h3>
             <p className="text-xs text-gray-500">Track deliverables, payment weights and schedule targets</p>
           </div>
-          <button 
+          <button
             onClick={handleAddMilestone}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm transition-colors"
           >
@@ -147,7 +147,7 @@ export function MilestoneWorkspace({ project }: { project: any }) {
           </div>
           <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">No Milestones Defined Yet</h4>
           <p className="text-xs text-gray-500 max-w-sm mb-4">Add your first milestone to define deliverables, set payment gates, and track overall progress.</p>
-          <button 
+          <button
             onClick={handleAddMilestone}
             className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-sm"
           >
@@ -159,8 +159,8 @@ export function MilestoneWorkspace({ project }: { project: any }) {
           {milestones.map(m => {
             const isOverdue = m.dueDate && new Date(m.dueDate) < new Date() && m.status !== 'COMPLETED' && m.status !== 'CANCELLED';
             return (
-              <div 
-                key={m.id} 
+              <div
+                key={m.id}
                 onClick={() => handleOpenMilestone(m.id)}
                 className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col group hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
               >
@@ -173,16 +173,15 @@ export function MilestoneWorkspace({ project }: { project: any }) {
                       {m.milestoneCode}
                     </span>
                   </div>
-                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                    m.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${m.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' :
                     m.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' :
-                    m.status === 'DELAYED' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' :
-                    'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                  }`}>
+                      m.status === 'DELAYED' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' :
+                        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                    }`}>
                     {m.status?.replace('_', ' ') || 'PLANNED'}
                   </span>
                 </div>
-                
+
                 <h4 className="font-bold text-gray-900 dark:text-gray-100 text-sm mb-1 leading-snug group-hover:text-blue-600 transition-colors">
                   {m.name}
                 </h4>
@@ -193,7 +192,7 @@ export function MilestoneWorkspace({ project }: { project: any }) {
                     <span className="truncate">{m.planning.planName}</span>
                   </p>
                 )}
-                
+
                 <div className="space-y-2 mb-4 flex-1 text-xs">
                   <div className={`flex items-center gap-1.5 ${isOverdue ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
                     <Calendar className="w-3.5 h-3.5" />
@@ -214,7 +213,7 @@ export function MilestoneWorkspace({ project }: { project: any }) {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
                   <div className="flex justify-between items-center text-[11px] font-bold text-gray-400 mb-1">
                     <span>Progress</span>

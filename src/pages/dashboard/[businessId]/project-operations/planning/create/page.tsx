@@ -1120,13 +1120,119 @@ export default function CreatePlanningPage({ planIdProp }: { planIdProp?: string
             </SectionCard>
 
             {/* Section 5: Progress */}
-            <SectionCard title="5. Progress" icon={Target}>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <InputField label="Initial Progress %" type="number" value={formData.initialProgress} onChange={(val: any) => handleChange('initialProgress', val)} placeholder="0" />
-                <InputField label="Current Progress %" type="number" value={formData.currentProgress} onChange={(val: any) => handleChange('currentProgress', val)} placeholder="0" />
-                <InputField label="Completion %" type="number" value={formData.completionPercentage} onChange={(val: any) => handleChange('completionPercentage', val)} placeholder="0" />
-                <SelectField label="Status" value={formData.progressStatus} onChange={(val: any) => handleChange('progressStatus', val)} options={['On Track', 'At Risk', 'Delayed', 'Completed']} />
-                <SelectField label="Risk Level" value={formData.riskLevel} onChange={(val: any) => handleChange('riskLevel', val)} options={['Low', 'Medium', 'High']} />
+            <SectionCard title="5. Progress & Completion" icon={Target}>
+              <div className="space-y-6">
+                {/* Interactive Visual Progress Meter */}
+                <div className="p-5 bg-gradient-to-r from-blue-50/60 via-indigo-50/40 to-emerald-50/40 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-emerald-950/20 rounded-2xl border border-blue-100 dark:border-blue-900/40 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-blue-600 text-white rounded-xl shadow-xs">
+                        <Target className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider block">
+                          Visual Progress Meter
+                        </span>
+                        <span className="text-[11px] text-gray-500 font-medium">
+                          Slide or pick presets to adjust schedule progress
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className={`text-2xl font-black ${
+                        (Number(formData.completionPercentage) || 0) >= 100 
+                          ? 'text-emerald-600 dark:text-emerald-400' 
+                          : 'text-blue-600 dark:text-blue-400'
+                      }`}>
+                        {Number(formData.completionPercentage) || Number(formData.currentProgress) || 0}%
+                      </span>
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                        formData.progressStatus === 'Completed' || (Number(formData.completionPercentage) || 0) >= 100
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                          : formData.progressStatus === 'Delayed'
+                          ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+                          : formData.progressStatus === 'At Risk'
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                          : 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+                      }`}>
+                        {formData.progressStatus || 'On Track'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Visual Progress Bar */}
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 h-3 rounded-full overflow-hidden shadow-inner mb-3.5">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        (Number(formData.completionPercentage) || 0) >= 100
+                          ? 'bg-emerald-500'
+                          : 'bg-blue-600'
+                      }`}
+                      style={{ width: `${Math.min(100, Math.max(0, Number(formData.completionPercentage) || Number(formData.currentProgress) || 0))}%` }}
+                    />
+                  </div>
+
+                  {/* Range Slider for drag adjustment */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-[11px] font-bold text-gray-400">0%</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={Number(formData.completionPercentage) || Number(formData.currentProgress) || 0}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        handleChange('completionPercentage', val);
+                        handleChange('currentProgress', val);
+                        if (Number(val) === 100) {
+                          handleChange('progressStatus', 'Completed');
+                        } else if (formData.progressStatus === 'Completed' && Number(val) < 100) {
+                          handleChange('progressStatus', 'On Track');
+                        }
+                      }}
+                      className="w-full accent-blue-600 cursor-pointer h-2 bg-gray-200 dark:bg-gray-700 rounded-lg"
+                    />
+                    <span className="text-[11px] font-bold text-gray-400">100%</span>
+                  </div>
+
+                  {/* Preset quick buttons */}
+                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-blue-100 dark:border-blue-900/30 flex-wrap">
+                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Quick Presets:</span>
+                    {[0, 25, 50, 75, 100].map(pct => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => {
+                          handleChange('completionPercentage', String(pct));
+                          handleChange('currentProgress', String(pct));
+                          if (pct === 100) {
+                            handleChange('progressStatus', 'Completed');
+                          } else if (formData.progressStatus === 'Completed' && pct < 100) {
+                            handleChange('progressStatus', 'On Track');
+                          }
+                        }}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          (Number(formData.completionPercentage) || 0) === pct
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <InputField label="Initial Progress %" type="number" value={formData.initialProgress} onChange={(val: any) => handleChange('initialProgress', val)} placeholder="0" />
+                  <InputField label="Current Progress %" type="number" value={formData.currentProgress} onChange={(val: any) => handleChange('currentProgress', val)} placeholder="0" />
+                  <InputField label="Completion %" type="number" value={formData.completionPercentage} onChange={(val: any) => {
+                    handleChange('completionPercentage', val);
+                    if (Number(val) === 100) handleChange('progressStatus', 'Completed');
+                  }} placeholder="0" />
+                  <SelectField label="Status" value={formData.progressStatus} onChange={(val: any) => handleChange('progressStatus', val)} options={['On Track', 'At Risk', 'Delayed', 'Completed']} />
+                  <SelectField label="Risk Level" value={formData.riskLevel} onChange={(val: any) => handleChange('riskLevel', val)} options={['Low', 'Medium', 'High']} />
+                </div>
               </div>
             </SectionCard>
 
@@ -1386,6 +1492,20 @@ export default function CreatePlanningPage({ planIdProp }: { planIdProp?: string
                     <span className="font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded truncate max-w-[150px]">
                       {typeof formData.execType === 'object' && formData.execType ? (formData.execType as any)?.name : (formData.execType || '-')}
                     </span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <span className="font-bold text-gray-500 uppercase">Progress</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${(Number(formData.completionPercentage) || 0) >= 100 ? 'bg-emerald-500' : 'bg-blue-600'}`}
+                          style={{ width: `${Math.min(100, Math.max(0, Number(formData.completionPercentage) || Number(formData.currentProgress) || 0))}%` }}
+                        />
+                      </div>
+                      <span className="font-black text-gray-900 dark:text-white">
+                        {Number(formData.completionPercentage) || Number(formData.currentProgress) || 0}%
+                      </span>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-3">
                     <span className="font-bold text-gray-500 uppercase">Est. Cost</span>

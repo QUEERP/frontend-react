@@ -14,15 +14,6 @@ import FinalCTA from '@/components/final-cta';
 import Footer from '@/components/footer';
 
 export default function Home() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const redirectUrl = getAuthenticatedRedirectUrl();
-    if (redirectUrl) {
-      navigate(redirectUrl, { replace: true });
-    }
-  }, [navigate]);
-
   return (
     <main className="bg-white">
       <Navbar />

@@ -8,6 +8,7 @@ import { DashboardLoadingGate } from "@/components/dashboard/dashboard-loading-g
 import { DashboardGlobalHeader } from "@/components/dashboard/global-header"
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getCookie } from "@/lib/utils";
+import { clearAuthSession } from "@/lib/auth";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { businessId } = useParams()
@@ -15,11 +16,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const location = useLocation()
 
   React.useEffect(() => {
-    const token = getCookie('token') || getCookie('accessToken')
+    const token = getCookie('token') || getCookie('accessToken') || (typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('accessToken') : null)
     if (!token) {
-      navigate('/signin')
+      clearAuthSession()
+      window.location.href = '/'
     }
-  }, [location.pathname, navigate])
+  }, [location.pathname])
 
   return (
     <DashboardThemeProvider>

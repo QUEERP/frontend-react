@@ -61,7 +61,7 @@ export default function Hero() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                 </span>
-                Que-ERP is now live
+                Que-ERP is now live • ⭐ 90-Day Free Trial
               </div>
               <h1 className="text-5xl lg:text-7xl font-bold leading-[1.1] tracking-tight text-slate-900 text-balance">
                 Know Exactly Where Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Money Moves.</span>
@@ -74,7 +74,7 @@ export default function Hero() {
 
             {/* CTAs */}
             <motion.div className="flex flex-col sm:flex-row gap-4" variants={itemVariants as any}>
-              <Link to="/register" className="w-full sm:w-auto">
+              <Link to="/register?trial=90" className="w-full sm:w-auto">
                 <Button className="w-full cursor-pointer sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-[0_8px_20px_rgb(37,99,235,0.25)] hover:shadow-[0_10px_25px_rgba(37,99,235,0.35)] hover:-translate-y-1 font-medium text-lg h-14 px-8 rounded-full transition-all duration-300 group flex items-center justify-center gap-2">
                   Start Free Trial
                   <ChevronRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
@@ -94,7 +94,7 @@ export default function Hero() {
             {/* Trust Signals */}
             <motion.div className="flex flex-wrap gap-3 pt-6" variants={itemVariants as any}>
               {[
-                { icon: ShieldCheck, label: 'UAE Compliant' },
+                { icon: ShieldCheck, label: 'Multi-Country & Multi-Currency' },
                 { icon: Banknote, label: 'Bank-Level Security' },
                 { icon: Server, label: 'Cloud Hosted' },
                 { icon: Users, label: 'Multi-Tenant' },
