@@ -1,7 +1,8 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { CheckCircle2, ChevronRight, Play, ShieldCheck, Banknote, Server, Users } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle2, ChevronRight, Play, ShieldCheck, Banknote, Server, Users, X, Maximize } from 'lucide-react';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -34,6 +35,63 @@ const cardVariants = {
 };
 
 export default function Hero() {
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
+  const [playBlocked, setPlayBlocked] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handleOpenDemo = () => {
+    setIsDemoOpen(true);
+    setPlayBlocked(false);
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.warn('Playback with sound requires user interaction:', err);
+            setPlayBlocked(true);
+          });
+        }
+      }
+    }, 50);
+  };
+
+  const handleCloseDemo = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+    setIsDemoOpen(false);
+    setPlayBlocked(false);
+  }, []);
+
+  const handleFullscreen = () => {
+    if (videoRef.current) {
+      if (videoRef.current.requestFullscreen) {
+        videoRef.current.requestFullscreen();
+      } else if ((videoRef.current as any).webkitRequestFullscreen) {
+        (videoRef.current as any).webkitRequestFullscreen();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        handleCloseDemo();
+      }
+    };
+    if (isDemoOpen) {
+      window.addEventListener('keydown', handleKeyDown, true);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+      document.body.style.overflow = '';
+    };
+  }, [isDemoOpen, handleCloseDemo]);
   return (
     <section className="relative pt-40 pb-24 px-6 overflow-hidden bg-slate-50">
       {/* Dynamic Background Elements */}
@@ -82,6 +140,7 @@ export default function Hero() {
               </Link>
               <Button
                 variant="outline"
+                onClick={handleOpenDemo}
                 className="w-full cursor-pointer sm:w-auto border-slate-200 text-slate-700 hover:bg-slate-100 font-medium text-lg h-14 px-8 rounded-full transition-all duration-300 group flex items-center justify-center gap-2 bg-white/50 backdrop-blur-sm shadow-sm hover:shadow"
               >
                 <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center transition-transform group-hover:scale-110">
@@ -227,6 +286,83 @@ export default function Hero() {
           </motion.div>
         </div>
       </div>
+      {/* Watch Demo Modal */}
+      <AnimatePresence>
+        {isDemoOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md"
+            onClick={handleCloseDemo}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-5xl aspect-video bg-black rounded-2xl shadow-2xl overflow-hidden border border-white/10 flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Action Buttons: Fullscreen & Close */}
+              <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleFullscreen}
+                  aria-label="Toggle Fullscreen"
+                  title="Fullscreen"
+                  className="p-2 rounded-full bg-slate-900/80 hover:bg-slate-800 text-white/90 hover:text-white transition-all backdrop-blur-sm border border-white/10 shadow-lg cursor-pointer"
+                >
+                  <Maximize className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseDemo}
+                  aria-label="Close demo"
+                  title="Close (Esc)"
+                  className="p-2 rounded-full bg-slate-900/80 hover:bg-slate-800 text-white/90 hover:text-white transition-all backdrop-blur-sm border border-white/10 shadow-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Video Element with Audio and Subtitles */}
+              <video
+                ref={videoRef}
+                src="/demo.mp4"
+                poster="/poster.jpg"
+                controls
+                playsInline
+                className="w-full h-full object-contain bg-black"
+              >
+                <track src="/demo.srt" kind="subtitles" srcLang="en" label="English" default />
+                Your browser does not support the video tag.
+              </video>
+
+              {/* Big Play Overlay (shown if browser blocks sound) */}
+              {playBlocked && (
+                <div
+                  onClick={() => {
+                    if (videoRef.current) {
+                      videoRef.current.play();
+                      setPlayBlocked(false);
+                    }
+                  }}
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 cursor-pointer backdrop-blur-sm"
+                >
+                  <div className="w-20 h-20 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-2xl transition-transform hover:scale-110">
+                    <Play className="w-10 h-10 ml-1 fill-white" />
+                  </div>
+                  <p className="mt-4 text-white text-base sm:text-lg font-medium tracking-wide">
+                    Click to Play Demo with Sound
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
