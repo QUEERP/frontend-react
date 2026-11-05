@@ -1,0 +1,119 @@
+1
+00:00:00,000 --> 00:00:12,564
+Welcome to QueERP, a modern, cloud-native enterprise platform built to give growing businesses complete financial visibility, automated operations, and statutory compliance.
+
+2
+00:00:12,564 --> 00:00:24,836
+Whether you manage inventory, client billing, multi-currency accounting, or project delivery, QueERP brings every department together into a single, intuitive workspace.
+
+3
+00:00:24,836 --> 00:00:28,269
+Let's explore how it powers your daily business.
+
+4
+00:00:28,769 --> 00:00:35,198
+The Executive Dashboard provides business owners and leadership with a real-time command center.
+
+5
+00:00:35,198 --> 00:00:43,588
+At a glance, monitor total billed revenue, collected cash flow, pending balances, and collection rates across all currencies.
+
+6
+00:00:43,588 --> 00:00:53,129
+Interactive charts track monthly revenue trends and invoice settlement distributions, ensuring you always know exactly where your money moves.
+
+7
+00:00:53,629 --> 00:00:58,914
+In the Sales module, managing the quote-to-cash lifecycle is effortless.
+
+8
+00:00:58,914 --> 00:01:07,324
+Browse and filter customer invoices with native multi-currency handling in Dirhams, US Dollars, and Indian Rupees.
+
+9
+00:01:07,324 --> 00:01:18,339
+Creating a new invoice takes only seconds: select a customer, add line items, and let QueERP automatically calculate statutory taxes and line totals.
+
+10
+00:01:18,339 --> 00:01:26,750
+Recording incoming payments is seamless, instantly updating balances and keeping your executive dashboard in sync.
+
+11
+00:01:27,250 --> 00:01:31,851
+Procurement and inventory management work seamlessly hand in hand.
+
+12
+00:01:31,851 --> 00:01:37,585
+Track approved vendors, issue formal purchase orders, and monitor delivery status.
+
+13
+00:01:37,585 --> 00:01:44,522
+The inventory engine provides multi-warehouse stock management, batch tracking, and serial numbers.
+
+14
+00:01:44,522 --> 00:01:52,380
+You always know precisely what products you have on hand, where they are stored, and when it is time to reorder.
+
+15
+00:01:52,880 --> 00:02:03,587
+Under Accounting and Finance, QueERP delivers a comprehensive double-entry Chart of Accounts aligned with international financial reporting standards.
+
+16
+00:02:03,587 --> 00:02:09,120
+Easily navigate assets, liabilities, equity, revenues, and operating expenses.
+
+17
+00:02:09,120 --> 00:02:19,900
+Every invoice, vendor bill, and payment posts automatically to the general ledger, maintaining total audit readiness without manual bookkeeping errors.
+
+18
+00:02:20,400 --> 00:02:32,574
+For service and project-driven organizations, the Project Operations workspace tracks master budgets, task execution, deliverable milestones, and project health in real time.
+
+19
+00:02:32,574 --> 00:02:38,416
+You can monitor completion percentages and cost efficiency against approved budgets.
+
+20
+00:02:38,416 --> 00:02:48,550
+Integrated HR features keep employee profiles, attendance, payroll, and departmental structures fully coordinated with your operational workflow.
+
+21
+00:02:49,050 --> 00:02:54,255
+Tax compliance is built directly into the foundation of QueERP.
+
+22
+00:02:54,255 --> 00:03:01,476
+With jurisdiction-aware statutory reporting, generate audit-ready filings effortlessly.
+
+23
+00:03:01,476 --> 00:03:13,819
+For United Arab Emirates operations, view and export your official UAE FTA VAT 201 return with precise standard-rated and zero-rated box breakdowns.
+
+24
+00:03:13,819 --> 00:03:21,880
+For Indian businesses, statutory GST returns including GSTR-1 and GSTR-3B are readily accessible.
+
+25
+00:03:22,380 --> 00:03:34,336
+Why choose QueERP? Because it replaces disconnected spreadsheets and legacy tools with a modern, high-performance platform that scales with your growth.
+
+26
+00:03:34,336 --> 00:03:44,154
+Automated invoicing, multi-currency accounting, warehouse logistics, project management, and tax compliance—all in one place.
+
+27
+00:03:44,154 --> 00:03:48,826
+Start your complimentary ninety-day free trial today at erp.
+
+28
+00:03:48,826 --> 00:03:49,697
+queinfotech.
+
+29
+00:03:49,697 --> 00:03:49,935
+com.
+
+30
+00:03:49,935 --> 00:03:53,340
+QueERP: know exactly where your money moves.
