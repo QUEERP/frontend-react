@@ -1058,14 +1058,23 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                 <CardHeader className="bg-muted/50 border-b border-border pb-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <CardTitle className="text-xl">Business Email Configuration</CardTitle>
                         <Badge className={cn("text-xs font-bold", emailConfig.isEnabled ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-slate-100 text-slate-700")}>
                           {emailConfig.isEnabled ? "Active" : "Disabled"}
                         </Badge>
-                        {emailConfig.isVerified && (
+                        {emailConfig.isVerified ? (
                           <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs font-bold">
                             Verified
+                          </Badge>
+                        ) : (
+                          <Badge className={cn(
+                            "text-xs font-bold",
+                            emailConfig.lastTestStatus === 'FAILED'
+                              ? "bg-rose-100 text-rose-800 border-rose-300"
+                              : "bg-amber-100 text-amber-800 border-amber-300"
+                          )}>
+                            {emailConfig.lastTestStatus === 'FAILED' ? "Auth Failed" : "Unverified"}
                           </Badge>
                         )}
                       </div>
@@ -1234,6 +1243,13 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                         placeholder="e.g. billing@yourcompany.com"
                         className="h-11 rounded-xl"
                       />
+                      {emailConfig.email &&
+                        emailConfig.smtpUser &&
+                        emailConfig.email.trim().toLowerCase() !== emailConfig.smtpUser.trim().toLowerCase() && (
+                          <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
+                            Note: SMTP Username (<span className="font-mono">{emailConfig.smtpUser}</span>) differs from Business Email (<span className="font-mono">{emailConfig.email}</span>). Verify your mail server expects this exact mailbox login.
+                          </p>
+                        )}
                     </div>
 
                     <div>
