@@ -32,6 +32,7 @@ interface CreateCustomerModalProps {
 
 const EMPTY_FORM: CreateCustomerData = {
   company: '',
+  email: '',
   region: 'INDIA',
   vatNumber: '',
   phone: '',
@@ -200,6 +201,16 @@ export function CreateCustomerModal({ open, onClose, businessId, onCreated }: Cr
                     value={form.phone || ''}
                     onChange={val => set('phone', val)}
                     defaultCountry={form.country || (form.region === 'INDIA' ? 'India' : form.region === 'UAE' ? 'UAE' : 'India')}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">Email Address</Label>
+                  <Input
+                    className={fieldCls}
+                    type="email"
+                    value={form.email || ''}
+                    onChange={e => set('email', e.target.value)}
+                    placeholder="customer@example.com"
                   />
                 </div>
                 <div className="space-y-1.5">

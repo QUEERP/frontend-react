@@ -287,10 +287,21 @@ export function QuotationPaymentPageClient({
     }
 
     const normalizedAmount = Number(String(paymentForm.amountReceived).replace(/,/g, '').trim())
-    if (!paymentForm.amountReceived || !Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    const hasCreditNote = paymentForm.creditNoteId && paymentForm.creditNoteId !== 'none'
+
+    if ((!paymentForm.amountReceived && paymentForm.amountReceived !== '0') || !Number.isFinite(normalizedAmount) || normalizedAmount < 0) {
       toast({
         title: 'Invalid amount',
-        description: 'Enter a valid numeric Amount Received greater than zero.',
+        description: 'Enter a valid numeric Amount Received.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (normalizedAmount === 0 && !hasCreditNote) {
+      toast({
+        title: 'Invalid amount',
+        description: 'Amount Received must be greater than zero, or apply a credit note.',
         variant: 'destructive',
       })
       return
@@ -563,13 +574,18 @@ export function QuotationPaymentPageClient({
                           const newForm = { ...prev, creditNoteId: value };
                           if (value !== 'none') {
                             const note = availableCreditNotes.find(cn => cn.id === value);
-                            if (note && note.remainingAmount > 0) {
-                              const amountToApply = Math.min(note.remainingAmount, remainingAmount);
-                              newForm.amountReceived = amountToApply.toString();
+                            if (note && Number(note.remainingAmount || 0) > 0) {
+                              const creditAmount = Number(note.remainingAmount || 0);
+                              const netAmount = Math.max(0, remainingAmount - creditAmount);
+                              newForm.amountReceived = String(netAmount);
+                            } else {
+                              newForm.amountReceived = String(remainingAmount > 0 ? remainingAmount : 0);
                             }
+                          } else {
+                            newForm.amountReceived = String(remainingAmount > 0 ? remainingAmount : 0);
                           }
                           return newForm;
-                        })
+                        });
                       }}
                       disabled={isLoadingPaymentSummary || quotationPaymentStatus === 'PAID' || availableCreditNotes.length === 0}
                     >

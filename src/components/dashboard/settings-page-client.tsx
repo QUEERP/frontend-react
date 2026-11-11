@@ -16,8 +16,16 @@ import {
   EyeIcon,
   EyeOffIcon,
   UserCircleIcon,
-  KeyRoundIcon
+  KeyRoundIcon,
+  MailIcon,
+  CheckCircle2Icon,
+  AlertCircleIcon,
+  SendIcon,
+  RefreshCwIcon,
+  SparklesIcon,
+  ExternalLinkIcon
 } from 'lucide-react'
+import { businessEmailAPI, BusinessEmailConfig } from '@/lib/api/businessEmail'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -41,7 +49,7 @@ const TEMPLATES = [
 export function SettingsPageClient({ businessId }: { businessId: string }) {
   const { business, refresh } = useBusinessData()
   const { toast } = useToast()
-  
+
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [currentUser, setCurrentUser] = useState<{ email: string; name: string } | null>(null)
   const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' })
@@ -52,6 +60,26 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
   const [profileForm, setProfileForm] = useState({ name: '' })
   const [profileStatus, setProfileStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [activeSection, setActiveSection] = useState('general')
+
+  // Business Email Configuration State
+  const [emailConfig, setEmailConfig] = useState<BusinessEmailConfig>({
+    businessId,
+    email: '',
+    senderName: '',
+    smtpHost: '',
+    smtpPort: 587,
+    smtpUser: '',
+    encryption: 'TLS',
+    isEnabled: true,
+    isVerified: false,
+    hasPassword: false,
+  })
+  const [smtpPass, setSmtpPass] = useState('')
+  const [showSmtpPass, setShowSmtpPass] = useState(false)
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailSaveStatus, setEmailSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [testRecipient, setTestRecipient] = useState('')
+  const [testingEmail, setTestingEmail] = useState(false)
 
   const [formData, setFormData] = useState<any>({
     // General
@@ -200,7 +228,7 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
           setCurrentUser(user)
           setProfileForm({ name: user?.name || '' })
         }
-      } catch {}
+      } catch { }
     }
     load()
   }, [])
@@ -279,6 +307,191 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
     }
   }
 
+  // Fetch business email configuration
+  const fetchEmailConfig = async () => {
+    if (!businessId) return
+    try {
+      setEmailLoading(true)
+      const res = await businessEmailAPI.getConfig(businessId)
+      if (res.success && res.data.config) {
+        setEmailConfig(res.data.config)
+      } else {
+        setEmailConfig({
+          businessId,
+          email: '',
+          senderName: business?.name || '',
+          smtpHost: '',
+          smtpPort: 587,
+          smtpUser: '',
+          encryption: 'TLS',
+          isEnabled: false,
+          isVerified: false,
+          hasPassword: false,
+        })
+      }
+    } catch (err: any) {
+      console.warn('Could not fetch email config:', err.message)
+    } finally {
+      setEmailLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchEmailConfig()
+  }, [businessId])
+
+  useEffect(() => {
+    if (currentUser?.email && !testRecipient) {
+      setTestRecipient(currentUser.email)
+    }
+  }, [currentUser])
+
+  const handleSaveEmailConfig = async () => {
+    if (!emailConfig.email || !emailConfig.smtpHost || !emailConfig.smtpUser) {
+      toast({
+        title: 'Missing required fields',
+        description: 'Business Email, SMTP Host, and SMTP Username are required.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!emailConfig.hasPassword && !smtpPass.trim()) {
+      toast({
+        title: 'Password required',
+        description: 'Please enter your SMTP Password or App Password.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setEmailSaveStatus('saving')
+    try {
+      const res = await businessEmailAPI.saveConfig(businessId, {
+        ...emailConfig,
+        isEnabled: emailConfig.isEnabled ?? true,
+        senderName: emailConfig.senderName || business?.name || 'Business Administrator',
+        smtpPass: smtpPass.trim() || undefined,
+      })
+      if (res.success && res.data) {
+        setEmailConfig(res.data)
+        setSmtpPass('')
+        setEmailSaveStatus('saved')
+        toast({
+          title: 'Email Configuration Saved',
+          description: 'Your business SMTP settings have been updated securely.',
+        })
+        setTimeout(() => setEmailSaveStatus('idle'), 2500)
+      }
+    } catch (err: any) {
+      setEmailSaveStatus('idle')
+      toast({
+        title: 'Failed to save email configuration',
+        description: err.message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleTestEmail = async () => {
+    if (!testRecipient) {
+      toast({
+        title: 'Recipient required',
+        description: 'Please enter a test recipient email address.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!emailConfig.smtpHost || !emailConfig.smtpUser || !emailConfig.email) {
+      toast({
+        title: 'Incomplete parameters',
+        description: 'Please fill in SMTP Host, Username, and Business Email first.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!emailConfig.hasPassword && !smtpPass.trim()) {
+      toast({
+        title: 'Password required',
+        description: 'Please provide the SMTP password to test the connection.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setTestingEmail(true)
+    try {
+      const res = await businessEmailAPI.testConfig(businessId, {
+        recipientEmail: testRecipient.trim(),
+        smtpHost: emailConfig.smtpHost,
+        smtpPort: emailConfig.smtpPort,
+        smtpUser: emailConfig.smtpUser,
+        smtpPass: smtpPass.trim() || undefined,
+        encryption: emailConfig.encryption,
+        email: emailConfig.email,
+        senderName: emailConfig.senderName || business?.name || 'Business Administrator',
+      })
+      if (res.success) {
+        toast({
+          title: 'Test Email Sent Successfully!',
+          description: `Verification email delivered to ${testRecipient.trim()}. Connection verified!`,
+        })
+        fetchEmailConfig()
+      }
+    } catch (err: any) {
+      toast({
+        title: 'SMTP Connection Test Failed',
+        description: err.message || 'Could not connect to the mail server. Please check host, port, credentials, and app password settings.',
+        variant: 'destructive',
+      })
+      fetchEmailConfig()
+    } finally {
+      setTestingEmail(false)
+    }
+  }
+
+  const handleApplyPreset = (preset: 'gmail' | 'office365' | 'zoho' | 'custom') => {
+    switch (preset) {
+      case 'gmail':
+        setEmailConfig(prev => ({
+          ...prev,
+          smtpHost: 'smtp.gmail.com',
+          smtpPort: 587,
+          encryption: 'TLS',
+        }))
+        toast({ title: 'Applied Google Workspace / Gmail preset', description: 'Port 587 (TLS). Note: Use a 16-character Google App Password.' })
+        break
+      case 'office365':
+        setEmailConfig(prev => ({
+          ...prev,
+          smtpHost: 'smtp.office365.com',
+          smtpPort: 587,
+          encryption: 'TLS',
+        }))
+        toast({ title: 'Applied Microsoft 365 / Outlook preset', description: 'Port 587 (STARTTLS / TLS).' })
+        break
+      case 'zoho':
+        setEmailConfig(prev => ({
+          ...prev,
+          smtpHost: 'smtppro.zoho.com',
+          smtpPort: 465,
+          encryption: 'SSL',
+        }))
+        toast({ title: 'Applied Zoho Mail preset', description: 'Port 465 (SSL).' })
+        break
+      case 'custom':
+        setEmailConfig(prev => ({
+          ...prev,
+          smtpHost: '',
+          smtpPort: 587,
+          encryption: 'TLS',
+        }))
+        break
+    }
+  }
+
   const isIndia = formData.country === 'INDIA'
   const isUAE = formData.country === 'UAE'
 
@@ -301,9 +514,9 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
     try {
       const token = getCookie('token') || getCookie('accessToken')
       const API_BASE = import.meta.env.VITE_API_BASE || ''
-      
+
       const formPayload = new FormData()
-      
+
       Object.entries(formData).forEach(([key, value]) => {
         if (key === 'companyLogoFile' || key === 'signatureFile') {
           if (value instanceof File) {
@@ -367,6 +580,7 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
     { id: 'finance', label: 'Financial', icon: CreditCardIcon },
     { id: 'banking', label: 'Banking', icon: Building2Icon },
     { id: 'invoice', label: 'Invoice Settings', icon: FileTextIcon },
+    { id: 'email', label: 'Business Email', icon: MailIcon },
     { id: 'inventory', label: 'Inventory', icon: PackageSearchIcon },
     { id: 'hr', label: 'HR Settings', icon: ClockIcon },
     { id: 'compliance', label: 'Compliance', icon: ShieldIcon },
@@ -375,7 +589,7 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
 
   return (
     <div className="w-full max-w-[1400px] mx-auto p-4 md:p-6 lg:p-8 space-y-6">
-      
+
       {/* Header & Progress */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-6 rounded-2xl border border-border shadow-sm sticky top-4 z-40">
         <div>
@@ -386,25 +600,25 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
           <div className="flex flex-col items-end">
             <span className="text-sm font-bold text-foreground">Setup Progress: {progressPercent}%</span>
             <div className="w-48 h-2 bg-muted rounded-full mt-1 overflow-hidden">
-              <div 
-                className={cn("h-full transition-all duration-500", progressPercent === 100 ? "bg-emerald-500" : "bg-orange-500")} 
+              <div
+                className={cn("h-full transition-all duration-500", progressPercent === 100 ? "bg-emerald-500" : "bg-orange-500")}
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
           </div>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={saveStatus === 'saving'}
             className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm px-6 h-11"
           >
-            {saveStatus === 'saving' ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"/> : <SaveIcon className="w-4 h-4" />}
+            {saveStatus === 'saving' ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <SaveIcon className="w-4 h-4" />}
             {saveStatus === 'saved' ? 'Saved!' : 'Save Changes'}
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
+
         {/* Sidebar Navigation */}
         <div className="lg:col-span-3 space-y-2">
           {sections.map(s => {
@@ -415,8 +629,8 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                 onClick={() => setActiveSection(s.id)}
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors text-left",
-                  activeSection === s.id 
-                    ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100" 
+                  activeSection === s.id
+                    ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
@@ -429,7 +643,7 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
 
         {/* Content Area */}
         <div className="lg:col-span-9 space-y-8 pb-32">
-          
+
           {activeSection === 'general' && (
             <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
               <CardHeader className="bg-muted/50 border-b border-border pb-6">
@@ -437,7 +651,7 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                 <CardDescription>Basic business details and branding</CardDescription>
               </CardHeader>
               <CardContent className="p-6 md:p-8 space-y-6">
-                
+
                 {/* Branding Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 border-b border-border pb-8">
                   <div>
@@ -452,10 +666,10 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                           <Building2Icon className="w-6 h-6 text-muted-foreground" />
                         )}
                       </div>
-                      <Input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={e => e.target.files?.[0] && updateField('companyLogoFile', e.target.files[0])} 
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => e.target.files?.[0] && updateField('companyLogoFile', e.target.files[0])}
                         className="flex-1"
                       />
                     </div>
@@ -472,10 +686,10 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                           <FileTextIcon className="w-6 h-6 text-muted-foreground" />
                         )}
                       </div>
-                      <Input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={e => e.target.files?.[0] && updateField('signatureFile', e.target.files[0])} 
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => e.target.files?.[0] && updateField('signatureFile', e.target.files[0])}
                         className="flex-1"
                       />
                     </div>
@@ -485,11 +699,11 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <FieldLabel id="companyName" label="Business Name" required />
-                    <Input 
-                      id="companyName" 
-                      value={formData.companyName} 
+                    <Input
+                      id="companyName"
+                      value={formData.companyName}
                       onChange={e => updateField('companyName', e.target.value)}
-                      className={cn("h-11 rounded-xl", !formData.companyName && "border-red-300 focus-visible:ring-red-200")} 
+                      className={cn("h-11 rounded-xl", !formData.companyName && "border-red-300 focus-visible:ring-red-200")}
                     />
                   </div>
                   <div>
@@ -518,12 +732,12 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                   </div>
                   <div className="md:col-span-2">
                     <FieldLabel id="description" label="Business Description" />
-                    <Textarea 
-                      id="description" 
-                      value={formData.description} 
-                      onChange={e => updateField('description', e.target.value)} 
-                      className="rounded-xl resize-none" 
-                      rows={4} 
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={e => updateField('description', e.target.value)}
+                      className="rounded-xl resize-none"
+                      rows={4}
                     />
                   </div>
                 </div>
@@ -541,15 +755,15 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <FieldLabel id="country" label="Country" required />
-                    <Input 
-                      id="country" 
-                      value={formData.country} 
-                      readOnly 
-                      className="h-11 rounded-xl bg-muted text-muted-foreground font-bold" 
+                    <Input
+                      id="country"
+                      value={formData.country}
+                      readOnly
+                      className="h-11 rounded-xl bg-muted text-muted-foreground font-bold"
                     />
                     <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold tracking-wider">Cannot be changed after creation</p>
                   </div>
-                  
+
                   {isIndia && (
                     <div>
                       <FieldLabel id="state" label="State" required={isIndia} />
@@ -808,8 +1022,8 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                             <img
                               src={tpl.image}
                               alt={tpl.name}
-                                                            className="object-cover"
-                                                          />
+                              className="object-cover"
+                            />
                             {formData.invoiceTemplate === tpl.id && (
                               <div className="absolute top-2 right-2 bg-blue-600 text-white p-1 rounded-full shadow-sm z-10">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -835,6 +1049,322 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {activeSection === 'email' && (
+            <div className="space-y-6">
+              {/* Card 1: Configuration */}
+              <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
+                <CardHeader className="bg-muted/50 border-b border-border pb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-xl">Business Email Configuration</CardTitle>
+                        <Badge className={cn("text-xs font-bold", emailConfig.isEnabled ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-slate-100 text-slate-700")}>
+                          {emailConfig.isEnabled ? "Active" : "Disabled"}
+                        </Badge>
+                        {emailConfig.isVerified && (
+                          <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs font-bold">
+                            Verified
+                          </Badge>
+                        )}
+                      </div>
+                      <CardDescription className="mt-1">
+                        Configure custom SMTP server to dispatch invoices, customer statements, employee notifications, and vendor purchase orders.
+                      </CardDescription>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Label htmlFor="toggle-email-enable" className="text-sm font-semibold cursor-pointer">
+                        Enable Email
+                      </Label>
+                      <Switch
+                        id="toggle-email-enable"
+                        checked={emailConfig.isEnabled}
+                        onCheckedChange={(checked) => setEmailConfig(prev => ({ ...prev, isEnabled: checked }))}
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="p-6 md:p-8 space-y-6">
+                  {/* Separation Notice Banner */}
+                  <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-100 text-blue-900 text-xs leading-relaxed flex items-start gap-3">
+                    <ShieldIcon className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-sm text-blue-950 mb-1">Tenant Email Separation Active</p>
+                      <p>
+                        This SMTP configuration applies strictly to <strong>{business?.name || 'this business'}</strong> for transactional emails (customer invoices, payment reminders, employee notices, and vendor POs). Official QUE ERP system communications (signups, passwords, subscriptions) are securely handled by the platform.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Provider Quick Presets */}
+                  <div>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2">
+                      Quick Provider Presets
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleApplyPreset('gmail')}
+                        className="rounded-xl text-xs font-semibold hover:bg-blue-50 hover:text-blue-700 border-dashed"
+                      >
+                        Google Workspace / Gmail
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleApplyPreset('office365')}
+                        className="rounded-xl text-xs font-semibold hover:bg-blue-50 hover:text-blue-700 border-dashed"
+                      >
+                        Microsoft 365 / Outlook
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleApplyPreset('zoho')}
+                        className="rounded-xl text-xs font-semibold hover:bg-blue-50 hover:text-blue-700 border-dashed"
+                      >
+                        Zoho Mail
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleApplyPreset('custom')}
+                        className="rounded-xl text-xs font-semibold hover:bg-slate-100 border-dashed"
+                      >
+                        Custom SMTP
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Form Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label htmlFor="business-sender-name" className="font-semibold text-foreground">Sender Display Name *</Label>
+                      </div>
+                      <Input
+                        id="business-sender-name"
+                        value={emailConfig.senderName}
+                        onChange={(e) => setEmailConfig(prev => ({ ...prev, senderName: e.target.value }))}
+                        placeholder={business?.name || "e.g. Acme Corp Billing"}
+                        className="h-11 rounded-xl"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1">Display name visible to your customers and vendors.</p>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label htmlFor="business-email-addr" className="font-semibold text-foreground">Business Email Address *</Label>
+                      </div>
+                      <Input
+                        id="business-email-addr"
+                        type="email"
+                        value={emailConfig.email}
+                        onChange={(e) => setEmailConfig(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="e.g. billing@yourcompany.com"
+                        className="h-11 rounded-xl"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1">From address used for outbound business correspondence.</p>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label htmlFor="smtp-host" className="font-semibold text-foreground">SMTP Host *</Label>
+                      </div>
+                      <Input
+                        id="smtp-host"
+                        value={emailConfig.smtpHost}
+                        onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpHost: e.target.value }))}
+                        placeholder="e.g. smtp.gmail.com or mail.yourdomain.com"
+                        className="h-11 rounded-xl"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <Label htmlFor="smtp-port" className="font-semibold text-foreground">SMTP Port *</Label>
+                        </div>
+                        <Input
+                          id="smtp-port"
+                          type="number"
+                          value={emailConfig.smtpPort}
+                          onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpPort: parseInt(e.target.value) || 587 }))}
+                          placeholder="587"
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <Label htmlFor="smtp-encryption" className="font-semibold text-foreground">Encryption *</Label>
+                        </div>
+                        <Select
+                          value={emailConfig.encryption}
+                          onValueChange={(val: any) => setEmailConfig(prev => ({ ...prev, encryption: val }))}
+                        >
+                          <SelectTrigger id="smtp-encryption" className="h-11 rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="TLS">TLS (Port 587 / STARTTLS)</SelectItem>
+                            <SelectItem value="SSL">SSL (Port 465)</SelectItem>
+                            <SelectItem value="NONE">None (Port 25)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label htmlFor="smtp-username" className="font-semibold text-foreground">SMTP Username *</Label>
+                      </div>
+                      <Input
+                        id="smtp-username"
+                        value={emailConfig.smtpUser}
+                        onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpUser: e.target.value }))}
+                        placeholder="e.g. billing@yourcompany.com"
+                        className="h-11 rounded-xl"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label htmlFor="smtp-password" className="font-semibold text-foreground">
+                          SMTP Password / App Password *
+                        </Label>
+                        {emailConfig.hasPassword && (
+                          <Badge variant="outline" className="text-[10px] text-emerald-700 bg-emerald-50 border-emerald-200">
+                            ✓ Encrypted & Stored
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <Input
+                          id="smtp-password"
+                          type={showSmtpPass ? "text" : "password"}
+                          value={smtpPass}
+                          onChange={(e) => setSmtpPass(e.target.value)}
+                          placeholder={emailConfig.hasPassword ? "•••••••••••• (Leave blank to keep current)" : "Enter password or App Password"}
+                          className="h-11 rounded-xl pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSmtpPass(!showSmtpPass)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showSmtpPass ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Encrypted with AES-256 before storage. For Gmail or Microsoft 365, use an App Password.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Save Configuration Button */}
+                  <div className="flex items-center justify-end pt-4 border-t border-border">
+                    <Button
+                      onClick={handleSaveEmailConfig}
+                      disabled={emailSaveStatus === 'saving'}
+                      className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm px-6 h-11"
+                    >
+                      {emailSaveStatus === 'saving' ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      ) : (
+                        <SaveIcon className="w-4 h-4" />
+                      )}
+                      {emailSaveStatus === 'saved' ? 'Saved Successfully!' : 'Save Email Configuration'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Card 2: Live Test Email */}
+              <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
+                <CardHeader className="bg-muted/50 border-b border-border pb-4">
+                  <div className="flex items-center gap-2">
+                    <SendIcon className="w-5 h-5 text-blue-600" />
+                    <CardTitle className="text-lg">Test Email Configuration</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Verify your SMTP handshake and send a live verification email before dispatching production documents.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1">
+                      <Label htmlFor="test-recipient-email" className="text-xs font-semibold text-muted-foreground mb-1 block">
+                        Send Test Email To:
+                      </Label>
+                      <Input
+                        id="test-recipient-email"
+                        type="email"
+                        value={testRecipient}
+                        onChange={(e) => setTestRecipient(e.target.value)}
+                        placeholder="your-email@example.com"
+                        className="h-11 rounded-xl"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <Button
+                        type="button"
+                        onClick={handleTestEmail}
+                        disabled={testingEmail || (!emailConfig.hasPassword && !smtpPass)}
+                        className="h-11 px-6 rounded-xl gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        {testingEmail ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            Connecting...
+                          </>
+                        ) : (
+                          <>
+                            <SendIcon className="w-4 h-4" />
+                            Send Test Email
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Last Test Status Details */}
+                  {emailConfig.lastTestedAt && (
+                    <div className={cn(
+                      "p-3.5 rounded-xl border text-xs flex items-center justify-between gap-3",
+                      emailConfig.lastTestStatus === 'SUCCESS' ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-rose-50 border-rose-200 text-rose-900"
+                    )}>
+                      <div className="flex items-center gap-2">
+                        {emailConfig.lastTestStatus === 'SUCCESS' ? (
+                          <CheckCircle2Icon className="w-4 h-4 text-emerald-600 shrink-0" />
+                        ) : (
+                          <AlertCircleIcon className="w-4 h-4 text-rose-600 shrink-0" />
+                        )}
+                        <span>
+                          {emailConfig.lastTestStatus === 'SUCCESS'
+                            ? `Last test succeeded on ${new Date(emailConfig.lastTestedAt).toLocaleString()}`
+                            : `Last test failed: ${emailConfig.lastTestError || 'Could not connect'}`}
+                        </span>
+                      </div>
+                      <Badge variant="outline" className={cn(
+                        "text-[10px] font-bold uppercase",
+                        emailConfig.lastTestStatus === 'SUCCESS' ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-rose-100 text-rose-800 border-rose-300"
+                      )}>
+                        {emailConfig.lastTestStatus}
+                      </Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {activeSection === 'inventory' && (
@@ -1053,11 +1583,10 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                                 setPwdErrors(err => ({ ...err, confirmPassword: '' }))
                               }}
                               placeholder="Re-enter new password"
-                              className={`h-11 rounded-xl pr-10 ${
-                                pwdErrors.confirmPassword || (passwordForm.confirmPassword && passwordForm.confirmPassword !== passwordForm.newPassword)
+                              className={`h-11 rounded-xl pr-10 ${pwdErrors.confirmPassword || (passwordForm.confirmPassword && passwordForm.confirmPassword !== passwordForm.newPassword)
                                   ? 'border-red-300 focus-visible:ring-red-400'
                                   : ''
-                              }`}
+                                }`}
                             />
                             <button
                               type="button"
@@ -1134,9 +1663,9 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                         <h4 className="font-semibold text-foreground">Leave Types Configuration</h4>
                         <p className="text-xs text-muted-foreground">Define leave types and their yearly limits. LWP (Unpaid) is infinite.</p>
                       </div>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
+                      <Button
+                        type="button"
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           const lt = [...(formData.leaveTypes || [])]
@@ -1152,35 +1681,35 @@ export function SettingsPageClient({ businessId }: { businessId: string }) {
                         <div key={leave.code} className="flex flex-col sm:flex-row items-center gap-3 p-3 bg-card border border-border rounded-lg shadow-sm">
                           <div className="flex-1 w-full">
                             <Label className="text-xs text-muted-foreground mb-1 block">Leave Name</Label>
-                            <Input 
-                              value={leave.name} 
+                            <Input
+                              value={leave.name}
                               disabled={leave.system}
                               onChange={(e) => {
                                 const lt = [...formData.leaveTypes]
                                 lt[index].name = e.target.value
                                 updateField('leaveTypes', lt)
-                              }} 
+                              }}
                             />
                           </div>
                           <div className="w-full sm:w-32">
                             <Label className="text-xs text-muted-foreground mb-1 block">Yearly Limit</Label>
-                            <Input 
-                              type="number" 
-                              value={leave.yearlyLimit === null ? '' : leave.yearlyLimit} 
+                            <Input
+                              type="number"
+                              value={leave.yearlyLimit === null ? '' : leave.yearlyLimit}
                               disabled={leave.system}
                               placeholder={leave.system ? "Infinite" : "Days"}
                               onChange={(e) => {
                                 const lt = [...formData.leaveTypes]
                                 lt[index].yearlyLimit = e.target.value ? parseInt(e.target.value, 10) : null
                                 updateField('leaveTypes', lt)
-                              }} 
+                              }}
                             />
                           </div>
                           <div className="w-full sm:w-auto flex justify-end mt-4 sm:mt-0 pt-1">
-                            <Button 
-                              type="button" 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
                               disabled={leave.system}
                               className="text-red-500 hover:text-red-700 hover:bg-red-50 disabled:opacity-50"
                               onClick={() => {

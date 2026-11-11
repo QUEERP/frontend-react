@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import {  useParams  } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom'
 import { emailLogsAPI, EmailLog } from '@/lib/api/crm'
+import { businessEmailAPI, BusinessEmailConfig } from '@/lib/api/businessEmail'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -17,28 +18,28 @@ import {
   CheckCircle,
   Eye,
   AlertTriangle,
-  ArrowDownRight
+  ArrowDownRight,
+  Settings,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
 export default function EmailLogsPage() {
-  const routerParams = useParams() as any;
-  const { businessId } = routerParams;
-
-  const params = useParams()
-  
+  const routerParams = useParams() as any
+  const { businessId } = routerParams
 
   const [logs, setLogs] = useState<EmailLog[]>([])
   const [loading, setLoading] = useState(true)
   const [formLoading, setFormLoading] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [emailConfig, setEmailConfig] = useState<BusinessEmailConfig | null>(null)
+  const [isConfigLoaded, setIsConfigLoaded] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
     subject: '',
-    fromEmail: 'sales@deltaledger.com',
+    fromEmail: '',
     toEmail: '',
     body: '',
     status: 'SENT',
@@ -61,8 +62,28 @@ export default function EmailLogsPage() {
     }
   }
 
+  const fetchEmailConfig = async () => {
+    try {
+      const res = await businessEmailAPI.getConfig(businessId)
+      if (res.success && res.data.config) {
+        setEmailConfig(res.data.config)
+        setFormData(prev => ({
+          ...prev,
+          fromEmail: res.data.config?.email || '',
+        }))
+      } else {
+        setEmailConfig(null)
+      }
+    } catch (err) {
+      setEmailConfig(null)
+    } finally {
+      setIsConfigLoaded(true)
+    }
+  }
+
   useEffect(() => {
     fetchLogs()
+    fetchEmailConfig()
   }, [businessId])
 
   const handleInputChange = (field: string, value: string) => {
@@ -84,7 +105,7 @@ export default function EmailLogsPage() {
         setShowAddForm(false)
         setFormData({
           subject: '',
-          fromEmail: 'sales@deltaledger.com',
+          fromEmail: emailConfig?.email || 'noreply@queinfotech.com',
           toEmail: '',
           body: '',
           status: 'SENT',
@@ -126,8 +147,8 @@ export default function EmailLogsPage() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Email Tracking</h1>
           <p className="text-sm text-muted-foreground mt-1">Audit trail of outbound marketing and transaction mail logs.</p>
         </div>
-        <Button 
-          onClick={() => setShowAddForm(!showAddForm)} 
+        <Button
+          onClick={() => setShowAddForm(!showAddForm)}
           className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium gap-2 shadow-sm cursor-pointer px-5"
         >
           {showAddForm ? 'Close Dispatcher' : (
@@ -138,6 +159,47 @@ export default function EmailLogsPage() {
           )}
         </Button>
       </div>
+
+      {/* BUSINESS EMAIL CONFIGURATION BANNER */}
+      {isConfigLoaded && (!emailConfig || !emailConfig.isEnabled) && (
+        <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-sm text-amber-950">Default Platform Mailer Active</p>
+              <p className="text-xs text-amber-800 mt-0.5">
+                Outbound messages are delivered via QueErp default mailer. To send directly from your own domain (@yourcompany.com), configure and enable your custom SMTP in Administration.
+              </p>
+            </div>
+          </div>
+          <Button asChild size="sm" className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl gap-1.5 shrink-0">
+            <Link to={`/dashboard/${businessId}/settings`}>
+              <Settings className="w-4 h-4" />
+              Configure Custom SMTP
+            </Link>
+          </Button>
+        </div>
+      )}
+
+      {isConfigLoaded && emailConfig && emailConfig.isEnabled && (
+        <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-emerald-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-sm text-emerald-950">Custom Business Email Active</p>
+              <p className="text-xs text-emerald-800 mt-0.5">
+                Outbound business communications are delivered via your dedicated SMTP server (<strong>{emailConfig.email}</strong>).
+              </p>
+            </div>
+          </div>
+          <Button asChild size="sm" variant="outline" className="border-emerald-300 text-emerald-800 hover:bg-emerald-100 rounded-xl gap-1.5 shrink-0">
+            <Link to={`/dashboard/${businessId}/settings`}>
+              <Settings className="w-4 h-4" />
+              Manage SMTP
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {/* QUICK COMPOSER FORM */}
       {showAddForm && (
