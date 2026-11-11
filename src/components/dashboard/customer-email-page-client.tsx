@@ -489,9 +489,16 @@ export function CustomerEmailPageClient({
                 Send Email to {customer?.company || customer?.name || 'Customer'}
               </h1>
               {senderDisplay.isCustom ? (
-                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 font-semibold text-xs gap-1 py-0.5">
-                  <ShieldCheckIcon className="size-3.5" /> Custom SMTP Active
-                </Badge>
+                emailConfig?.isVerified ? (
+                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 font-semibold text-xs gap-1 py-0.5">
+                    <ShieldCheckIcon className="size-3.5" /> Custom SMTP Active
+                  </Badge>
+                ) : (
+                  <Badge className="bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 font-semibold text-xs gap-1 py-0.5">
+                    <AlertCircleIcon className="size-3.5" />
+                    {emailConfig?.lastTestStatus === 'FAILED' ? 'Custom SMTP Auth Failed' : 'Custom SMTP Unverified'}
+                  </Badge>
+                )
               ) : (
                 <Badge variant="outline" className="text-slate-600 border-slate-300 dark:text-slate-400 font-medium text-xs gap-1 py-0.5">
                   <InfoIcon className="size-3.5" /> Platform Mailer Active
@@ -579,6 +586,27 @@ export function CustomerEmailPageClient({
                   <Building2Icon className="size-4 mr-2 text-muted-foreground shrink-0" />
                   <span className="truncate">{senderDisplay.fromText}</span>
                 </div>
+                {senderDisplay.isCustom && emailConfig && (!emailConfig.isVerified || emailConfig.lastTestStatus === 'FAILED') && (
+                  <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-3.5 py-2.5 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                    <p className="font-semibold flex items-center gap-1.5">
+                      <AlertCircleIcon className="size-3.5 shrink-0" />
+                      {emailConfig.lastTestStatus === 'FAILED'
+                        ? 'Business SMTP authentication/connection failed on last check.'
+                        : 'Business SMTP configuration has not been verified yet.'}
+                    </p>
+                    <p className="text-[11px] opacity-90">
+                      SMTP Login: <span className="font-mono">{emailConfig.smtpUser}</span> via{' '}
+                      <span className="font-mono">{emailConfig.smtpHost}:{emailConfig.smtpPort}</span>
+                      {emailConfig.lastTestError ? ` — ${emailConfig.lastTestError}` : ''}
+                    </p>
+                    <Link
+                      to={`/dashboard/${businessId}/settings`}
+                      className="inline-block text-[11px] font-semibold text-blue-700 dark:text-blue-400 hover:underline"
+                    >
+                      Verify credentials & send a test email in Settings &rarr;
+                    </Link>
+                  </div>
+                )}
                 <p className="text-[11px] text-muted-foreground">
                   Your customer will receive this message from your official business identity.
                 </p>
@@ -642,8 +670,8 @@ export function CustomerEmailPageClient({
                           type="button"
                           onClick={() => c.email && setToEmail(c.email)}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all border ${isSelected
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                              : 'bg-muted/70 hover:bg-muted text-foreground border-border/70 hover:border-border'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-muted/70 hover:bg-muted text-foreground border-border/70 hover:border-border'
                             }`}
                         >
                           <UserIcon className="size-3 shrink-0" />
@@ -865,8 +893,8 @@ export function CustomerEmailPageClient({
                       key={inv.id}
                       onClick={() => handleToggleInvoice(inv.id)}
                       className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${isChecked
-                          ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/30'
-                          : 'border-border/70 hover:border-border hover:bg-muted/30'
+                        ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/30'
+                        : 'border-border/70 hover:border-border hover:bg-muted/30'
                         }`}
                     >
                       <div className="flex items-center gap-3">
@@ -883,10 +911,10 @@ export function CustomerEmailPageClient({
                             <Badge
                               variant="outline"
                               className={`text-[10px] font-semibold uppercase px-1.5 py-0 ${isPaid
-                                  ? 'border-emerald-300 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40'
-                                  : inv.status === 'PARTIAL'
-                                    ? 'border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/40'
-                                    : 'border-rose-300 text-rose-700 bg-rose-50 dark:bg-rose-950/40'
+                                ? 'border-emerald-300 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40'
+                                : inv.status === 'PARTIAL'
+                                  ? 'border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/40'
+                                  : 'border-rose-300 text-rose-700 bg-rose-50 dark:bg-rose-950/40'
                                 }`}
                             >
                               {inv.status}
@@ -938,8 +966,8 @@ export function CustomerEmailPageClient({
                       key={q.id}
                       onClick={() => handleToggleQuotation(q.id)}
                       className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${isChecked
-                          ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
-                          : 'border-border/70 hover:border-border hover:bg-muted/30'
+                        ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
+                        : 'border-border/70 hover:border-border hover:bg-muted/30'
                         }`}
                     >
                       <div className="flex items-center gap-3">
