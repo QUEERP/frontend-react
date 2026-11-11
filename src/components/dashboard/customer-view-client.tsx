@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom';
-import {  useNavigate  } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   ArrowDownToLineIcon,
   ArrowLeftIcon,
@@ -153,7 +153,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
   const [quotations, setQuotations] = useState<QuotationItem[]>([])
   const [loadingQuotations, setLoadingQuotations] = useState(false)
   const [downloadingPaymentId, setDownloadingPaymentId] = useState<string | null>(null)
-  
+
   const isBasic = business?.businessType?.toLowerCase() === 'basic'
 
   const [customerInvoices, setCustomerInvoices] = useState<any[]>([])
@@ -212,40 +212,65 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
 
 
 
-  // Load customer direct if missing in provider
+  // Hydrate full customer details (resolved email, contacts, bank accounts)
   useEffect(() => {
-    if (!customer && businessId) {
-      const fetchCustomerDirectly = async () => {
-        try {
-          setCustomerLoading(true)
-          const token = getCookie('token') || getCookie('accessToken')
-          if (!token) return
+    if (!businessId || !customerId) return
+    let active = true
 
-          const response = await fetch(`${API_BASE}/api/customers/${customerId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'x-business-id': businessId
-            }
-          })
+    const fetchCustomerDirectly = async () => {
+      try {
+        if (!customer) setCustomerLoading(true)
+        const token =
+          getCookie('token') ||
+          getCookie('accessToken') ||
+          (typeof window !== 'undefined'
+            ? window.localStorage.getItem('token') || window.localStorage.getItem('accessToken') || ''
+            : '')
 
-          if (response.ok) {
-            const data = await response.json()
-            if (data.success) {
-              setDirectCustomer(data.customer)
-            }
-          }
-        } catch (error) {
-          console.error('Failed to fetch customer:', error)
-        } finally {
-          setCustomerLoading(false)
+        const headers: Record<string, string> = {
+          'x-business-id': businessId,
         }
+        if (token) {
+          headers.Authorization = `Bearer ${token}`
+        }
+
+        const response = await fetch(`${API_BASE}/api/customers/${customerId}`, {
+          credentials: 'include',
+          headers,
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (active && data.success && data.customer) {
+            setDirectCustomer(data.customer)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch customer:', error)
+      } finally {
+        if (active) setCustomerLoading(false)
       }
-
-      fetchCustomerDirectly()
     }
-  }, [businessId, customerId, customer])
 
-  const displayCustomer = customer || directCustomer
+    fetchCustomerDirectly()
+    return () => {
+      active = false
+    }
+  }, [businessId, customerId])
+
+  const displayCustomer = useMemo(() => {
+    if (!customer && !directCustomer) return null
+    return {
+      ...(customer || {}),
+      ...(directCustomer || {}),
+      email:
+        directCustomer?.email ||
+        customer?.email ||
+        directCustomer?.customerContacts?.find((c: any) => c.email)?.email ||
+        customer?.customerContacts?.find((c: any) => c.email)?.email ||
+        null,
+    }
+  }, [customer, directCustomer])
 
   const customerCurrencySymbol = useMemo(() => {
     if (!displayCustomer) return currencySymbol || '₹'
@@ -255,7 +280,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
     if (ccy.toUpperCase() === 'INDIA') ccy = 'INR'
     if (ccy.toUpperCase() === 'UAE' || ccy.toUpperCase() === 'DUBAI') ccy = 'AED'
     if (ccy.toUpperCase() === 'USA' || ccy.toUpperCase() === 'US') ccy = 'USD'
-    
+
     // Quick map for symbols
     const symbols: Record<string, string> = {
       'INR': '₹', 'USD': '$', 'EUR': '€', 'GBP': '£', 'CAD': 'CA$', 'AUD': 'A$', 'AED': 'د.إ', 'SGD': 'S$'
@@ -270,7 +295,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
     if (ccy.toUpperCase() === 'INDIA') ccy = 'INR'
     if (ccy.toUpperCase() === 'UAE' || ccy.toUpperCase() === 'DUBAI') ccy = 'AED'
     if (ccy.toUpperCase() === 'USA' || ccy.toUpperCase() === 'US') ccy = 'USD'
-    
+
     try {
       return new Intl.NumberFormat('en-IN', {
         style: 'currency',
@@ -551,15 +576,15 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
           const raw = Array.isArray(data.data?.items) ? data.data.items : Array.isArray(data.data) ? data.data : []
           const invoiceIds = new Set(customerInvoices.map((inv: any) => String(inv.id)))
           const quotationIds = new Set(quotations.map((q: any) => String(q.id)))
-          
+
           setPaymentsList(
             raw.filter((p: any) => p.customerId === customerId || invoiceIds.has(String(p.invoiceId)) || quotationIds.has(String(p.quotationId))).map((p: any) => ({
               id: String(p.id),
               invoiceId: String(p.invoiceId || p.quotationId || ''),
               invoiceNumber: String(
-                p.invoice?.invoiceNumber || 
-                (p.quotation?.projects && p.quotation.projects.length > 0 ? (p.quotation.projects[0].projectName || p.quotation.projects[0].projectCode) : null) || 
-                p.quotation?.quoteNumber || 
+                p.invoice?.invoiceNumber ||
+                (p.quotation?.projects && p.quotation.projects.length > 0 ? (p.quotation.projects[0].projectName || p.quotation.projects[0].projectCode) : null) ||
+                p.quotation?.quoteNumber ||
                 (p.customerId && !p.invoiceId && !p.quotationId ? 'Unassigned Advance' : '-')
               ),
               amount: Number(p.amount || 0),
@@ -804,8 +829,14 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
     )
   }
 
-  const status = customer.isActive ? 'Active' : 'Inactive'
-  const address = [customer.address, customer.city, customer.state, customer.zipCode, customer.country]
+  const status = displayCustomer?.isActive ? 'Active' : 'Inactive'
+  const address = [
+    displayCustomer?.address,
+    displayCustomer?.city,
+    displayCustomer?.state,
+    displayCustomer?.zipCode,
+    displayCustomer?.country,
+  ]
     .filter(Boolean)
     .join(', ')
 
@@ -832,6 +863,12 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
 
         {/* Quick Actions */}
         <div className="flex flex-wrap items-center gap-3">
+          <Link to={`/dashboard/${businessId}/customers/${customerId}/email`}>
+            <Button size="sm" variant="outline" className="h-10 cursor-pointer rounded-xl border-blue-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-medium px-4">
+              <MailIcon className="mr-2 size-4 text-blue-600" />
+              Send Email
+            </Button>
+          </Link>
           <Link to={`/dashboard/${businessId}/quotations/add?customerId=${customerId}`}>
             <Button size="sm" variant="outline" className="h-10 cursor-pointer rounded-xl border-border text-muted-foreground hover:bg-muted font-medium px-4">
               <PlusIcon className="mr-2 size-4" />
@@ -852,9 +889,9 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
               New Invoice
             </Button>
           </Link>
-          <Button 
-            size="sm" 
-            variant="outline" 
+          <Button
+            size="sm"
+            variant="outline"
             className="h-10 cursor-pointer rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 font-medium px-4"
             onClick={() => {
               navigate(`/dashboard/${businessId}/payments/add?customerId=${customerId}`)
@@ -972,7 +1009,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
                         <MailIcon className="size-4 text-slate-400" />
                         <span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Email Address</span>
                       </div>
-                      <span className="font-bold text-foreground text-sm sm:text-base pl-6 truncate block">{String((customer as any).email || '—')}</span>
+                      <span className="font-bold text-foreground text-sm sm:text-base pl-6 truncate block">{String(displayCustomer?.email || displayCustomer?.customerContacts?.find((c: any) => c.email)?.email || (customer as any)?.email || '—')}</span>
                     </div>
 
                     {/* Phone Number */}
@@ -1062,7 +1099,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
                     <div>
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">Annual Target Value</span>
                       <span className="text-lg font-bold text-foreground">
-                        {customer.annualRevenue ? `${currencySymbol} ${customer.annualRevenue.toLocaleString()}` : '—'}
+                        {displayCustomer?.annualRevenue ? `${currencySymbol} ${displayCustomer.annualRevenue.toLocaleString()}` : '—'}
                       </span>
                     </div>
                   </div>
@@ -1073,7 +1110,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
                     <div>
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">Employee Scale</span>
                       <span className="text-lg font-bold text-foreground">
-                        {customer.employeeCount ? `${customer.employeeCount} Members` : '—'}
+                        {displayCustomer?.employeeCount ? `${displayCustomer.employeeCount} Members` : '—'}
                       </span>
                     </div>
                   </div>
@@ -1200,67 +1237,67 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
         {/* ── Sales Orders Tab ── */}
         {!isBasic && (
           <TabsContent value="orders">
-          <Card className="rounded-2xl shadow-sm border-border bg-card overflow-hidden">
-            <CardHeader className="pb-4 border-b border-border flex flex-row items-center justify-between bg-muted/50">
-              <div>
-                <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                  <FileCheckIcon className="h-5 w-5 text-blue-600" />
-                  Sales Orders Log
-                </CardTitle>
-                <CardDescription className="text-sm mt-1">Approved order pipelines in production</CardDescription>
-              </div>
-              <Link to={`/dashboard/${businessId}/sales-orders/add?customerId=${customerId}`}>
-                <Button size="sm" className="h-9 cursor-pointer px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-medium">
-                  <PlusIcon className="mr-2 size-4" />
-                  Create Sales Order
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="pt-6 p-0 sm:p-6">
-              {loadingSalesOrders ? (
-                <div className="text-center py-12"><Loader2Icon className="h-8 w-8 animate-spin mx-auto text-blue-600" /></div>
-              ) : salesOrders.length === 0 ? (
-                <div className="text-center py-12 bg-muted/50 rounded-xl border border-dashed border-border text-muted-foreground font-medium">No sales orders active for this customer.</div>
-              ) : (
-                <div className="rounded-xl border border-border overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-muted">
-                      <TableRow>
-                        <TableHead className="font-semibold text-foreground">Order Number</TableHead>
-                        <TableHead className="font-semibold text-foreground">Order Date</TableHead>
-                        <TableHead className="font-semibold text-foreground">Delivery Date</TableHead>
-                        <TableHead className="text-right font-semibold text-foreground">Total Amount</TableHead>
-                        <TableHead className="font-semibold text-foreground">Status</TableHead>
-                        <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {salesOrders.map((so) => (
-                        <TableRow key={so.id}>
-                          <TableCell className="font-semibold text-foreground">{so.orderNumber}</TableCell>
-                          <TableCell className="text-muted-foreground">{new Date(so.orderDate).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-muted-foreground">{so.deliveryDate ? new Date(so.deliveryDate).toLocaleDateString() : '—'}</TableCell>
-                          <TableCell className="text-right font-semibold font-mono text-foreground"><span className="font-semibold">{formatMoney(so.totalAmount)}</span></TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border">
-                              {so.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Link to={`/dashboard/${businessId}/sales-orders/${so.id}`}>
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-lg">
-                                <EyeIcon className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+            <Card className="rounded-2xl shadow-sm border-border bg-card overflow-hidden">
+              <CardHeader className="pb-4 border-b border-border flex flex-row items-center justify-between bg-muted/50">
+                <div>
+                  <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                    <FileCheckIcon className="h-5 w-5 text-blue-600" />
+                    Sales Orders Log
+                  </CardTitle>
+                  <CardDescription className="text-sm mt-1">Approved order pipelines in production</CardDescription>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <Link to={`/dashboard/${businessId}/sales-orders/add?customerId=${customerId}`}>
+                  <Button size="sm" className="h-9 cursor-pointer px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-medium">
+                    <PlusIcon className="mr-2 size-4" />
+                    Create Sales Order
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent className="pt-6 p-0 sm:p-6">
+                {loadingSalesOrders ? (
+                  <div className="text-center py-12"><Loader2Icon className="h-8 w-8 animate-spin mx-auto text-blue-600" /></div>
+                ) : salesOrders.length === 0 ? (
+                  <div className="text-center py-12 bg-muted/50 rounded-xl border border-dashed border-border text-muted-foreground font-medium">No sales orders active for this customer.</div>
+                ) : (
+                  <div className="rounded-xl border border-border overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-muted">
+                        <TableRow>
+                          <TableHead className="font-semibold text-foreground">Order Number</TableHead>
+                          <TableHead className="font-semibold text-foreground">Order Date</TableHead>
+                          <TableHead className="font-semibold text-foreground">Delivery Date</TableHead>
+                          <TableHead className="text-right font-semibold text-foreground">Total Amount</TableHead>
+                          <TableHead className="font-semibold text-foreground">Status</TableHead>
+                          <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {salesOrders.map((so) => (
+                          <TableRow key={so.id}>
+                            <TableCell className="font-semibold text-foreground">{so.orderNumber}</TableCell>
+                            <TableCell className="text-muted-foreground">{new Date(so.orderDate).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-muted-foreground">{so.deliveryDate ? new Date(so.deliveryDate).toLocaleDateString() : '—'}</TableCell>
+                            <TableCell className="text-right font-semibold font-mono text-foreground"><span className="font-semibold">{formatMoney(so.totalAmount)}</span></TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border">
+                                {so.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Link to={`/dashboard/${businessId}/sales-orders/${so.id}`}>
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                                  <EyeIcon className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         )}
 
@@ -1379,24 +1416,25 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
                                 <span className="font-semibold">{formatMoney(p.amount)}</span>
                               )}
                             </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-xs cursor-pointer h-8 rounded-lg border-border text-muted-foreground hover:bg-muted font-medium"
-                              onClick={() => void handleDownloadPaySlip(p)}
-                              disabled={downloadingPaymentId === p.id}
-                            >
-                              {downloadingPaymentId === p.id ? (
-                                <Loader2Icon className="mr-1.5 size-3.5 animate-spin" />
-                              ) : (
-                                <DownloadIcon className="mr-1.5 size-3.5" />
-                              )}
-                              Receipt
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      )})}
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs cursor-pointer h-8 rounded-lg border-border text-muted-foreground hover:bg-muted font-medium"
+                                onClick={() => void handleDownloadPaySlip(p)}
+                                disabled={downloadingPaymentId === p.id}
+                              >
+                                {downloadingPaymentId === p.id ? (
+                                  <Loader2Icon className="mr-1.5 size-3.5 animate-spin" />
+                                ) : (
+                                  <DownloadIcon className="mr-1.5 size-3.5" />
+                                )}
+                                Receipt
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -1590,7 +1628,7 @@ export function CustomerViewClient({ businessId, customerId }: { businessId: str
           </Card>
         </TabsContent>
       </Tabs>
-      
+
     </div>
   )
 }

@@ -301,10 +301,21 @@ export function InvoicePaymentPageClient({
     }
 
     const normalizedAmount = Number(String(paymentForm.amountReceived).replace(/,/g, '').trim())
-    if (!paymentForm.amountReceived || !Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    const hasCreditNote = paymentForm.creditNoteId && paymentForm.creditNoteId !== 'none'
+
+    if ((!paymentForm.amountReceived && paymentForm.amountReceived !== '0') || !Number.isFinite(normalizedAmount) || normalizedAmount < 0) {
       toast({
         title: 'Invalid amount',
-        description: 'Enter a valid numeric Amount Received greater than zero.',
+        description: 'Enter a valid numeric Amount Received.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (normalizedAmount === 0 && !hasCreditNote) {
+      toast({
+        title: 'Invalid amount',
+        description: 'Amount Received must be greater than zero, or apply a credit note.',
         variant: 'destructive',
       })
       return
@@ -644,7 +655,20 @@ export function InvoicePaymentPageClient({
 
                 {targetInvoiceId && availableCreditNotes.length > 0 && (
                   <div className="grid gap-2">
-                    <Label htmlFor="creditNoteId" className="text-sm font-semibold text-foreground">Apply Credit Note</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="creditNoteId" className="text-sm font-semibold text-foreground">Apply Credit Note</Label>
+                      {paymentForm.creditNoteId && paymentForm.creditNoteId !== 'none' && (() => {
+                        const note = availableCreditNotes.find(cn => cn.id === paymentForm.creditNoteId);
+                        if (!note) return null;
+                        const creditVal = Number(note.remainingAmount || 0);
+                        const appliedVal = Math.min(creditVal, remainingAmount);
+                        return (
+                          <span className="text-xs text-blue-600 font-semibold">
+                            Offset: -{invoiceCurrencySymbol} {appliedVal.toFixed(2)}
+                          </span>
+                        );
+                      })()}
+                    </div>
                     <Select
                       value={paymentForm.creditNoteId}
                       onValueChange={(value) => {
@@ -652,13 +676,20 @@ export function InvoicePaymentPageClient({
                           const newForm = { ...prev, creditNoteId: value };
                           if (value !== 'none') {
                             const note = availableCreditNotes.find(cn => cn.id === value);
-                            if (note && note.remainingAmount > 0) {
-                              const amountToApply = Math.min(note.remainingAmount, remainingAmount);
-                              newForm.amountReceived = amountToApply.toString();
+                            if (note && Number(note.remainingAmount || 0) > 0) {
+                              const creditAmount = Number(note.remainingAmount || 0);
+                              // Subtract credit note amount from the invoice remaining balance
+                              const netAmount = Math.max(0, remainingAmount - creditAmount);
+                              newForm.amountReceived = String(netAmount);
+                            } else {
+                              newForm.amountReceived = String(remainingAmount > 0 ? remainingAmount : 0);
                             }
+                          } else {
+                            // Restore original remaining balance when 'none' is selected
+                            newForm.amountReceived = String(remainingAmount > 0 ? remainingAmount : 0);
                           }
                           return newForm;
-                        })
+                        });
                       }}
                       disabled={isLoadingPaymentSummary || invoicePaymentStatus === 'PAID' || availableCreditNotes.length === 0}
                     >
@@ -674,6 +705,25 @@ export function InvoicePaymentPageClient({
                         ))}
                       </SelectContent>
                     </Select>
+                    {paymentForm.creditNoteId && paymentForm.creditNoteId !== 'none' && (() => {
+                      const note = availableCreditNotes.find(cn => cn.id === paymentForm.creditNoteId);
+                      if (!note) return null;
+                      const creditVal = Number(note.remainingAmount || 0);
+                      const appliedVal = Math.min(creditVal, remainingAmount);
+                      const netVal = Math.max(0, remainingAmount - appliedVal);
+                      return (
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs px-3.5 py-2.5 rounded-xl bg-blue-50/80 border border-blue-200 text-blue-900 gap-1.5 mt-1">
+                          <div className="flex items-center gap-1.5 font-medium">
+                            <span>Remaining Balance: <strong>{invoiceCurrencySymbol} {remainingAmount.toFixed(2)}</strong></span>
+                            <span>−</span>
+                            <span>Credit Note: <strong className="text-blue-700">-{invoiceCurrencySymbol} {appliedVal.toFixed(2)}</strong></span>
+                          </div>
+                          <div>
+                            <span>Amount Received: <strong className="text-blue-800 text-sm font-bold">{invoiceCurrencySymbol} {netVal.toFixed(2)}</strong></span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 

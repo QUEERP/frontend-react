@@ -1,7 +1,6 @@
 import { getCookie } from '@/lib/utils'
 import { API_ROOT } from "@/config/api";
 
-
 function buildHeaders(businessId: string) {
   const token = getCookie('token') || getCookie('accessToken')
   if (!token) throw new Error('No authentication token found')
@@ -196,3 +195,6 @@ export const emailLogsAPI = {
     return response.json()
   },
 }
+
+// Re-export BusinessEmail types and API
+export * from './businessEmail'

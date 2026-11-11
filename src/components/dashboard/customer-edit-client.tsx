@@ -8,22 +8,21 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useBusinessData } from '@/components/dashboard/business-data-provider';
-import { SaveIcon, ArrowLeftIcon, TrashIcon, GlobeIcon, HashIcon, PhoneIcon, MapPinIcon, AlertTriangleIcon, CopyIcon } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SaveIcon, ArrowLeftIcon, TrashIcon, GlobeIcon, HashIcon, PhoneIcon, MailIcon, MapPinIcon, AlertTriangleIcon, CopyIcon } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CountrySelect } from '@/components/dashboard/country-select';
 import { CurrencySelect } from '@/components/dashboard/currency-select';
-import { 
-  getBankConfigForCountry, 
-  INDIAN_GST_STATES, 
+import { StateSelect } from '@/components/dashboard/state-select';
+import {
+  getBankConfigForCountry,
   CountryBankConfig,
   getPhoneRulesForCountry,
   extractSubscriberDigits
 } from '@/lib/bank-configs';
 import { COUNTRY_TO_CURRENCY } from '@/lib/country_to_currency';
-import { 
-  DynamicBankAccountsSection, 
-  BankAccountItem 
+import {
+  DynamicBankAccountsSection,
+  BankAccountItem
 } from './DynamicBankAccountsSection';
 
 export function CustomerEditClient({ businessId, customerId }: { businessId: string; customerId: string }) {
@@ -45,7 +44,7 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
   useEffect(() => {
     async function fetchCustomerData() {
       try {
-        const token = getCookie('token');
+        const token = getCookie('token') || getCookie('accessToken') || (typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('accessToken')) : '') || '';
         const res = await fetch(`${API_BASE}/api/customers/${encodeURIComponent(customerId)}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -72,6 +71,7 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
 
   const [form, setForm] = useState({
     company: '',
+    email: '',
     country: 'INDIA',
     region: 'INDIA',
     vatNumber: '',
@@ -143,8 +143,14 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
         (!customer.shippingCountry || customer.shippingCountry === (customer.billingCountry || resolvedCountry))
       );
 
+      const resolvedEmail = customer.email
+        || customer.customerContacts?.find((c: any) => c.isPrimary && c.email)?.email
+        || customer.customerContacts?.find((c: any) => c.email)?.email
+        || '';
+
       setForm({
         company: customer.company || '',
+        email: resolvedEmail,
         country: resolvedCountry,
         region: resolvedCountry,
         vatNumber: customer.vatNumber || '',
@@ -388,6 +394,7 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
         },
         body: JSON.stringify({
           company: form.company,
+          email: form.email !== undefined ? form.email.trim() : undefined,
           country: form.country,
           region: form.country,
           currency: form.currency,
@@ -438,7 +445,7 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
       uiToast({ title: 'Customer updated', description: `${form.company} saved successfully.` });
       try {
         await refresh();
-      } catch {}
+      } catch { }
       navigate(`/dashboard/${businessId}/customers/${customerId}/view`);
     } catch (err: any) {
       uiToast({ title: 'Failed to update', description: err?.message || 'Unknown error', variant: 'destructive' });
@@ -465,7 +472,7 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
       uiToast({ title: 'Customer deleted', description: 'The customer has been removed.', variant: 'destructive' });
       try {
         await refresh();
-      } catch {}
+      } catch { }
       navigate(`/dashboard/${businessId}/customers`);
     } catch (err: any) {
       uiToast({ title: 'Delete failed', description: err?.message || 'Unknown error', variant: 'destructive' });
@@ -567,7 +574,7 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="vatNumber" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                     <HashIcon className="size-3.5 text-blue-600" />
@@ -580,6 +587,24 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
                     onChange={(e) => handleChange('vatNumber', e.target.value.toUpperCase())}
                     className="rounded-xl border-border bg-background h-11 text-sm shadow-sm font-mono tracking-wide"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <MailIcon className="size-3.5 text-blue-600" />
+                    Email Address
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="customer@example.com"
+                    value={form.email}
+                    onChange={(e) => handleChange('email', e.target.value)}
+                    className="rounded-xl border-border bg-background h-11 text-sm shadow-sm"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    For invoices, statements, & notifications.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -661,19 +686,11 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
                       State {(form.country.toUpperCase() === 'INDIA' || form.country.toUpperCase() === 'IN') && <span className="text-destructive">* (Statutory GST Code)</span>}
                     </Label>
                     {(form.country.toUpperCase() === 'INDIA' || form.country.toUpperCase() === 'IN') ? (
-                      <Select value={form.state} onValueChange={(val) => handleChange('state', val)}>
-                        <SelectTrigger className="w-full rounded-xl border-border bg-background h-11 text-sm shadow-sm font-medium">
-                          <SelectValue placeholder="Select Indian State" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-border shadow-lg max-h-72">
-                          {INDIAN_GST_STATES.map((s) => (
-                            <SelectItem key={s.code} value={s.name} className="cursor-pointer">
-                              <span className="font-mono text-xs text-blue-600 mr-2">[{s.code}]</span>
-                              {s.name} ({s.short})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <StateSelect
+                        value={form.state}
+                        onValueChange={(val) => handleChange('state', val)}
+                        placeholder="Select Indian State"
+                      />
                     ) : (
                       <Input
                         id="state"
@@ -768,22 +785,11 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
                             State / Province
                           </Label>
                           {(form.billingCountry.toUpperCase() === 'INDIA' || form.billingCountry.toUpperCase() === 'IN') ? (
-                            <Select
+                            <StateSelect
                               value={form.billingState}
                               onValueChange={(val) => handleChange('billingState', val)}
-                            >
-                              <SelectTrigger className="w-full rounded-xl border-border bg-background h-11 text-sm shadow-sm font-medium">
-                                <SelectValue placeholder="Select State" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl border-border shadow-lg max-h-72">
-                                {INDIAN_GST_STATES.map((s) => (
-                                  <SelectItem key={s.code} value={s.name} className="cursor-pointer">
-                                    <span className="font-mono text-xs text-blue-600 mr-2">[{s.code}]</span>
-                                    {s.name} ({s.short})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              placeholder="Select State"
+                            />
                           ) : (
                             <Input
                               id="billingState"
@@ -866,22 +872,11 @@ export function CustomerEditClient({ businessId, customerId }: { businessId: str
                             State / Province
                           </Label>
                           {(form.shippingCountry.toUpperCase() === 'INDIA' || form.shippingCountry.toUpperCase() === 'IN') ? (
-                            <Select
+                            <StateSelect
                               value={form.shippingState}
                               onValueChange={(val) => handleChange('shippingState', val)}
-                            >
-                              <SelectTrigger className="w-full rounded-xl border-border bg-background h-11 text-sm shadow-sm font-medium">
-                                <SelectValue placeholder="Select State" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl border-border shadow-lg max-h-72">
-                                {INDIAN_GST_STATES.map((s) => (
-                                  <SelectItem key={s.code} value={s.name} className="cursor-pointer">
-                                    <span className="font-mono text-xs text-blue-600 mr-2">[{s.code}]</span>
-                                    {s.name} ({s.short})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              placeholder="Select State"
+                            />
                           ) : (
                             <Input
                               id="shippingState"

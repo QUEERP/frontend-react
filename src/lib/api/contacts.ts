@@ -73,6 +73,7 @@ export interface Customer {
 
 export interface CreateCustomerData {
   company: string;
+  email?: string;
   region: 'INDIA' | 'UAE';
   vatNumber?: string;
   phone?: string;

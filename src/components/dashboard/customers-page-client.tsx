@@ -473,6 +473,12 @@ export function CustomersPageClient({ businessId }: { businessId: string }) {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild className="cursor-pointer focus:bg-muted text-foreground">
+                          <Link to={`/dashboard/${businessId}/customers/${customer.id}/email`}>
+                            <MailIcon className="mr-2 h-4 w-4 text-blue-600" />
+                            Send Email
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="cursor-pointer focus:bg-muted text-foreground">
                           <Link to={`/dashboard/${businessId}/customers/${customer.id}/edit`}>
                             <EditIcon className="mr-2 h-4 w-4 text-slate-400" />
                             Edit Customer

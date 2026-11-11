@@ -9,6 +9,7 @@ import {
   GlobeIcon,
   HashIcon,
   PhoneIcon,
+  MailIcon,
   MapPinIcon,
   AlertTriangleIcon,
   Sparkles,
@@ -26,29 +27,22 @@ import { DashboardModeToggle } from '@/components/dashboard/mode-toggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { useBusinessData } from '@/components/dashboard/business-data-provider';
 import { UserMenu } from './user-menu';
 import { CurrencySelect } from '@/components/dashboard/currency-select';
 import { CountrySelect } from '@/components/dashboard/country-select';
+import { StateSelect } from '@/components/dashboard/state-select';
 import { 
   getBankConfigForCountry, 
-  INDIAN_GST_STATES, 
   CountryBankConfig,
   getPhoneRulesForCountry
 } from '@/lib/bank-configs';
 import { COUNTRY_TO_CURRENCY } from '@/lib/country_to_currency';
-import { 
-  DynamicBankAccountsSection, 
-  BankAccountItem 
+import {
+  DynamicBankAccountsSection,
+  BankAccountItem
 } from './DynamicBankAccountsSection';
 import {
   Dialog,
@@ -109,6 +103,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
 
   const [formData, setFormData] = useState({
     company: '',
+    email: '',
     country: defaultCountry,
     region: defaultCountry,
     vatNumber: '',
@@ -210,6 +205,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
           setFormData(prev => ({
             ...prev,
             company: l.company || l.name || '',
+            email: l.email || '',
             country: targetCountry,
             region: targetCountry,
             currency: targetCurrency,
@@ -449,6 +445,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
         businessId: activeBusinessId,
         leadId: leadId || undefined,
         company: formData.company.trim(),
+        email: formData.email ? formData.email.trim() : undefined,
         country: formData.country,
         region: formData.country,
         currency: formData.currency,
@@ -517,8 +514,8 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       }
 
       setSaveStatus('saved');
-      const successMsg = convertingLead 
-        ? `Lead "${convertingLead.company || convertingLead.name}" converted to Customer "${formData.company}" successfully!` 
+      const successMsg = convertingLead
+        ? `Lead "${convertingLead.company || convertingLead.name}" converted to Customer "${formData.company}" successfully!`
         : `Customer "${formData.company}" created successfully!`;
       toast.success(successMsg);
       uiToast({
@@ -527,7 +524,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
       });
       try {
         if (refresh) await refresh();
-      } catch {}
+      } catch { }
       navigate(`/dashboard/${activeBusinessId}/customers`);
     } catch (err: any) {
       console.error('Error creating customer:', err);
@@ -646,7 +643,7 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {/* Tax Number (GSTIN / TRN / VAT) */}
                   <div className="space-y-2">
                     <Label htmlFor="vatNumber" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
@@ -660,6 +657,25 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                       onChange={(e) => handleInputChange('vatNumber', e.target.value.toUpperCase())}
                       className="rounded-xl border-border bg-background h-11 text-sm shadow-sm font-mono tracking-wide"
                     />
+                  </div>
+
+                  {/* Email Address */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <MailIcon className="size-3.5 text-blue-600" />
+                      Email Address
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="customer@example.com"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      className="rounded-xl border-border bg-background h-11 text-sm shadow-sm"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      For invoices, statements, & notifications.
+                    </p>
                   </div>
 
                   {/* Phone */}
@@ -747,19 +763,11 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                         State {(formData.country.toUpperCase() === 'INDIA' || formData.country.toUpperCase() === 'IN') && <span className="text-destructive">* (Statutory GST Code)</span>}
                       </Label>
                       {(formData.country.toUpperCase() === 'INDIA' || formData.country.toUpperCase() === 'IN') ? (
-                        <Select value={formData.state} onValueChange={(val) => handleInputChange('state', val)}>
-                          <SelectTrigger className="w-full rounded-xl border-border bg-background h-11 text-sm shadow-sm font-medium">
-                            <SelectValue placeholder="Select Indian State" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-border shadow-lg max-h-72">
-                            {INDIAN_GST_STATES.map((s) => (
-                              <SelectItem key={s.code} value={s.name} className="cursor-pointer">
-                                <span className="font-mono text-xs text-blue-600 mr-2">[{s.code}]</span>
-                                {s.name} ({s.short})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <StateSelect
+                          value={formData.state}
+                          onValueChange={(val) => handleInputChange('state', val)}
+                          placeholder="Select Indian State"
+                        />
                       ) : (
                         <Input
                           id="state"
@@ -857,22 +865,11 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                             State / Province
                           </Label>
                           {(formData.billingCountry.toUpperCase() === 'INDIA' || formData.billingCountry.toUpperCase() === 'IN') ? (
-                            <Select
+                            <StateSelect
                               value={formData.billingState}
                               onValueChange={(val) => handleInputChange('billingState', val)}
-                            >
-                              <SelectTrigger className="w-full rounded-xl border-border bg-background h-11 text-sm shadow-sm font-medium">
-                                <SelectValue placeholder="Select State" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl border-border shadow-lg max-h-72">
-                                {INDIAN_GST_STATES.map((s) => (
-                                  <SelectItem key={s.code} value={s.name} className="cursor-pointer">
-                                    <span className="font-mono text-xs text-blue-600 mr-2">[{s.code}]</span>
-                                    {s.name} ({s.short})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              placeholder="Select State"
+                            />
                           ) : (
                             <Input
                               id="billingState"
@@ -955,22 +952,11 @@ export function AddCustomerClient({ businessId }: { businessId: string }) {
                             State / Province
                           </Label>
                           {(formData.shippingCountry.toUpperCase() === 'INDIA' || formData.shippingCountry.toUpperCase() === 'IN') ? (
-                            <Select
+                            <StateSelect
                               value={formData.shippingState}
                               onValueChange={(val) => handleInputChange('shippingState', val)}
-                            >
-                              <SelectTrigger className="w-full rounded-xl border-border bg-background h-11 text-sm shadow-sm font-medium">
-                                <SelectValue placeholder="Select State" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl border-border shadow-lg max-h-72">
-                                {INDIAN_GST_STATES.map((s) => (
-                                  <SelectItem key={s.code} value={s.name} className="cursor-pointer">
-                                    <span className="font-mono text-xs text-blue-600 mr-2">[{s.code}]</span>
-                                    {s.name} ({s.short})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              placeholder="Select State"
+                            />
                           ) : (
                             <Input
                               id="shippingState"
