@@ -34,6 +34,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { businessEmailAPI, BusinessEmailConfig } from '@/lib/api/businessEmail'
 import { contactsAPI, Contact } from '@/lib/api/contacts'
+import { buildCustomerEmailHtml } from '@/lib/customer-email-template'
 import { API_ROOT } from '@/config/api'
 
 function getAuthToken(): string {
@@ -337,27 +338,55 @@ export function CustomerEmailPageClient({
     setUploadedFiles((prev) => prev.filter((_, idx) => idx !== index))
   }
 
+  const attachedInvoices = useMemo(
+    () => invoices.filter((inv) => selectedInvoiceIds.includes(inv.id)),
+    [invoices, selectedInvoiceIds]
+  )
+
+  const attachedQuotations = useMemo(
+    () => quotations.filter((q) => selectedQuotationIds.includes(q.id)),
+    [quotations, selectedQuotationIds]
+  )
+
   // Quick Template Injectors
   const applyTemplate = (type: 'statement' | 'reminder' | 'quotation' | 'general') => {
     const company = customer?.company || customer?.name || 'Customer'
     const bName = business?.name || 'our company'
+    const invNumbers = attachedInvoices.map((inv) => inv.invoiceNumber).filter(Boolean)
+    const invRef = invNumbers.length > 0 ? ` (${invNumbers.join(', ')})` : ''
+    const quoteNumbers = attachedQuotations.map((q) => q.quoteNumber).filter(Boolean)
+    const quoteRef = quoteNumbers.length > 0 ? ` (${quoteNumbers.join(', ')})` : ''
+    const formattedDue =
+      outstandingDues > 0
+        ? `${currencySymbol} ${outstandingDues.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+        : ''
 
     switch (type) {
       case 'statement':
-        setSubject(`Account Statement & Invoice - ${company}`)
-        setBody(`Dear ${company},\n\nPlease find attached your updated account statement and latest invoices.\n\nKindly review and let us know if you need any adjustments or receipts.\n\nWarm regards,\n${bName} Accounts Team`)
+        setSubject(`Account Statement & Invoice${invRef} - ${company}`)
+        setBody(
+          `Dear ${company},\n\nPlease find attached your updated account statement and invoice documentation${invRef} from ${bName}.\n\nKindly review the summary below along with the attached PDF file(s). Should you need any clarification, tax breakdown, or payment confirmation, simply reply to this email and our billing team will assist right away.\n\nWarm regards,\n${bName} Accounts Team`
+        )
         break
       case 'reminder':
-        setSubject(`Payment Reminder - Pending Invoice Dues`)
-        setBody(`Dear ${company},\n\nThis is a gentle reminder regarding outstanding payment for your recent invoices with ${bName}.\n\nAttached are the corresponding invoice copies for your review. We appreciate your prompt payment.\n\nBest regards,\n${bName} Finance`)
+        setSubject(`Payment Reminder - Pending Invoice Dues${invRef}`)
+        setBody(
+          `Dear ${company},\n\nI hope this message finds you well. This is a courteous reminder regarding ${
+            formattedDue ? `an outstanding balance of ${formattedDue}` : 'pending invoice dues'
+          } on your account with ${bName}${invRef}.\n\nFor your convenience, the corresponding invoice summary is shown below with PDF copies attached. Please let us know once payment has been arranged, or reply directly if you have already completed the transfer.\n\nThank you for your prompt attention.\n\nBest regards,\n${bName} Finance`
+        )
         break
       case 'quotation':
-        setSubject(`Quotation & Proposal Follow-Up - ${company}`)
-        setBody(`Hello ${company},\n\nThank you for considering ${bName}. Attached please find our quotation and project details for your review.\n\nWe look forward to collaborating with you.\n\nSincerely,\n${bName} Sales`)
+        setSubject(`Quotation & Proposal Follow-Up${quoteRef} - ${company}`)
+        setBody(
+          `Hello ${company},\n\nThank you for considering ${bName}. Please find attached our quotation and proposal details${quoteRef} prepared for your review.\n\nWe welcome the opportunity to discuss any scope adjustments, timelines, or commercial terms at your convenience. Simply reply to this email or reach out directly to proceed.\n\nSincerely,\n${bName} Sales Team`
+        )
         break
       case 'general':
-        setSubject(`Notice from ${bName} regarding your account`)
-        setBody(`Dear ${company},\n\nWe are writing to update you on your business relationship with ${bName}.\n\nPlease let us know if there is anything we can assist you with.\n\nRegards,\n${bName}`)
+        setSubject(`Important Account Update - ${company}`)
+        setBody(
+          `Dear ${company},\n\nWe are writing to share an update regarding your account with ${bName}.\n\nPlease review the message and any accompanying documents. Should you require further details or support, feel free to reply directly to this email.\n\nWarm regards,\n${bName}`
+        )
         break
     }
   }
@@ -392,6 +421,45 @@ export function CustomerEmailPageClient({
       isCustom: false,
     }
   }, [emailConfig, business])
+
+  const businessLocation = useMemo(() => {
+    return [business?.address, business?.city, business?.country].filter(Boolean).join(', ')
+  }, [business])
+
+  const emailHtml = useMemo(() => {
+    return buildCustomerEmailHtml({
+      subject: subject.trim() || `Account Communication - ${customer?.company || customer?.name || 'Customer'}`,
+      body,
+      businessName: emailConfig?.senderName || business?.name || 'Our Business',
+      senderEmail: senderDisplay.email,
+      businessPhone: business?.settings?.phone || business?.phone || null,
+      businessLocation: businessLocation || null,
+      businessWebsite: business?.settings?.website || business?.website || null,
+      customerName: customer?.company || customer?.name || 'Valued Customer',
+      toEmail: toEmail.trim(),
+      currencySymbol,
+      outstandingDues,
+      hasInvoices: invoices.length > 0,
+      attachedInvoices,
+      attachedQuotations,
+      uploadedFiles: uploadedFiles.map((f) => ({ name: f.name, size: f.size })),
+    })
+  }, [
+    subject,
+    body,
+    customer,
+    emailConfig?.senderName,
+    business,
+    senderDisplay.email,
+    businessLocation,
+    toEmail,
+    currencySymbol,
+    outstandingDues,
+    invoices.length,
+    attachedInvoices,
+    attachedQuotations,
+    uploadedFiles,
+  ])
 
   // Check if current entered toEmail is already saved as a contact
   const isEmailSaved = useMemo(() => {
@@ -442,7 +510,7 @@ export function CustomerEmailPageClient({
         to: toEmail.trim(),
         subject: subject.trim(),
         text: body.trim(),
-        html: `<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333333; white-space: pre-wrap;">${body.trim()}</div>`,
+        html: emailHtml,
         cc: ccEmail.trim() || undefined,
         bcc: bccEmail.trim() || undefined,
         customerId: customerId,
@@ -830,7 +898,7 @@ export function CustomerEmailPageClient({
                     className="min-h-[220px] rounded-xl border-border bg-background focus-visible:ring-blue-500 text-sm leading-relaxed p-4"
                   />
                 ) : (
-                  <div className="min-h-[220px] rounded-xl border border-border bg-muted/20 p-5 space-y-4">
+                  <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
                     <div className="border-b border-border pb-3">
                       <div className="text-xs text-muted-foreground">
                         <strong className="text-foreground">From:</strong> {senderDisplay.fromText}
@@ -842,9 +910,12 @@ export function CustomerEmailPageClient({
                         <strong className="text-foreground">Subject:</strong> {subject || '(no subject)'}
                       </div>
                     </div>
-                    <div className="text-sm whitespace-pre-wrap leading-relaxed text-foreground">
-                      {body || <span className="text-muted-foreground italic">No message content drafted yet.</span>}
-                    </div>
+                    <iframe
+                      title="Customer Email Preview"
+                      srcDoc={emailHtml}
+                      sandbox=""
+                      className="w-full h-[520px] rounded-xl border border-border bg-slate-100"
+                    />
                   </div>
                 )}
               </div>
