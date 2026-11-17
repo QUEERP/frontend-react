@@ -1,5 +1,5 @@
 import * as React from 'react'
-import {  useNavigate  } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { invoicesAPI, Invoice } from '@/lib/api/invoices'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,7 +20,8 @@ import {
   Info,
   Banknote,
   Receipt,
-  Download
+  Download,
+  Mail
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getCookie } from '@/lib/utils'
@@ -68,7 +69,7 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
 
   const isOwner = React.useMemo(() => {
     if (role?.name?.toLowerCase() === 'owner') return true;
-    
+
     // Check if the user is the actual business creator/owner by decoding token
     const token = getCookie('token') || getCookie('accessToken');
     if (token) {
@@ -103,7 +104,7 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
       setFinLoading(true)
       const token = getCookie('token') || getCookie('accessToken')
       const headers = { Authorization: `Bearer ${token}`, 'x-business-id': businessId }
-      
+
       const [payRes, expRes] = await Promise.all([
         fetch(`${API_BASE}/api/payments/invoice/${encodeURIComponent(invoiceId)}`, { headers }).then(r => r.json()),
         fetch(`${API_BASE}/api/expenses?referenceId=${encodeURIComponent(invoiceId)}`, { headers }).then(r => r.json())
@@ -241,7 +242,7 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
           {actionLoading && <Loader2 className="h-4 w-4 animate-spin text-slate-400 mr-2" />}
-          
+
           {isOwner && isUnpaid && (
             <Button
               onClick={() => navigate(`/dashboard/${businessId}/invoices/payment?invoiceId=${invoiceId}`)}
@@ -263,7 +264,23 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
               Add Expense
             </Button>
           )}
-          
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              const targetCustId = invoice.customerId || invoice.customer?.id
+              if (targetCustId) {
+                navigate(`/dashboard/${businessId}/customers/${encodeURIComponent(targetCustId)}/email?invoiceId=${encodeURIComponent(invoice.id)}`)
+              } else {
+                navigate(`/dashboard/${businessId}/invoices/${encodeURIComponent(invoice.id)}/email`)
+              }
+            }}
+            className="h-10 rounded-xl cursor-pointer gap-2 border-blue-200 text-blue-700 hover:bg-blue-50 font-semibold bg-card w-full md:w-auto"
+          >
+            <Mail className="h-4 w-4" />
+            Send Email
+          </Button>
+
           <Button
             variant="outline"
             onClick={handleDownloadPdf}
@@ -315,7 +332,7 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
                         {isBasic ? 'QTY' : (
                           invoice.items && invoice.items.length > 0 ? (
                             invoice.items[0].itemType === 'SERVICE' ? 'HRS' :
-                            ['kg', 'gram', 'meter', 'litre'].includes((invoice.items[0].unit || '').toLowerCase()) ? invoice.items[0].unit?.toUpperCase() : 'QTY'
+                              ['kg', 'gram', 'meter', 'litre'].includes((invoice.items[0].unit || '').toLowerCase()) ? invoice.items[0].unit?.toUpperCase() : 'QTY'
                           ) : 'QTY'
                         )}
                       </th>
@@ -409,78 +426,78 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
                 ) : (
                   <div className="flex flex-col gap-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="flex flex-col gap-2 p-4 rounded-xl bg-blue-50 border border-blue-100">
-                      <span className="text-sm font-bold uppercase tracking-wider text-blue-600">Total Received</span>
-                      <span className="text-2xl font-black text-blue-700">
-                        {formatCurrency(payments.reduce((sum, p) => sum + Number(p.amount || 0), 0), invoice.currency)}
-                      </span>
-                      <span className="text-xs font-medium text-blue-600/70">{payments.length} payment(s)</span>
+                      <div className="flex flex-col gap-2 p-4 rounded-xl bg-blue-50 border border-blue-100">
+                        <span className="text-sm font-bold uppercase tracking-wider text-blue-600">Total Received</span>
+                        <span className="text-2xl font-black text-blue-700">
+                          {formatCurrency(payments.reduce((sum, p) => sum + Number(p.amount || 0), 0), invoice.currency)}
+                        </span>
+                        <span className="text-xs font-medium text-blue-600/70">{payments.length} payment(s)</span>
+                      </div>
+                      <div className="flex flex-col gap-2 p-4 rounded-xl bg-rose-50 border border-rose-100">
+                        <span className="text-sm font-bold uppercase tracking-wider text-rose-600">Total Expenses</span>
+                        <span className="text-2xl font-black text-rose-700">
+                          {formatCurrency(expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0), invoice.currency)}
+                        </span>
+                        <span className="text-xs font-medium text-rose-600/70">{expenses.length} expense(s)</span>
+                      </div>
+                      <div className="flex flex-col gap-2 p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                        <span className="text-sm font-bold uppercase tracking-wider text-emerald-600">Net Profit</span>
+                        <span className="text-2xl font-black text-emerald-700">
+                          {formatCurrency(
+                            payments.reduce((sum, p) => sum + Number(p.amount || 0), 0) -
+                            expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0),
+                            invoice.currency
+                          )}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-2 p-4 rounded-xl bg-rose-50 border border-rose-100">
-                      <span className="text-sm font-bold uppercase tracking-wider text-rose-600">Total Expenses</span>
-                      <span className="text-2xl font-black text-rose-700">
-                        {formatCurrency(expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0), invoice.currency)}
-                      </span>
-                      <span className="text-xs font-medium text-rose-600/70">{expenses.length} expense(s)</span>
-                    </div>
-                    <div className="flex flex-col gap-2 p-4 rounded-xl bg-emerald-50 border border-emerald-100">
-                      <span className="text-sm font-bold uppercase tracking-wider text-emerald-600">Net Profit</span>
-                      <span className="text-2xl font-black text-emerald-700">
-                        {formatCurrency(
-                          payments.reduce((sum, p) => sum + Number(p.amount || 0), 0) - 
-                          expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0), 
-                          invoice.currency
+
+                    {/* Detailed Lists */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 mt-6 border-t border-border">
+                      <div className="flex flex-col gap-4">
+                        <h4 className="text-sm font-bold text-foreground">Payments Received</h4>
+                        {payments.length === 0 ? (
+                          <div className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-xl text-center border border-dashed">No payments recorded yet.</div>
+                        ) : (
+                          <div className="flex flex-col gap-3">
+                            {payments.map((p, i) => (
+                              <div key={p.id || i} className="flex justify-between items-center p-3 rounded-xl border border-border/50 bg-card hover:bg-muted/30 transition-colors">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-semibold text-foreground">{p.paymentMode || 'Payment'}</span>
+                                  <span className="text-xs text-muted-foreground">{p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : 'No date'}</span>
+                                </div>
+                                <span className="text-sm font-bold text-blue-600">
+                                  {formatCurrency(p.amount, invoice.currency)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         )}
-                      </span>
+                      </div>
+
+                      <div className="flex flex-col gap-4">
+                        <h4 className="text-sm font-bold text-foreground">Expenses Incurred</h4>
+                        {expenses.length === 0 ? (
+                          <div className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-xl text-center border border-dashed">No expenses recorded yet.</div>
+                        ) : (
+                          <div className="flex flex-col gap-3">
+                            {expenses.map((e, i) => (
+                              <div key={e.id || i} className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center p-3 rounded-xl border border-border/50 bg-card hover:bg-muted/30 transition-colors">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-semibold text-foreground line-clamp-1">{e.title || e.category || 'Expense'}</span>
+                                  <span className="text-xs text-muted-foreground">{e.date ? new Date(e.date).toLocaleDateString() : 'No date'}</span>
+                                </div>
+                                <span className="text-sm font-bold text-rose-600 shrink-0">
+                                  {formatCurrency(e.amount, invoice.currency)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  
-                  {/* Detailed Lists */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 mt-6 border-t border-border">
-                    <div className="flex flex-col gap-4">
-                      <h4 className="text-sm font-bold text-foreground">Payments Received</h4>
-                      {payments.length === 0 ? (
-                        <div className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-xl text-center border border-dashed">No payments recorded yet.</div>
-                      ) : (
-                        <div className="flex flex-col gap-3">
-                          {payments.map((p, i) => (
-                            <div key={p.id || i} className="flex justify-between items-center p-3 rounded-xl border border-border/50 bg-card hover:bg-muted/30 transition-colors">
-                              <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-foreground">{p.paymentMode || 'Payment'}</span>
-                                <span className="text-xs text-muted-foreground">{p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : 'No date'}</span>
-                              </div>
-                              <span className="text-sm font-bold text-blue-600">
-                                {formatCurrency(p.amount, invoice.currency)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-col gap-4">
-                      <h4 className="text-sm font-bold text-foreground">Expenses Incurred</h4>
-                      {expenses.length === 0 ? (
-                        <div className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-xl text-center border border-dashed">No expenses recorded yet.</div>
-                      ) : (
-                        <div className="flex flex-col gap-3">
-                          {expenses.map((e, i) => (
-                            <div key={e.id || i} className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center p-3 rounded-xl border border-border/50 bg-card hover:bg-muted/30 transition-colors">
-                              <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-foreground line-clamp-1">{e.title || e.category || 'Expense'}</span>
-                                <span className="text-xs text-muted-foreground">{e.date ? new Date(e.date).toLocaleDateString() : 'No date'}</span>
-                              </div>
-                              <span className="text-sm font-bold text-rose-600 shrink-0">
-                                {formatCurrency(e.amount, invoice.currency)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+                )}
               </CardContent>
             </Card>
           )}
@@ -516,15 +533,15 @@ export function InvoiceDetailsClient({ businessId, invoiceId }: InvoiceDetailsCl
                 <span className="font-bold text-foreground text-base">{invoice.customer?.company || invoice.customer?.name || '—'}</span>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                 <div className="flex flex-col gap-1">
-                   <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Issue Date</span>
-                   <span className="font-semibold text-foreground">{new Date((invoice.issueDate || invoice.invoiceDate) as string).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                 </div>
-                 {(invoice.expiryDate || invoice.dueDate) && (
-                   <div className="flex flex-col gap-1">
-                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Expiry Date</span>
-                     <span className="font-semibold text-rose-600">{new Date((invoice.expiryDate || invoice.dueDate)!).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                   </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Issue Date</span>
+                  <span className="font-semibold text-foreground">{new Date((invoice.issueDate || invoice.invoiceDate) as string).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                </div>
+                {(invoice.expiryDate || invoice.dueDate) && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Expiry Date</span>
+                    <span className="font-semibold text-rose-600">{new Date((invoice.expiryDate || invoice.dueDate)!).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                  </div>
                 )}
               </div>
               {invoice.deal && (

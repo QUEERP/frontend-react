@@ -112,8 +112,10 @@ export const businessEmailAPI = {
       bcc?: string
       customerId?: string
       contactId?: string
+      vendorId?: string
       invoiceIds?: string[]
       quotationIds?: string[]
+      billIds?: string[]
       attachments?: any[]
     }
   ): Promise<{ success: boolean; message: string; data?: any }> {

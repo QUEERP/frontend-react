@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom';
-import {  useNavigate  } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   BellIcon,
   Building2Icon,
@@ -249,7 +249,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
       })
       const data = await res.json()
       if (!res.ok || !data.success) throw new Error(data.message || 'Sync failed')
-      
+
       toast({
         title: 'Sync Complete',
         description: data.message,
@@ -373,8 +373,8 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
           <p className="text-sm text-muted-foreground mt-1">Create, track, and manage your invoices</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="h-10 gap-2 bg-card hover:bg-muted text-foreground border-border shadow-sm rounded-xl font-medium px-4 cursor-pointer"
             onClick={handleBulkSync}
             disabled={syncLoading}
@@ -382,7 +382,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
             {syncLoading ? <Loader2Icon className="size-4 animate-spin text-blue-600" /> : <RefreshCwIcon className="size-4 text-blue-600" />}
             Sync Old Records
           </Button>
-          <Button 
+          <Button
             onClick={handleAddInvoiceClick}
             className="h-10 cursor-pointer gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-xl border-none font-medium px-5"
           >
@@ -455,8 +455,8 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
             </Select>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="h-10 rounded-xl cursor-pointer border-border bg-card text-foreground hover:bg-muted gap-2 font-medium px-4 shadow-sm"
                   disabled={exportLoading}
                 >
@@ -526,8 +526,8 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                   </TableCell>
                 </TableRow>
               ) : filteredInvoices.map((invoice: any) => (
-                <TableRow 
-                  key={invoice.id} 
+                <TableRow
+                  key={invoice.id}
                   className="group hover:bg-muted/50 border-b border-border transition-colors cursor-pointer"
                   onClick={() => {
                     navigate(`/dashboard/${businessId}/invoices/${invoice.id}`)
@@ -558,9 +558,9 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                       className={cn(
                         "text-[11px] px-2.5 py-0.5 font-bold border",
                         invoice.status === 'PAID' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                        invoice.status === 'UNPAID' ? "bg-rose-50 text-rose-700 border-rose-200" :
-                        invoice.status === 'PARTIALLY_PAID' ? "bg-amber-50 text-amber-700 border-amber-200" :
-                        "bg-muted text-foreground border-border"
+                          invoice.status === 'UNPAID' ? "bg-rose-50 text-rose-700 border-rose-200" :
+                            invoice.status === 'PARTIALLY_PAID' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                              "bg-muted text-foreground border-border"
                       )}
                     >
                       <div className="flex items-center gap-1.5 uppercase tracking-wider">
@@ -581,9 +581,9 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                     <div className="flex justify-end items-center gap-1">
                       {isBasic ? (
                         <>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="h-8 px-2 text-xs text-emerald-700 border-emerald-200 hover:bg-emerald-50"
                             onClick={(e) => {
                               e.stopPropagation()
@@ -593,9 +593,9 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                             <DollarSignIcon className="size-3 mr-1" />
                             Add Payment
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="h-8 px-2 text-xs text-rose-700 border-rose-200 hover:bg-rose-50"
                             onClick={(e) => {
                               e.stopPropagation()
@@ -608,10 +608,10 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                         </>
                       ) : (
                         <>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Add Payment" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Add Payment"
                             className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                             onClick={(e) => {
                               e.stopPropagation()
@@ -620,10 +620,10 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                           >
                             <DollarSignIcon className="size-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Add Expense" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Add Expense"
                             className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                             onClick={(e) => {
                               e.stopPropagation()
@@ -642,7 +642,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg border-border">
                           <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</DropdownMenuLabel>
-                          
+
                           <DropdownMenuItem
                             className="cursor-pointer font-medium text-foreground focus:text-blue-700 focus:bg-blue-50 py-2.5"
                             onClick={(e) => {
@@ -685,12 +685,12 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                               e.stopPropagation()
                               const url = await ensurePdfUrl(invoice)
                               if (!url) return
-                              
+
                               try {
                                 toast({ title: "Starting Download", description: "Preparing your PDF..." })
-                                
+
                                 const downloadUrl = `${API_BASE}/api/invoices/${encodeURIComponent(invoice.id)}/download-pdf?token=${getCookie('token') || getCookie('accessToken')}&x-business-id=${businessId}`
-                                
+
                                 const a = document.createElement('a')
                                 a.href = downloadUrl
                                 a.target = '_self'
@@ -706,13 +706,21 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                             <DownloadIcon className="mr-2 size-4" />
                             Download PDF
                           </DropdownMenuItem>
-                          
-                          {!isBasic && (
-                            <DropdownMenuItem className="cursor-pointer font-medium text-foreground focus:text-blue-700 focus:bg-blue-50 py-2.5" onClick={(e) => e.stopPropagation()}>
-                              <SendIcon className="mr-2 size-4" />
-                              Send to Customer
-                            </DropdownMenuItem>
-                          )}
+
+                          <DropdownMenuItem
+                            className="cursor-pointer font-medium text-foreground focus:text-blue-700 focus:bg-blue-50 py-2.5"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (invoice.customerId) {
+                                navigate(`/dashboard/${businessId}/customers/${encodeURIComponent(invoice.customerId)}/email?invoiceId=${encodeURIComponent(invoice.id)}`)
+                              } else {
+                                navigate(`/dashboard/${businessId}/invoices/${encodeURIComponent(invoice.id)}/email`)
+                              }
+                            }}
+                          >
+                            <MailIcon className="mr-2 size-4 text-blue-600" />
+                            Send Email
+                          </DropdownMenuItem>
 
                           <DropdownMenuItem
                             className="cursor-pointer font-medium text-rose-600 focus:text-rose-700 focus:bg-rose-50 py-2.5"
@@ -732,30 +740,30 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
               ))}
             </TableBody>
           </Table>
+        </div>
+        <div className="p-4 border-t border-border flex items-center justify-between bg-muted/50 mt-auto">
+          <p className="text-sm text-muted-foreground font-medium">Page <span className="font-bold text-foreground">{currentPage}</span> of <span className="font-bold text-foreground">{totalPages}</span></p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-lg cursor-pointer border-border bg-card"
+              disabled={currentPage <= 1 || listLoading}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-lg cursor-pointer border-border bg-card"
+              disabled={currentPage >= totalPages || listLoading}
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            >
+              Next
+            </Button>
           </div>
-          <div className="p-4 border-t border-border flex items-center justify-between bg-muted/50 mt-auto">
-            <p className="text-sm text-muted-foreground font-medium">Page <span className="font-bold text-foreground">{currentPage}</span> of <span className="font-bold text-foreground">{totalPages}</span></p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 rounded-lg cursor-pointer border-border bg-card"
-                disabled={currentPage <= 1 || listLoading}
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 rounded-lg cursor-pointer border-border bg-card"
-                disabled={currentPage >= totalPages || listLoading}
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+        </div>
       </Card>
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent>
@@ -792,7 +800,7 @@ export function InvoicesPageClient({ businessId }: { businessId: string }) {
                   })
                   try {
                     await refresh()
-                  } catch {}
+                  } catch { }
                 } catch (err: any) {
                   toast({
                     title: 'Delete failed',
