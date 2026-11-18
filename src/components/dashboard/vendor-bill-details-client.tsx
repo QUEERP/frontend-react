@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Loader2, IndianRupee, Printer } from 'lucide-react'
+import { ArrowLeft, Loader2, IndianRupee, Printer, Mail } from 'lucide-react'
 import { vendorBillsAPI, Bill } from '@/lib/api/purchase'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
@@ -66,7 +66,20 @@ export function VendorBillDetailsClient({ businessId, billId }: { businessId: st
           </p>
         </div>
         <Badge className="ml-2 uppercase">{bill.status}</Badge>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+            onClick={() => {
+              if (bill.vendorId) {
+                navigate(`/dashboard/${businessId}/vendors/${bill.vendorId}/email?billId=${bill.id}`)
+              } else {
+                navigate(`/dashboard/${businessId}/vendor-bills/${bill.id}/email`)
+              }
+            }}
+          >
+            <Mail className="h-4 w-4" /> Send Email
+          </Button>
           <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => exportVendorBillToPDF(bill, business)}>
             <FileDown className="h-4 w-4" /> Download PDF
           </Button>

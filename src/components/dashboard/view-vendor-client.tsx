@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 import React, { useEffect, useState, useCallback } from 'react'
-import {  useNavigate  } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeftIcon, StoreIcon, Loader2Icon, IndianRupeeIcon, Building2Icon, MailIcon, PhoneIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -131,8 +131,8 @@ export function ViewVendorClient({ businessId, vendorId }: { businessId: string,
       {/* Breadcrumb & Header */}
       <div className="flex flex-col gap-4">
         <div>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => navigate(`/dashboard/${businessId}/vendors`)}
             className="h-9 px-3 rounded-xl hover:bg-slate-200 text-muted-foreground -ml-3"
           >
@@ -157,12 +157,22 @@ export function ViewVendorClient({ businessId, vendorId }: { businessId: string,
               <p className="text-muted-foreground">{vendor.vendorCode} • {vendor.vendorType}</p>
             </div>
           </div>
-          <Button 
-            onClick={() => navigate(`/dashboard/${businessId}/vendors/${vendor.id}/edit`)}
-            className="rounded-xl font-medium"
-          >
-            Edit Vendor
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/dashboard/${businessId}/vendors/${vendor.id}/email`)}
+              className="rounded-xl font-medium gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+            >
+              <MailIcon className="h-4 w-4" />
+              Send Email
+            </Button>
+            <Button
+              onClick={() => navigate(`/dashboard/${businessId}/vendors/${vendor.id}/edit`)}
+              className="rounded-xl font-medium"
+            >
+              Edit Vendor
+            </Button>
+          </div>
         </div>
       </div>
 

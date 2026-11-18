@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeftIcon,
   MailIcon,
@@ -57,6 +57,8 @@ export function CustomerEmailPageClient({
   customerId: string
 }) {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const initialInvoiceId = searchParams.get('invoiceId')
   const { toast } = useToast()
   const { business, currencySymbol } = useBusinessData()
 
@@ -215,8 +217,19 @@ export function CustomerEmailPageClient({
           const list = Array.isArray(data.invoices) ? data.invoices : (Array.isArray(data.data) ? data.data : [])
           setInvoices(list)
 
-          // Auto-select latest invoice if exists
-          if (list.length > 0) {
+          // Auto-select invoice: prefer requested initialInvoiceId or latest
+          if (initialInvoiceId && list.some((inv: any) => inv.id === initialInvoiceId)) {
+            setSelectedInvoiceIds([initialInvoiceId])
+            const targetInv = list.find((inv: any) => inv.id === initialInvoiceId)
+            if (targetInv) {
+              const compName = customer?.company || customer?.name || 'Customer'
+              const bName = business?.name || 'our company'
+              setSubject(`Invoice ${targetInv.invoiceNumber} - ${compName}`)
+              setBody(
+                `Dear ${compName},\n\nPlease find attached Invoice ${targetInv.invoiceNumber} from ${bName}.\n\nInvoice Date: ${targetInv.invoiceDate ? new Date(targetInv.invoiceDate).toLocaleDateString() : '—'}\nDue Date: ${targetInv.dueDate ? new Date(targetInv.dueDate).toLocaleDateString() : 'Upon receipt'}\nTotal Amount: ${targetInv.currency || currencySymbol} ${Number(targetInv.grandTotal || targetInv.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}\n\nPlease review the attached invoice PDF and let us know if you have any questions or require assistance.\n\nWarm regards,\n${bName} Accounts Team`
+              )
+            }
+          } else if (list.length > 0) {
             setSelectedInvoiceIds([list[0].id])
           }
         }
@@ -371,8 +384,7 @@ export function CustomerEmailPageClient({
       case 'reminder':
         setSubject(`Payment Reminder - Pending Invoice Dues${invRef}`)
         setBody(
-          `Dear ${company},\n\nI hope this message finds you well. This is a courteous reminder regarding ${
-            formattedDue ? `an outstanding balance of ${formattedDue}` : 'pending invoice dues'
+          `Dear ${company},\n\nI hope this message finds you well. This is a courteous reminder regarding ${formattedDue ? `an outstanding balance of ${formattedDue}` : 'pending invoice dues'
           } on your account with ${bName}${invRef}.\n\nFor your convenience, the corresponding invoice summary is shown below with PDF copies attached. Please let us know once payment has been arranged, or reply directly if you have already completed the transfer.\n\nThank you for your prompt attention.\n\nBest regards,\n${bName} Finance`
         )
         break

@@ -1,8 +1,8 @@
 import { toast } from 'sonner';
 import React, { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom';
-import {  useLocation  } from 'react-router-dom';
-import { Receipt, Plus, Search, Filter, AlertCircle, Clock, DollarSign, CheckCircle2, FileDown } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { Receipt, Plus, Search, Filter, AlertCircle, Clock, DollarSign, CheckCircle2, FileDown, Mail } from 'lucide-react'
 import { useBusinessData } from '@/components/dashboard/business-data-provider'
 import { exportVendorBillToPDF } from '@/lib/utils/vendor-bill-pdf'
 import { billsAPI, Bill, BILL_STATUS } from '@/lib/api/purchase'
@@ -202,15 +202,15 @@ export default function VendorBillsPageClient() {
                 Showing <span className="text-foreground font-semibold">{filtered.length}</span> of {bills.length} bills
               </CardDescription>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input 
-                  placeholder="Search bill # or vendor…" 
-                  value={search} 
-                  onChange={e => setSearch(e.target.value)} 
-                  className="pl-9 h-10 rounded-xl border-border bg-card focus-visible:ring-blue-500 text-sm shadow-sm" 
+                <Input
+                  placeholder="Search bill # or vendor…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-9 h-10 rounded-xl border-border bg-card focus-visible:ring-blue-500 text-sm shadow-sm"
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -313,6 +313,14 @@ export default function VendorBillsPageClient() {
                       </TableCell>
                       <TableCell className="pr-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Link
+                            to={b.vendorId ? `/dashboard/${businessId}/vendors/${b.vendorId}/email?billId=${b.id}` : `/dashboard/${businessId}/vendor-bills/${b.id}/email`}
+                            title="Send Email"
+                          >
+                            <Button variant="outline" size="sm" className="h-8 rounded-lg border-border hover:bg-blue-50 hover:text-blue-600">
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Link to={`/dashboard/${businessId}/vendor-bills/${b.id}`}>
                             <Button variant="outline" size="sm" className="h-8 rounded-lg border-border hover:bg-muted font-medium">
                               View

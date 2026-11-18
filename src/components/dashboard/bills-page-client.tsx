@@ -2,7 +2,7 @@ import { toast } from 'sonner';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {  useLocation  } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Eye, Search, Filter, FileText, Download, MoreVertical, ReceiptIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, Search, Filter, FileText, Download, MoreVertical, ReceiptIcon, Mail } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
   Table,
@@ -293,6 +293,15 @@ export default function BillsPageClient() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link
+                              to={bill.vendorId ? `/dashboard/${businessId}/vendors/${bill.vendorId}/email?billId=${bill.id}` : `/dashboard/${businessId}/bills/${bill.id}/email`}
+                              className="flex items-center gap-2 text-blue-600 focus:text-blue-700"
+                            >
+                              <Mail className="h-4 w-4" />
+                              Send Email
+                            </Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem asChild>
                             <Link to={`/dashboard/${businessId}/bills/${bill.id}`} className="flex items-center gap-2">
                               <Eye className="h-4 w-4" />

@@ -8,10 +8,17 @@ import { ShieldCheck, CheckCircle2, Sparkles, Gift, Eye, EyeOff } from 'lucide-r
 export default function Register() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const trialParam = searchParams.get('trial');
+  const planParam = searchParams.get('plan');
   const isTrial =
-    searchParams.get('trial') === '90' ||
-    searchParams.get('trial') === 'true' ||
-    searchParams.get('plan') === 'trial';
+    trialParam === '7' ||
+    trialParam === '90' ||
+    trialParam === 'true' ||
+    planParam === 'trial' ||
+    planParam === 'growth' ||
+    Boolean(trialParam);
+
+  const trialDays = trialParam && !isNaN(parseInt(trialParam)) ? parseInt(trialParam) : 7;
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -65,6 +72,7 @@ export default function Register() {
           email: formData.email,
           password: formData.password,
           isTrial,
+          trialDays: isTrial ? trialDays : 0,
         }),
       });
 
@@ -78,7 +86,7 @@ export default function Register() {
 
       toast.success(
         isTrial
-          ? '🎉 Account created! Your 90-Day Free Trial is active. Please sign in.'
+          ? `🎉 Account created! Your ${trialDays}-Day Free Trial is active. Please sign in.`
           : 'Account created successfully. Please sign in.'
       );
       navigate('/signin');
@@ -110,7 +118,7 @@ export default function Register() {
           {isTrial ? (
             <div className="mb-8 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-semibold uppercase tracking-wider">
               <Gift className="w-4 h-4 text-amber-300" />
-              Special 90-Day Free Trial Offer
+              Special {trialDays}-Day Free Trial Offer
             </div>
           ) : (
             <div className="mb-10 text-blue-200">
@@ -130,16 +138,16 @@ export default function Register() {
           <div className="flex flex-col gap-4">
             {(isTrial
               ? [
-                  '⭐ 90-Day All-Inclusive Free Trial automatically activated',
-                  'Fast, 2-minute onboarding with no setup fees',
-                  'UAE & Indian Regulatory compliance ready',
-                  'Enterprise-grade security and automated backups',
-                ]
+                `⭐ ${trialDays}-Day Free Trial with full module access`,
+                `After ${trialDays} days, subscription deactivates automatically unless renewed`,
+                'Fast, 2-minute onboarding with no setup fees',
+                'Enterprise-grade security and automated backups',
+              ]
               : [
-                  'Fast, 2-minute onboarding',
-                  'UAE Regulatory compliance ready',
-                  'End-to-end encrypted data',
-                ]
+                'Fast, 2-minute onboarding',
+                'UAE Regulatory compliance ready',
+                'End-to-end encrypted data',
+              ]
             ).map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-full bg-blue-500/50 flex items-center justify-center border border-blue-400/50 shrink-0">
@@ -174,23 +182,23 @@ export default function Register() {
             <img src="/que-logo.png" alt="QueErp" width={660} height={180} className="h-9 w-auto" />
           </Link>
 
-          {/* 90-Day Free Trial Banner (ONLY on trial signup) */}
+          {/* Free Trial Banner */}
           {isTrial && (
             <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-lg shadow-blue-500/20 border border-blue-400/30">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[11px] uppercase tracking-wider font-extrabold bg-white/20 px-2.5 py-0.5 rounded-full text-blue-50 flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-amber-300" />
-                  Complimentary Access
+                  Free Trial
                 </span>
                 <span className="text-xs font-bold text-amber-300 flex items-center gap-1">
-                  ⭐ 90 Days Free
+                  ⭐ {trialDays} Days Free
                 </span>
               </div>
               <h3 className="text-base font-bold text-white mb-0.5">
-                90-Day Free Trial Activated
+                {trialDays}-Day Free Trial Activated
               </h3>
               <p className="text-xs text-blue-100/90 leading-relaxed">
-                Every new account receives 90 days of complete enterprise access automatically upon business setup. No credit card required.
+                Enjoy complete access to all modules and features for {trialDays} days. After {trialDays} days, your subscription will deactivate unless renewed. No credit card required.
               </p>
             </div>
           )}
@@ -198,11 +206,11 @@ export default function Register() {
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-1.5 tracking-tight">
-              {isTrial ? 'Start Your 90-Day Free Trial' : 'Create an Account'}
+              {isTrial ? `Start Your ${trialDays}-Day Free Trial` : 'Create an Account'}
             </h1>
             <p className="text-slate-500 font-medium text-sm sm:text-base">
               {isTrial
-                ? 'Create your account to activate 90 days of full access for your business.'
+                ? `Create your account to activate ${trialDays} days of full access. No credit card required.`
                 : 'Join QueErp and start managing your finances.'}
             </p>
           </div>
@@ -222,9 +230,8 @@ export default function Register() {
                 value={formData.fullName}
                 onChange={handleChange}
                 placeholder="John Doe"
-                className={`w-full px-4 py-3 rounded-xl border ${
-                  errors.fullName ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'
-                } bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:bg-white transition-all font-medium text-sm`}
+                className={`w-full px-4 py-3 rounded-xl border ${errors.fullName ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'
+                  } bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:bg-white transition-all font-medium text-sm`}
               />
               {errors.fullName && <p className="text-red-500 text-xs mt-1 font-medium">{errors.fullName}</p>}
             </motion.div>
@@ -243,9 +250,8 @@ export default function Register() {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="you@example.com"
-                className={`w-full px-4 py-3 rounded-xl border ${
-                  errors.email ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'
-                } bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:bg-white transition-all font-medium text-sm`}
+                className={`w-full px-4 py-3 rounded-xl border ${errors.email ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'
+                  } bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:bg-white transition-all font-medium text-sm`}
               />
               {errors.email && <p className="text-red-500 text-xs mt-1 font-medium">{errors.email}</p>}
             </motion.div>
@@ -266,9 +272,8 @@ export default function Register() {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="••••••••"
-                    className={`w-full px-4 py-3 pr-11 rounded-xl border ${
-                      errors.password ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'
-                    } bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:bg-white transition-all font-medium text-sm`}
+                    className={`w-full px-4 py-3 pr-11 rounded-xl border ${errors.password ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'
+                      } bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:bg-white transition-all font-medium text-sm`}
                   />
                   <button
                     type="button"
@@ -297,9 +302,8 @@ export default function Register() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="••••••••"
-                    className={`w-full px-4 py-3 pr-11 rounded-xl border ${
-                      errors.confirmPassword ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'
-                    } bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:bg-white transition-all font-medium text-sm`}
+                    className={`w-full px-4 py-3 pr-11 rounded-xl border ${errors.confirmPassword ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'
+                      } bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:bg-white transition-all font-medium text-sm`}
                   />
                   <button
                     type="button"
@@ -357,8 +361,8 @@ export default function Register() {
                 {isLoading
                   ? 'Creating Account...'
                   : isTrial
-                  ? 'Start Free 90-Day Trial'
-                  : 'Create Account'}
+                    ? `Start Free ${trialDays}-Day Trial`
+                    : 'Create Account'}
               </Button>
             </motion.div>
           </form>

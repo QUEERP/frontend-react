@@ -15,6 +15,15 @@ export interface CustomerEmailQuotationSummary {
   totalAmount?: number | string | null
 }
 
+export interface CustomerEmailBillSummary {
+  id: string
+  billNumber?: string
+  billDate?: string | null
+  dueDate?: string | null
+  status?: string | null
+  totalAmount?: number | string | null
+}
+
 export interface CustomerEmailFileSummary {
   name: string
   size: number
@@ -35,6 +44,7 @@ export interface BuildCustomerEmailHtmlParams {
   hasInvoices?: boolean
   attachedInvoices?: CustomerEmailInvoiceSummary[]
   attachedQuotations?: CustomerEmailQuotationSummary[]
+  attachedBills?: CustomerEmailBillSummary[]
   uploadedFiles?: CustomerEmailFileSummary[]
 }
 
@@ -153,6 +163,7 @@ export function buildCustomerEmailHtml({
   hasInvoices = false,
   attachedInvoices = [],
   attachedQuotations = [],
+  attachedBills = [],
   uploadedFiles = [],
 }: BuildCustomerEmailHtmlParams): string {
   const safeBusinessName = escapeHtml(businessName || 'Our Business')
@@ -261,6 +272,54 @@ export function buildCustomerEmailHtml({
                   </td>
                   <td align="right" style="padding:10px 16px;font-size:12.5px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;">
                     ${escapeHtml(formatMoney(Number(q.totalAmount || 0), currencySymbol))}
+                  </td>
+                </tr>
+              `
+              )
+              .join('')}
+          </table>
+        </td>
+      </tr>
+    `
+      : ''
+
+  const billsBlock =
+    attachedBills.length > 0
+      ? `
+      <tr>
+        <td style="padding:0 32px 18px 32px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background-color:#ffffff;">
+            <tr style="background-color:#0f172a;">
+              <td style="padding:10px 16px;font-size:11px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#ffffff;">
+                Attached Vendor Bills (${attachedBills.length})
+              </td>
+              <td style="padding:10px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">
+                Bill Date
+              </td>
+              <td style="padding:10px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">
+                Status
+              </td>
+              <td align="right" style="padding:10px 16px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">
+                Amount
+              </td>
+            </tr>
+            ${attachedBills
+              .map(
+                (b) => `
+                <tr>
+                  <td style="padding:10px 16px;font-size:13px;font-weight:700;color:#0f172a;font-family:Consolas,Monaco,monospace;border-bottom:1px solid #f1f5f9;">
+                    ${escapeHtml(b.billNumber || 'Bill')}
+                  </td>
+                  <td style="padding:10px 12px;font-size:12px;color:#475569;border-bottom:1px solid #f1f5f9;">
+                    ${escapeHtml(formatShortDate(b.billDate))}
+                  </td>
+                  <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;">
+                    <span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;${getStatusBadgeStyle(b.status)}">
+                      ${escapeHtml(b.status || 'UNPAID')}
+                    </span>
+                  </td>
+                  <td align="right" style="padding:10px 16px;font-size:12.5px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;">
+                    ${escapeHtml(formatMoney(Number(b.totalAmount || 0), currencySymbol))}
                   </td>
                 </tr>
               `
@@ -398,6 +457,7 @@ export function buildCustomerEmailHtml({
           <!-- Attached Records / Files -->
           ${invoicesBlock}
           ${quotationsBlock}
+          ${billsBlock}
           ${filesBlock}
 
           <!-- Quick Reply Callout -->

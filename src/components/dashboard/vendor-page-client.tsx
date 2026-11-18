@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 import React, { useEffect, useState, useCallback } from 'react'
-import {  useNavigate  } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Loader2Icon,
   PlusIcon,
@@ -11,7 +11,8 @@ import {
   FileDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  EyeIcon
+  EyeIcon,
+  MailIcon
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -75,7 +76,7 @@ export function VendorPageClient({ businessId }: { businessId: string }) {
   const [vendorList, setVendorList] = useState<VendorItem[]>([])
   const [pageLoading, setPageLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  
+
   // Server-side pagination
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -354,8 +355,8 @@ export function VendorPageClient({ businessId }: { businessId: string }) {
               </TableHeader>
               <TableBody>
                 {vendorList.map((item) => (
-                  <TableRow 
-                    key={item.id} 
+                  <TableRow
+                    key={item.id}
                     className="hover:bg-muted/50 border-border transition-colors cursor-pointer"
                     onClick={() => handleOpenEdit(item)}
                   >
@@ -392,26 +393,36 @@ export function VendorPageClient({ businessId }: { businessId: string }) {
                     </TableCell>
                     <TableCell className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/vendors/${item.id}`); }} 
-                          className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 rounded-lg"
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Send Email"
+                          onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/vendors/${item.id}/email`); }}
+                          className="h-8 w-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer"
+                        >
+                          <MailIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="View Vendor"
+                          onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/${businessId}/vendors/${item.id}`); }}
+                          className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 rounded-lg cursor-pointer"
                         >
                           <EyeIcon className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={(e) => { e.stopPropagation(); handleOpenEdit(item); }} 
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => { e.stopPropagation(); handleOpenEdit(item); }}
                           className="h-8 w-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-lg"
                         >
                           <EditIcon className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={(e) => { e.stopPropagation(); setDeleteId(item.id); }} 
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => { e.stopPropagation(); setDeleteId(item.id); }}
                           className="h-8 w-8 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
                         >
                           <TrashIcon className="h-4 w-4" />
