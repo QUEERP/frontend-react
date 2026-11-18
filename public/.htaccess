@@ -1,11 +1,9 @@
 # ==============================================================================
-# Security & Anti-Indexing Configuration for QueErp Application
+# Security & SPA Routing Configuration for QueErp Application
 # Host: https://erp.queinfotech.com
 # ==============================================================================
 
 <IfModule mod_headers.c>
-  # Enforce strict noindex, nofollow on ALL files, attachments, PDFs and assets
-  Header always set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
@@ -17,4 +15,3 @@ RewriteBase /
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.html [L]
-
