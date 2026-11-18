@@ -1,0 +1,4 @@
+# Disallow all web crawlers and robots from indexing QueErp portal
+User-agent: *
+Disallow: /
+
