@@ -1,4 +1,11 @@
-# Disallow all web crawlers and robots from indexing QueErp portal
-User-agent: *
-Disallow: /
+# ==============================================================================
+# Robots.txt for QueErp Platform (https://erp.queinfotech.com)
+# ==============================================================================
 
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://erp.queinfotech.com/sitemap.xml
